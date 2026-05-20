@@ -907,6 +907,87 @@ pre.ac-code {
   #artifact-panel { width: 380px; }
   .ship-modal { width: 95vw; max-width: 560px; }
 }
+
+/* ── Filter bar ── */
+#filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+#filter-bar .filter-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+.filter-btn.active {
+  background: #1f3a5f;
+  border-color: var(--blue);
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--surface2);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.filter-btn.active .filter-count {
+  background: var(--blue);
+  color: #000;
+}
+
+/* Stage-specific active colours */
+.filter-btn[data-stage="build"].active  { background:#0d1f15; border-color:var(--green); color:var(--green); }
+.filter-btn[data-stage="build"].active .filter-count { background:var(--green); color:#000; }
+.filter-btn[data-stage="test"].active   { background:#1f1a0d; border-color:var(--yellow); color:var(--yellow); }
+.filter-btn[data-stage="test"].active .filter-count { background:var(--yellow); color:#000; }
+.filter-btn[data-stage="review"].active { background:#1a0d2a; border-color:var(--purple); color:var(--purple); }
+.filter-btn[data-stage="review"].active .filter-count { background:var(--purple); color:#000; }
+.filter-btn[data-stage="ship"].active   { background:#1f0d1f; border-color:#e3b341; color:#e3b341; }
+.filter-btn[data-stage="ship"].active .filter-count { background:#e3b341; color:#000; }
+.filter-btn[data-stage="done"].active   { background:#0d1f38; border-color:var(--blue); color:var(--blue); }
+.filter-btn[data-stage="done"].active .filter-count { background:var(--blue); color:#000; }
+
+.lane.filter-hidden { display: none !important; }
+
+@media (max-width: 768px) {
+  #filter-bar { padding: 8px 14px; gap: 5px; }
+  .filter-btn { padding: 5px 10px; font-size: 11px; }
+}
 </style>
 </head>
 <body>
@@ -926,6 +1007,18 @@ pre.ac-code {
         /spec
       </button>
     </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div id="filter-bar">
+    <span class="filter-label">Stage:</span>
+    <button class="filter-btn active" data-stage="all"    onclick="setFilter('all')">All <span class="filter-count" id="fc-all">0</span></button>
+    <button class="filter-btn"        data-stage="plan"   onclick="setFilter('plan')">/plan <span class="filter-count" id="fc-plan">0</span></button>
+    <button class="filter-btn"        data-stage="build"  onclick="setFilter('build')">/build <span class="filter-count" id="fc-build">0</span></button>
+    <button class="filter-btn"        data-stage="test"   onclick="setFilter('test')">/test <span class="filter-count" id="fc-test">0</span></button>
+    <button class="filter-btn"        data-stage="review" onclick="setFilter('review')">/review <span class="filter-count" id="fc-review">0</span></button>
+    <button class="filter-btn"        data-stage="ship"   onclick="setFilter('ship')">/ship <span class="filter-count" id="fc-ship">0</span></button>
+    <button class="filter-btn"        data-stage="done"   onclick="setFilter('done')">Done <span class="filter-count" id="fc-done">0</span></button>
   </div>
 
   <!-- Spec panel -->
@@ -1431,6 +1524,7 @@ function ensureLaneDOM(id) {
 function refreshLane(id) {
   ensureLaneDOM(id);
   renderLane(id);
+  updateFilterCounts();
 }
 
 // ════════════════════════════════════════════
@@ -1963,6 +2057,7 @@ function addLaneFromChip(featureName) {
   const id = createLane(featureName);
   ensureLaneDOM(id);
   renderLane(id);
+  updateFilterCounts();
 
   // Disable chip button
   const slug = slugify(featureName);
@@ -1989,6 +2084,7 @@ function addLaneManual() {
   const id = createLane(name);
   ensureLaneDOM(id);
   renderLane(id);
+  updateFilterCounts();
   inp.value = '';
 }
 
@@ -2254,6 +2350,73 @@ document.getElementById('interview-modal').addEventListener('click', function(e)
 document.getElementById('ship-modal').addEventListener('click', function(e) {
   if (e.target === this) closeShipModal();
 });
+
+// ════════════════════════════════════════════
+// FILTER BAR
+// ════════════════════════════════════════════
+
+let activeFilter = 'all';
+
+// Map lane.phase → filter stage key
+function getLaneStage(lane) {
+  const p = lane.phase;
+  if (p === 'shipped') return 'done';
+  if (p === 'fixing')  return 'ship';   // fixing = after NO-GO, still in ship loop
+  if (p === 'shipping') return 'ship';
+  if (p === 'reviewing') return 'review';
+  if (p === 'testing')   return 'test';
+  if (p === 'building')  return 'build';
+  return 'plan'; // planning
+}
+
+function setFilter(stage) {
+  activeFilter = stage;
+
+  // Update button active states
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.stage === stage);
+  });
+
+  // Show/hide lanes
+  applyFilter();
+}
+
+function applyFilter() {
+  Object.values(lanes).forEach(lane => {
+    const el = document.getElementById('lane_' + lane.id);
+    if (!el) return;
+    const matches = activeFilter === 'all' || getLaneStage(lane) === activeFilter;
+    el.classList.toggle('filter-hidden', !matches);
+  });
+
+  // Show empty state if no visible lanes
+  const visibleLanes = Object.values(lanes).filter(l => {
+    const el = document.getElementById('lane_' + l.id);
+    return el && !el.classList.contains('filter-hidden');
+  });
+  const emptyState = document.getElementById('empty-state');
+  if (emptyState) {
+    emptyState.style.display = (Object.keys(lanes).length === 0 || visibleLanes.length === 0) ? 'flex' : 'none';
+    if (visibleLanes.length === 0 && Object.keys(lanes).length > 0) {
+      emptyState.querySelector('p').textContent = `No lanes in the "${activeFilter}" stage.`;
+    } else if (Object.keys(lanes).length === 0) {
+      emptyState.querySelector('p').textContent = 'Run /spec to detect features and generate lanes.';
+    }
+  }
+}
+
+function updateFilterCounts() {
+  const counts = { all: 0, plan: 0, build: 0, test: 0, review: 0, ship: 0, done: 0 };
+  Object.values(lanes).forEach(lane => {
+    counts.all++;
+    counts[getLaneStage(lane)]++;
+  });
+  Object.keys(counts).forEach(stage => {
+    const el = document.getElementById('fc-' + stage);
+    if (el) el.textContent = counts[stage];
+  });
+  applyFilter();
+}
 </script>
 </body>
 </html>
