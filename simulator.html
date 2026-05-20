@@ -795,6 +795,118 @@ pre.ac-code {
 }
 
 .ac-line { display: block; }
+
+/* ── Responsive / Mobile ────────────────────────────────────────────────── */
+
+/* Allow body to scroll on mobile (overrides overflow:hidden) */
+@media (max-width: 768px) {
+  html, body { overflow: auto; height: auto; }
+
+  #app { height: auto; overflow: visible; }
+
+  /* Header: stack input + buttons vertically */
+  #header { padding: 10px 14px; }
+  #header h1 { font-size: 12px; margin-bottom: 8px; }
+
+  #global-bar { flex-direction: column; align-items: stretch; gap: 6px; }
+  #global-input { min-width: 0; width: 100%; font-size: 14px; padding: 10px 12px; }
+
+  #global-bar .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Spec panel: allow wrap and scroll */
+  #spec-panel { padding: 10px 14px; }
+  .spec-panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .feature-chips { gap: 6px; }
+
+  /* Lanes: vertical stack instead of horizontal scroll */
+  #lanes-area { overflow: visible; }
+  #lanes-scroll {
+    overflow-x: visible;
+    overflow-y: visible;
+    padding: 12px 14px;
+    height: auto;
+  }
+  #lanes-row {
+    flex-direction: column;
+    min-width: unset;
+    height: auto;
+    gap: 14px;
+  }
+
+  /* Lane card: full width, auto height */
+  .lane {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  .lane-body {
+    overflow-y: visible;
+    max-height: none;
+  }
+
+  /* Add lane bar: stack */
+  #add-lane-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px 14px;
+  }
+  #add-lane-input { font-size: 14px; padding: 9px 12px; }
+  #add-lane-row .btn { width: 100%; justify-content: center; padding: 10px; }
+
+  /* Bigger touch targets on step buttons */
+  .step-btn { padding: 10px 10px; }
+  .step-btn .step-label { font-size: 13px; }
+  .step-btn .step-sub { font-size: 11px; }
+
+  /* Artifact badges: larger touch area */
+  .artifact-badge { padding: 4px 8px; font-size: 11px; }
+
+  /* Artifact side panel: full screen */
+  #artifact-panel { width: 100vw; }
+
+  /* Modals: full width on mobile */
+  .modal { width: 95vw; max-height: 90vh; }
+  .ship-modal { width: 95vw; }
+
+  /* Ship agent cards: stack in 2 columns then wrap */
+  .agent-cards { flex-wrap: wrap; }
+  .agent-card { flex: 1 1 calc(50% - 5px); min-width: 120px; }
+
+  /* Modal body padding */
+  .modal-body { padding: 14px; }
+  .modal-header { padding: 12px 14px; }
+  .modal-footer { padding: 10px 14px; }
+
+  /* Empty state */
+  #empty-state { min-width: unset; padding: 32px 16px; }
+
+  /* Chat input */
+  .chat-input-row { flex-direction: column; }
+  .chat-input-row .btn { width: 100%; justify-content: center; }
+
+  /* Buttons in spec/fix areas */
+  .btn { touch-action: manipulation; }
+}
+
+/* Narrow phones (≤ 380px) */
+@media (max-width: 380px) {
+  #header h1 { font-size: 11px; }
+  .agent-card { flex: 1 1 100%; }
+  .step-btn .step-label { font-size: 12px; }
+}
+
+/* Tablet: allow horizontal lanes but constrain height better */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .lane { width: 210px; height: calc(100vh - 130px); }
+  #artifact-panel { width: 380px; }
+  .ship-modal { width: 95vw; max-width: 560px; }
+}
 </style>
 </head>
 <body>
