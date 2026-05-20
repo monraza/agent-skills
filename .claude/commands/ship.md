@@ -63,6 +63,32 @@ Produce a single output:
 - [test-engineer report]
 ```
 
+## Phase D — Write fix tasks back to tasks/todo.md
+
+After producing the Phase C output, automatically update `tasks/todo.md` so the
+engineer can re-enter the `/build` loop without manual editing:
+
+1. If there are **Blockers** or **Recommended fixes**, open `tasks/todo.md` (create it
+   if it does not exist) and append a new section at the bottom:
+
+   ```markdown
+   ### Fix tasks from /ship (YYYY-MM-DD)
+   - [ ] Fix [Critical]: <finding summary> (<file:line>) — <persona>
+   - [ ] Fix [Important]: <finding summary> (<file:line>) — <persona>
+   - [ ] Recommended: <finding summary> (<file:line>) — <persona>
+   ```
+
+2. Use today's date in the section header.
+3. Map finding severity to prefix: Critical/High → `Fix [Critical]`,
+   Important/Medium → `Fix [Important]`, Suggestion/Low → `Recommended`.
+4. Include the source persona name so the engineer knows why the task exists.
+5. **Do not modify existing tasks** — only append. Checked-off tasks stay intact.
+6. If the decision is a clean GO with no findings, skip this phase entirely and
+   print: `tasks/todo.md unchanged — no fix tasks generated.`
+
+After writing, print:
+`Fix tasks appended to tasks/todo.md — run /build to address them.`
+
 ## Rules
 
 1. The three Phase A personas run in parallel — never sequentially.
