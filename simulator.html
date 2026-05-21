@@ -459,13 +459,12 @@ html, body {
 
 /* ── Spec panel ── */
 #spec-panel {
-  display: none;
+  display: block;
   background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 12px 16px;
   flex-shrink: 0;
 }
-#spec-panel.visible { display: block; }
 
 .spec-panel-header {
   display: flex;
@@ -507,7 +506,7 @@ html, body {
   font-family: var(--font);
   transition: all 0.15s;
 }
-.feature-chip .chip-add:hover { background: #1a3a6e; }
+.feature-chip .chip-add:hover { background: var(--primary-btn-hover); }
 .feature-chip .chip-add:disabled {
   border-color: var(--green);
   color: var(--green);
@@ -863,29 +862,7 @@ html, body {
 #lanes-scroll::-webkit-scrollbar-track { background: transparent; }
 #lanes-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* ── Add lane input ── */
-#add-lane-row {
-  display: flex;
-  gap: 8px;
-  padding: 8px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-  align-items: center;
-}
-#add-lane-input {
-  flex: 1;
-  padding: 5px 9px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 12px;
-  outline: none;
-}
-#add-lane-input:focus { border-color: var(--blue); }
-#add-lane-input::placeholder { color: var(--text-muted); }
+/* ── Add lane input ── (now lives in spec table last row) */
 
 /* ── Divider ── */
 .divider {
@@ -981,15 +958,7 @@ pre.ac-code {
     max-height: none;
   }
 
-  /* Add lane bar: stack */
-  #add-lane-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    padding: 10px 14px;
-  }
-  #add-lane-input { font-size: 14px; padding: 9px 12px; }
-  #add-lane-row .btn { width: 100%; justify-content: center; padding: 10px; }
+  #add-lane-input { font-size: 13px; }
 
   /* Bigger touch targets on step buttons */
   .step-btn { padding: 10px 10px; }
@@ -1176,6 +1145,20 @@ pre.ac-code {
 }
 #spec-table .spec-action { text-align: right; white-space: nowrap; }
 #spec-table tr.spec-added td { color: var(--text-muted); }
+#spec-table .spec-add-row td { border-bottom: none; padding-top: 8px; }
+#add-lane-input {
+  width: 100%;
+  padding: 5px 9px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  outline: none;
+}
+#add-lane-input:focus { border-color: var(--blue); }
+#add-lane-input::placeholder { color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -1189,7 +1172,7 @@ pre.ac-code {
 
   <!-- Global controls -->
   <div id="header">
-    <h1>▸ agent-skills workflow simulator</h1>
+    <h1>Define your specification in short</h1>
     <div id="global-bar">
       <input id="global-input" type="text"
         placeholder="What do you want to build? e.g. banking validation library with IBAN, credit card, fee calculator"
@@ -1233,18 +1216,11 @@ pre.ac-code {
       <div id="lanes-row">
         <div id="empty-state">
           <span class="big">◈</span>
-          <p>Run /spec to detect features and generate starts.</p>
-          <p style="color:var(--text-muted)">Or use "Add Start Manually" below.</p>
+          <p>Run /spec to detect features, or add one manually.</p>
         </div>
       </div>
     </div>
 
-    <!-- Add start bar -->
-    <div id="add-lane-row">
-      <span style="font-size:11px; color:var(--text-muted); white-space:nowrap;">Add start manually:</span>
-      <input id="add-lane-input" type="text" placeholder="Feature name...">
-      <button class="btn" onclick="addLaneManual()">+ Add Start</button>
-    </div>
   </div>
 </div>
 
@@ -2214,8 +2190,22 @@ function runSpec() {
   }, 2000);
 }
 
+function buildAddFeatureRow() {
+  return `<tr class="spec-add-row">
+    <td class="spec-num" style="color:var(--text-muted)">+</td>
+    <td><input id="add-lane-input" type="text" placeholder="Add a feature..." autocomplete="off"></td>
+    <td class="spec-action"><button class="btn" onclick="addLaneManual()">+ Add Feature</button></td>
+  </tr>`;
+}
+
+function initSpecTable() {
+  const container = document.getElementById('spec-table-container');
+  const tableHtml = '<table id="spec-table"><thead><tr><th>#</th><th>Feature</th><th></th></tr></thead><tbody>' +
+    buildAddFeatureRow() + '</tbody></table>';
+  container.innerHTML = tableHtml;
+}
+
 function renderSpecPanel(features) {
-  const panel = document.getElementById('spec-panel');
   const container = document.getElementById('spec-table-container');
   const summary = document.getElementById('spec-summary');
   const createAllBtn = document.getElementById('btn-create-all');
@@ -2226,17 +2216,15 @@ function renderSpecPanel(features) {
     tableHtml += `<tr id="specrow_${slugify(f)}">
       <td class="spec-num">${i + 1}</td>
       <td>${escHtml(f)}</td>
-      <td class="spec-action"><button class="chip-add" onclick="addLaneFromChip('${escAttr(f)}')" id="chipadd_${slugify(f)}">+ Start</button></td>
+      <td class="spec-action"><button class="btn" onclick="addLaneFromChip('${escAttr(f)}')" id="chipadd_${slugify(f)}">+ Start</button></td>
     </tr>`;
   }
+  tableHtml += buildAddFeatureRow();
   tableHtml += '</tbody></table>';
   container.innerHTML = tableHtml;
 
   summary.textContent = `Detected ${features.length} feature${features.length > 1 ? 's' : ''} from spec analysis.`;
-
   createAllBtn.style.display = features.length > 1 ? '' : 'none';
-
-  panel.classList.add('visible');
 }
 
 function addLaneFromChip(featureName) {
@@ -2625,6 +2613,9 @@ function toggleTheme() {
     localStorage.setItem('sim-theme', 'light');
   }
 }
+
+// Initialise spec table (shows add-feature row before /spec is run)
+initSpecTable();
 
 // Apply saved theme on load
 (function () {
