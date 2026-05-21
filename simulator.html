@@ -129,18 +129,36 @@ html, body {
   overflow: hidden;
 }
 
+/* ── App top bar ── */
+#app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#app-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
 #header {
-  padding: 12px 20px;
+  padding: 10px 20px 12px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 #header h1 {
-  font-size: 14px;
-  color: var(--blue);
+  font-size: 12px;
+  color: var(--text-dim);
   letter-spacing: 0.05em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 #global-bar {
@@ -914,9 +932,13 @@ pre.ac-code {
 
   #app { height: auto; overflow: visible; }
 
+  /* App bar */
+  #app-bar { padding: 8px 14px; }
+  #app-title { font-size: 13px; }
+
   /* Header: stack input + buttons vertically */
   #header { padding: 10px 14px; }
-  #header h1 { font-size: 12px; margin-bottom: 8px; }
+  #header h1 { font-size: 11px; margin-bottom: 8px; }
 
   #global-bar { flex-direction: column; align-items: stretch; gap: 6px; }
   #global-input { min-width: 0; width: 100%; font-size: 14px; padding: 10px 12px; }
@@ -1159,7 +1181,13 @@ pre.ac-code {
 <body>
 <div id="app">
 
-  <!-- Header + global controls -->
+  <!-- App bar -->
+  <div id="app-bar">
+    <span id="app-title">SDD Workflow</span>
+    <button class="theme-toggle" id="btn-theme" onclick="toggleTheme()" title="Toggle light/dark mode">◑ Light</button>
+  </div>
+
+  <!-- Global controls -->
   <div id="header">
     <h1>▸ agent-skills workflow simulator</h1>
     <div id="global-bar">
@@ -1172,7 +1200,6 @@ pre.ac-code {
       <button class="btn primary" id="btn-spec" onclick="runSpec()">
         /spec
       </button>
-      <button class="theme-toggle" id="btn-theme" onclick="toggleTheme()" title="Toggle light/dark mode">◑ Light</button>
     </div>
   </div>
 
