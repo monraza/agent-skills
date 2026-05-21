@@ -226,6 +226,7 @@ html, body {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 16px;
+  min-height: 0;
 }
 
 #lanes-row {
@@ -233,6 +234,7 @@ html, body {
   gap: 12px;
   height: 100%;
   min-width: max-content;
+  align-items: stretch;
 }
 
 #empty-state {
@@ -257,7 +259,8 @@ html, body {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   transition: border-color 0.3s;
 }
@@ -1006,7 +1009,7 @@ pre.ac-code {
 
 /* Tablet: allow horizontal lanes but constrain height better */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .lane { width: 210px; height: calc(100vh - 130px); }
+  .lane { width: 210px; }
   #artifact-panel { width: 380px; }
   #ship-drawer { width: 380px; }
 }
@@ -1596,7 +1599,7 @@ function buildTaskBlock(lane, idx) {
 
   let html = `<div class="step-block">`;
   html += `<button class="${btnClass}" id="${id}" ${state === 'active' ? '' : 'disabled'} ${onclick}>`;
-  html += `<span class="step-label">Task ${idx + 1}: ${task.label}</span>`;
+  html += `<span class="step-label">/build — Task ${idx + 1}: ${task.label}</span>`;
   html += `<span class="step-sub">${task.file}</span>`;
   html += `</button>`;
 
@@ -2170,6 +2173,32 @@ function closeArtifact() {
 
 let detectedFeatures = [];
 let addedFeatures = new Set();
+let specMd = null;
+
+function generateSpecMd(input, features) {
+  let lines = [];
+  lines.push(['header', '# spec.md — feature specification']);
+  lines.push(['dim', '']);
+  lines.push(['header', '## Input']);
+  lines.push(['text', input]);
+  lines.push(['dim', '']);
+  lines.push(['header', '## Detected Features']);
+  for (let i = 0; i < features.length; i++) {
+    lines.push(['green', `${i + 1}. ${features[i]}`]);
+  }
+  lines.push(['dim', '']);
+  lines.push(['header', '## Scope']);
+  lines.push(['text', `${features.length} feature module${features.length > 1 ? 's' : ''} identified.`]);
+  lines.push(['muted', 'Each feature will follow: /plan → /build tasks → /test → /review → /ship']);
+  return lines;
+}
+
+function openSpecArtifact() {
+  if (!specMd) return;
+  document.getElementById('artifact-title').textContent = 'spec.md';
+  document.getElementById('artifact-content').innerHTML = renderArtifactLines(specMd);
+  document.getElementById('artifact-panel').classList.add('open');
+}
 
 function runSpec() {
   const input = document.getElementById('global-input').value.trim();
@@ -2182,6 +2211,7 @@ function runSpec() {
   setTimeout(() => {
     detectedFeatures = detectFeatures(input);
     addedFeatures = new Set();
+    specMd = generateSpecMd(input, detectedFeatures);
 
     renderSpecPanel(detectedFeatures);
 
@@ -2210,18 +2240,23 @@ function renderSpecPanel(features) {
   const summary = document.getElementById('spec-summary');
   const createAllBtn = document.getElementById('btn-create-all');
 
-  let tableHtml = '<table id="spec-table"><thead><tr><th>#</th><th>Feature</th><th></th></tr></thead><tbody>';
+  // spec.md badge above the table
+  let html = '<div class="artifact-badges" style="margin-bottom:8px;">';
+  html += '<span class="artifact-badge" onclick="openSpecArtifact()">spec.md</span>';
+  html += '</div>';
+
+  html += '<table id="spec-table"><thead><tr><th>#</th><th>Feature</th><th></th></tr></thead><tbody>';
   for (let i = 0; i < features.length; i++) {
     const f = features[i];
-    tableHtml += `<tr id="specrow_${slugify(f)}">
+    html += `<tr id="specrow_${slugify(f)}">
       <td class="spec-num">${i + 1}</td>
       <td>${escHtml(f)}</td>
       <td class="spec-action"><button class="btn" onclick="addLaneFromChip('${escAttr(f)}')" id="chipadd_${slugify(f)}">+ Start</button></td>
     </tr>`;
   }
-  tableHtml += buildAddFeatureRow();
-  tableHtml += '</tbody></table>';
-  container.innerHTML = tableHtml;
+  html += buildAddFeatureRow();
+  html += '</tbody></table>';
+  container.innerHTML = html;
 
   summary.textContent = `Detected ${features.length} feature${features.length > 1 ? 's' : ''} from spec analysis.`;
   createAllBtn.style.display = features.length > 1 ? '' : 'none';
