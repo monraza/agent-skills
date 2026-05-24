@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Corrected SDD Workflow — based on simulator review</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; }
+    .mermaid {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .legend {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+    }
+    .legend span {
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid;
+    }
+    .legend .define   { background: #e3f2fd; border-color: #1976d2; }
+    .legend .build    { background: #fff3e0; border-color: #f57c00; }
+    .legend .review   { background: #f3e5f5; border-color: #7b1fa2; }
+    .legend .ship     { background: #e8f5e9; border-color: #388e3c; }
+    .legend .decision { background: #fffde7; border-color: #fbc02d; }
+    h2 { margin-top: 2.5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>Corrected SDD Workflow</h1>
+  <p class="subtitle">Derived from the review of <code>simulator.html</code> on branch <code>claude/update-simulator-ui-RhGZs</code>.</p>
+
+  <div class="mermaid">
+flowchart TD
+    Start([User has an idea])
+
+    subgraph DEFINE["DEFINE phase — global, once"]
+        direction TB
+        Intent{Intent clear?}
+        Interview["interview-me skill<br/>extract who / why / success / constraint"]
+        Scope{Scope clear?}
+        Refine["idea-refine skill<br/>generate 5–8 variations, pick direction"]
+        TopSpec["/spec — top-level SPEC.md<br/>six core areas for the whole project"]
+    end
+
+    subgraph LANE["PER-FEATURE LANE — repeats for each feature"]
+        direction TB
+        FeatureSpec["/spec — feature SPEC.md<br/>objective, boundaries, acceptance criteria"]
+        Plan["/plan — decompose into tasks<br/>writes tasks/plan.md + tasks/todo.md"]
+
+        subgraph BUILDVERIFY["BUILD ↔ VERIFY loop"]
+            direction TB
+            Build["/build — next task<br/>TDD inside: failing test → impl → commit"]
+            Verify["VERIFY<br/>browser-testing-with-devtools<br/>debugging-and-error-recovery"]
+            MoreTasks{More tasks<br/>in todo.md?}
+            Build --> Verify
+            Verify -- bug found --> Build
+            Verify -- task passes --> MoreTasks
+            MoreTasks -- yes --> Build
+        end
+
+        subgraph REVIEW["REVIEW phase"]
+            direction TB
+            CodeReview["/review — code-review-and-quality<br/>five-axis"]
+            Simplify["/code-simplify<br/>reduce complexity, no behavior change"]
+            Security["security-and-hardening"]
+            Perf["performance-optimization"]
+            CodeReview --> Simplify --> Security --> Perf
+        end
+
+        Ship["/ship — parallel personas<br/>code-reviewer + security-auditor + test-engineer"]
+        Decision{GO / NO-GO?}
+        PhaseD["Phase D fixes<br/>append to tasks/todo.md"]
+        Shipped([Shipped ✓])
+    end
+
+    NewFeature{Add another<br/>feature later?}
+    Done([Done])
+
+    Start --> Intent
+    Intent -- no --> Interview --> Scope
+    Intent -- yes --> Scope
+    Scope -- no --> Refine --> TopSpec
+    Scope -- yes --> TopSpec
+    TopSpec --> FeatureSpec
+    FeatureSpec --> Plan
+    Plan --> Build
+    MoreTasks -- no --> CodeReview
+    Perf --> Ship
+    Ship --> Decision
+    Decision -- GO --> Shipped
+    Decision -- NO-GO --> PhaseD --> Build
+    Shipped --> NewFeature
+    NewFeature -- yes --> FeatureSpec
+    NewFeature -- no --> Done
+
+    classDef define   fill:#e3f2fd,stroke:#1976d2,color:#000
+    classDef build    fill:#fff3e0,stroke:#f57c00,color:#000
+    classDef review   fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef ship     fill:#e8f5e9,stroke:#388e3c,color:#000
+    classDef decision fill:#fffde7,stroke:#fbc02d,color:#000
+
+    class Interview,Refine,TopSpec,FeatureSpec define
+    class Plan,Build,Verify build
+    class CodeReview,Simplify,Security,Perf review
+    class Ship,PhaseD,Shipped ship
+    class Intent,Scope,MoreTasks,Decision,NewFeature decision
+  </div>
+
+  <div class="legend">
+    <span class="define">Define phase</span>
+    <span class="build">Build / Verify</span>
+    <span class="review">Review phase</span>
+    <span class="ship">Ship</span>
+    <span class="decision">Decision point</span>
+  </div>
+
+  <h2>What changed vs. the current simulator</h2>
+  <table>
+    <thead>
+      <tr><th>Current simulator</th><th>Corrected workflow</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/spec</code> runs once globally, splits text into features</td>
+        <td><code>/spec</code> runs globally for top-level SPEC.md <em>and</em> again per feature</td>
+      </tr>
+      <tr>
+        <td>Lane starts at <code>/plan</code></td>
+        <td>Lane starts at <code>/spec</code> (per-feature), then <code>/plan</code></td>
+      </tr>
+      <tr>
+        <td><code>/interview-me</code> is a slash command with 3 canned questions</td>
+        <td><code>interview-me</code> is a skill triggered by intent gaps; <code>idea-refine</code> added as a peer</td>
+      </tr>
+      <tr>
+        <td><code>/build</code> → <code>/test</code> → <code>/review</code> (rigidly linear)</td>
+        <td><code>/build</code> ↔ <code>verify</code> loop, then Review phase</td>
+      </tr>
+      <tr>
+        <td>Review is one step ("code-reviewer persona")</td>
+        <td>Review = <code>/review</code> + <code>/code-simplify</code> + security + performance</td>
+      </tr>
+      <tr>
+        <td>Adding a new feature skips <code>/interview-me</code> and <code>/spec</code></td>
+        <td>Adding a new feature re-enters at per-feature <code>/spec</code></td>
+      </tr>
+      <tr>
+        <td>Only loop is NO-GO → Phase D → re-<code>/ship</code></td>
+        <td>Loops at Build↔Verify <em>and</em> NO-GO → Build (fixes re-enter the build pipe)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "default", flowchart: { useMaxWidth: true, htmlLabels: true } });
+  </script>
+</body>
+</html>
