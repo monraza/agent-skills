@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDD Workflow Simulator — Corrected</title>
+<style>
+/* ── Theme tokens ─────────────────────────────────────────── */
+:root {
+  --bg: #18181b; --surface: #232326; --surface-2: #2c2c30;
+  --border: #3a3a3f; --border-strong: #505058;
+  --text: #e8e8ea; --text-muted: #98989e; --text-dim: #68686e;
+  --input-bg: #1e1e22; --input-border: #444;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3); --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+  --define: #60a5fa; --define-bg: rgba(96,165,250,.12); --define-border: #3b6ec7;
+  --plan: #f59e0b; --plan-bg: rgba(245,158,11,.1); --plan-border: #b27308;
+  --build: #f97316; --build-bg: rgba(249,115,22,.1); --build-border: #b85414;
+  --verify: #14b8a6; --verify-bg: rgba(20,184,166,.1); --verify-border: #0d7d71;
+  --review: #a78bfa; --review-bg: rgba(167,139,250,.1); --review-border: #7c5cc7;
+  --ship: #34d399; --ship-bg: rgba(52,211,153,.1); --ship-border: #1f9d6e;
+  --nogo: #f87171; --nogo-bg: rgba(248,113,113,.12); --nogo-border: #c53030;
+  --done: #34d399; --active: #fbbf24; --idle: #555;
+  --radius: 10px; --radius-sm: 6px;
+  --font: -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;
+  --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"] {
+  --bg: #f5f5f0; --surface: #ffffff; --surface-2: #f0efeb;
+  --border: #e0ded6; --border-strong: #c8c5ba;
+  --text: #1c1c1a; --text-muted: #6b6a64; --text-dim: #9b998f;
+  --input-bg: #fff; --input-border: #ccc;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06); --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --define-bg: #eff5ff; --define-border: #c0d4f6;
+  --plan-bg: #fef5e7; --plan-border: #f0d9a8;
+  --build-bg: #fef0e4; --build-border: #f0c89a;
+  --verify-bg: #e6f6f4; --verify-border: #a0ddd5;
+  --review-bg: #f3edff; --review-border: #d4c0f5;
+  --ship-bg: #e8f7ec; --ship-border: #b0e2c0;
+  --nogo-bg: #fdecec; --nogo-border: #f0c0c0;
+  --idle: #bbb;
+}
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── App bar ──────────────────────────────────────────────── */
+.appbar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+.appbar h1{font-size:15px;font-weight:600}
+.appbar .sub{color:var(--text-muted);font-size:12px;margin-left:10px}
+.appbar .right{display:flex;gap:8px;align-items:center}
+.theme-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted);font-size:12px;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font)}
+.theme-btn:hover{background:var(--border)}
+
+/* ── Container ────────────────────────────────────────────── */
+.container{max-width:1200px;margin:0 auto;padding:16px 20px 80px}
+
+/* ── Define rail ──────────────────────────────────────────── */
+.define-rail{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--define);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.define-rail .phase-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--define);font-weight:600;margin-bottom:10px}
+.define-input-row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+#global-input{flex:1;min-width:260px;padding:9px 12px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font)}
+#global-input:focus{outline:none;border-color:var(--define);box-shadow:0 0 0 3px rgba(96,165,250,.2)}
+.define-btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{background:var(--surface);border:1px solid var(--border-strong);color:var(--text);font-size:12px;padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--define);color:#fff;border-color:var(--define)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.skill-btn{border-style:dashed;color:var(--text-muted)}
+.btn.skill-btn:hover{border-color:var(--define);color:var(--define)}
+.define-output{margin-top:12px;display:none}
+.define-output.visible{display:block}
+.define-output .agent-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;font-family:var(--mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;color:var(--text-muted)}
+.define-output .agent-block .agent-label{color:var(--define);font-weight:600}
+
+/* ── Spec table ───────────────────────────────────────────── */
+.specs{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;display:none}
+.specs.visible{display:block}
+.specs-header{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface-2)}
+.specs-header .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);font-weight:600}
+.spec-row{display:grid;grid-template-columns:32px 1fr 120px 100px;align-items:center;padding:8px 18px;border-bottom:1px solid var(--border);gap:10px;font-size:13px}
+.spec-row:last-child{border-bottom:none}
+.spec-row .num{color:var(--text-dim);font-family:var(--mono);font-size:12px}
+.spec-row .name{font-weight:500}
+.spec-row .status{font-size:11px;display:flex;align-items:center;gap:5px}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.status-dot.idle{background:var(--idle)}.status-dot.active{background:var(--active);animation:pulse 1.6s infinite}
+.status-dot.done{background:var(--done)}.status-dot.fixing{background:var(--nogo)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.spec-action{text-align:right}
+.spec-add-row{background:var(--surface-2)}
+.spec-add-row input{width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;color:var(--text);font-size:12px;font-family:var(--font)}
+
+/* ── Filter bar ───────────────────────────────────────────── */
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-bar .label{font-size:11px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:4px 10px;border-radius:999px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px}
+.filter-btn:hover{border-color:var(--text-muted)}
+.filter-btn.active{color:#fff;font-weight:600}
+.filter-btn.active[data-f="all"]{background:var(--text-muted);border-color:var(--text-muted)}
+.filter-btn.active[data-f="spec"]{background:var(--define);border-color:var(--define)}
+.filter-btn.active[data-f="plan"]{background:var(--plan);border-color:var(--plan)}
+.filter-btn.active[data-f="build"]{background:var(--build);border-color:var(--build)}
+.filter-btn.active[data-f="review"]{background:var(--review);border-color:var(--review)}
+.filter-btn.active[data-f="ship"]{background:var(--ship);border-color:var(--ship)}
+.filter-btn.active[data-f="shipped"]{background:var(--done);border-color:var(--done)}
+.filter-btn .fc{font-family:var(--mono);font-size:10px}
+.filter-hidden{display:none!important}
+
+/* ── Lane card ────────────────────────────────────────────── */
+.lane{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow-sm);overflow:hidden;transition:box-shadow .2s}
+.lane:hover{box-shadow:var(--shadow-md)}
+.lane-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.lane-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.lane-title .num{font-family:var(--mono);color:var(--text-dim);font-size:12px;font-weight:400}
+.phase-badge{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500}
+.badge-spec{background:var(--define-bg);color:var(--define);border:1px solid var(--define-border)}
+.badge-plan{background:var(--plan-bg);color:var(--plan);border:1px solid var(--plan-border)}
+.badge-build{background:var(--build-bg);color:var(--build);border:1px solid var(--build-border)}
+.badge-review{background:var(--review-bg);color:var(--review);border:1px solid var(--review-border)}
+.badge-ship{background:var(--ship-bg);color:var(--ship);border:1px solid var(--ship-border)}
+.badge-shipped{background:var(--ship-bg);color:var(--done);border:1px solid var(--ship-border)}
+.badge-fixing{background:var(--nogo-bg);color:var(--nogo);border:1px solid var(--nogo-border)}
+
+/* ── Pipeline (horizontal stations) ───────────────────────── */
+.pipeline{padding:16px 16px 4px;display:flex;align-items:flex-start;gap:0;overflow-x:auto}
+.station{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;min-width:100px}
+.station-box{background:var(--surface-2);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 12px;min-width:88px;text-align:center;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
+.station-box:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.station-cmd{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
+.station-sub{font-size:10px;color:var(--text-muted);margin-top:1px}
+.station-marker{position:absolute;top:-7px;right:-7px;width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--idle);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--idle)}
+.station.done .station-box{background:var(--ship-bg);border-color:var(--ship-border)}
+.station.done .station-marker{background:var(--done);border-color:var(--done);color:#fff}
+.station.done .station-cmd{color:var(--done)}
+.station.active .station-box{border-color:var(--active);box-shadow:0 0 0 3px rgba(251,191,36,.18)}
+.station.active .station-marker{background:var(--active);border-color:var(--active);color:#fff;animation:pulse 1.6s infinite}
+.station.running .station-box{border-color:var(--active);box-shadow:0 0 0 3px rgba(251,191,36,.25)}
+.station.running .station-marker{background:var(--active);border-color:var(--active);color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.station.idle .station-box{opacity:.5;cursor:default}
+.station.idle .station-box:hover{transform:none;box-shadow:none}
+
+.station.active.s-spec .station-box,.station.running.s-spec .station-box{background:var(--define-bg);border-color:var(--define)}
+.station.active.s-plan .station-box,.station.running.s-plan .station-box{background:var(--plan-bg);border-color:var(--plan)}
+.station.active.s-build .station-box,.station.running.s-build .station-box{background:var(--build-bg);border-color:var(--build)}
+.station.active.s-review .station-box,.station.running.s-review .station-box{background:var(--review-bg);border-color:var(--review)}
+.station.active.s-ship .station-box,.station.running.s-ship .station-box{background:var(--ship-bg);border-color:var(--ship)}
+
+/* Arrow */
+.arrow{flex:0 0 auto;align-self:flex-start;margin-top:18px;width:32px;height:2px;background:var(--border-strong);position:relative}
+.arrow::after{content:'';position:absolute;right:-1px;top:50%;width:0;height:0;border-left:6px solid var(--border-strong);border-top:4px solid transparent;border-bottom:4px solid transparent;transform:translateY(-50%)}
+.arrow.done{background:var(--done)}.arrow.done::after{border-left-color:var(--done)}
+
+/* ── Composite Build/Verify station ───────────────────────── */
+.station.composite-bv{min-width:180px}
+.composite-inner{display:flex;align-items:stretch;gap:0;background:var(--surface-2);border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);padding:7px 10px;position:relative;cursor:pointer;transition:transform .15s}
+.composite-inner:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.station.active.composite-bv .composite-inner,.station.running.composite-bv .composite-inner{border-color:var(--build);background:var(--build-bg);box-shadow:0 0 0 3px rgba(249,115,22,.15)}
+.station.done.composite-bv .composite-inner{border-style:solid;border-color:var(--ship-border);background:var(--ship-bg)}
+.sub-station{flex:1;text-align:center;padding:2px 6px}
+.sub-cmd{font-family:var(--mono);font-size:11px;font-weight:600}
+.sub-sub{font-size:9px;color:var(--text-muted);margin-top:1px}
+.loop-icon{align-self:center;font-size:15px;padding:0 4px;color:var(--build)}
+.station.done .loop-icon{color:var(--done)}
+.iter-badge{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--build);color:#fff;font-size:9px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.station.done .iter-badge{background:var(--done)}
+
+/* ── Composite Review station ─────────────────────────────── */
+.station.composite-review{min-width:120px}
+.review-expand-hint{position:absolute;right:5px;top:5px;font-size:9px;color:var(--text-dim)}
+.review-sublist{display:none;margin-top:6px;padding:7px 8px;background:var(--review-bg);border:1px dashed var(--review-border);border-radius:var(--radius-sm);text-align:left;min-width:190px}
+.station.composite-review.expanded .review-sublist{display:block}
+.rsub-item{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 2px;font-family:var(--mono);color:var(--text-muted);cursor:pointer;border-radius:3px}
+.rsub-item:hover{background:rgba(167,139,250,.08)}
+.rsub-item .rdot{width:6px;height:6px;border-radius:50%;flex:0 0 6px}
+.rsub-item.idle .rdot{background:var(--idle);opacity:.4}
+.rsub-item.active .rdot{background:var(--review);animation:pulse 1.4s infinite}
+.rsub-item.running .rdot{background:var(--review);animation:spin .6s linear infinite}
+.rsub-item.done .rdot{background:var(--done)}
+.rsub-item.done{color:var(--done)}
+
+/* ── Step output (inline terminal) ────────────────────────── */
+.step-output{padding:0 16px 12px}
+.step-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-top:8px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;color:var(--text-muted);max-height:180px;overflow-y:auto;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.step-block .lbl{font-weight:600}
+.step-block .lbl-agent{color:var(--define)}
+.step-block .lbl-spec{color:var(--define)}
+.step-block .lbl-plan{color:var(--plan)}
+.step-block .lbl-build{color:var(--build)}
+.step-block .lbl-verify{color:var(--verify)}
+.step-block .lbl-review{color:var(--review)}
+.step-block .lbl-ship{color:var(--ship)}
+.step-block .lbl-nogo{color:var(--nogo)}
+.spinner-inline{display:inline-block;width:10px;height:10px;border:2px solid var(--border);border-top:2px solid var(--active);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px}
+
+/* ── Artifact track ───────────────────────────────────────── */
+.artifact-track{padding:10px 16px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:10px}
+.artifact-track .at-label{color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-right:4px;font-weight:600}
+.at-pill{font-family:var(--mono);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:3px;color:var(--text-dim)}
+.at-pill.done{color:var(--text);border-color:var(--ship-border);background:var(--ship-bg)}
+.at-pill.active{color:var(--define);border-color:var(--define);background:var(--define-bg);font-weight:600}
+.at-sep{color:var(--text-dim)}
+
+/* ── NO-GO loop indicator ─────────────────────────────────── */
+.nogo-loop{padding:4px 16px 10px;font-size:11px;color:var(--nogo);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.nogo-loop .arrow-back{flex:1;height:0;border-top:1.5px dashed var(--nogo)}
+.nogo-loop .fix-label{background:var(--nogo-bg);border:1px solid var(--nogo-border);padding:2px 8px;border-radius:var(--radius-sm)}
+
+/* ── Ship drawer ──────────────────────────────────────────── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30;display:none;opacity:0;transition:opacity .25s}
+.drawer-overlay.open{display:flex;justify-content:flex-end;opacity:1}
+.drawer{width:440px;max-width:90vw;background:var(--surface);border-left:1px solid var(--border);height:100%;overflow-y:auto;padding:20px;animation:slideIn .3s}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.drawer h2{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.drawer h2 .close{cursor:pointer;margin-left:auto;color:var(--text-muted);font-size:18px}
+.persona-cards{display:flex;gap:8px;margin-bottom:16px}
+.persona-card{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:11px;transition:border-color .3s}
+.persona-card .icon{font-size:20px;margin-bottom:4px}
+.persona-card .pname{font-weight:600;font-size:12px}
+.persona-card .pstate{margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+.persona-card.running{border-color:var(--active)}
+.persona-card.running .pstate{color:var(--active)}
+.persona-card.pass{border-color:var(--done)}
+.persona-card.pass .pstate{color:var(--done)}
+.persona-card.warn{border-color:var(--plan)}
+.persona-card.warn .pstate{color:var(--plan)}
+.persona-card.fail{border-color:var(--nogo)}
+.persona-card.fail .pstate{color:var(--nogo)}
+.merge-banner{text-align:center;padding:10px;margin:12px 0;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);display:none}
+.decision-banner{text-align:center;padding:14px;margin:12px 0;border-radius:var(--radius-sm);font-size:15px;font-weight:700;display:none}
+.decision-banner.go{background:var(--ship-bg);color:var(--done);border:2px solid var(--ship-border)}
+.decision-banner.nogo{background:var(--nogo-bg);color:var(--nogo);border:2px solid var(--nogo-border)}
+.findings-list{margin-top:12px;font-size:12px}
+.findings-list .finding{padding:6px 10px;border-left:3px solid var(--border);margin-bottom:6px;background:var(--surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.findings-list .finding.critical{border-left-color:var(--nogo)}
+.findings-list .finding.important{border-left-color:var(--plan)}
+.findings-list .finding.minor{border-left-color:var(--text-dim)}
+.drawer-close-btn{margin-top:16px;width:100%}
+
+/* ── Interview / Idea-refine modal ────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:480px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-md)}
+.modal h2{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.modal h2 .close{cursor:pointer;margin-left:auto;color:var(--text-muted);font-size:18px}
+.chat-area{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;max-height:260px;overflow-y:auto;margin-bottom:10px}
+.chat-msg{margin-bottom:8px;font-size:12px}
+.chat-msg .role{font-weight:600;font-size:11px;display:block;margin-bottom:2px}
+.chat-msg.agent .role{color:var(--define)}
+.chat-msg.user .role{color:var(--done)}
+.chat-msg .content{color:var(--text-muted);white-space:pre-wrap}
+.chat-input-row{display:flex;gap:6px}
+.chat-input-row input{flex:1;padding:7px 10px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-family:var(--font)}
+.chat-input-row input:focus{outline:none;border-color:var(--define)}
+
+/* Shipped lane */
+.lane.shipped{border-color:var(--ship-border)}
+.lane.shipped .lane-header{background:linear-gradient(to right,var(--ship-bg),var(--surface-2))}
+.lane.fixing{border-color:var(--nogo-border)}
+.lane.fixing .lane-header{background:linear-gradient(to right,var(--nogo-bg),var(--surface-2))}
+
+@media(max-width:700px){
+  .pipeline{padding:12px 10px}.station{min-width:80px}.station-box{min-width:72px;padding:6px 8px}
+  .arrow{width:20px}.define-input-row{flex-direction:column}
+  .spec-row{grid-template-columns:24px 1fr 90px}.spec-row .status{display:none}
+  .drawer{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ APP BAR ══════════════════════════════════════════════ -->
+<div class="appbar">
+  <div>
+    <h1 style="display:inline">SDD Workflow Simulator</h1>
+    <span class="sub">corrected workflow</span>
+  </div>
+  <div class="right">
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle">◐ Dark</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ══ DEFINE RAIL ═════════════════════════════════════════ -->
+<div class="define-rail">
+  <div class="phase-label">Define — global, runs once</div>
+  <div class="define-input-row">
+    <input id="global-input" placeholder="What do you want to build?  e.g. banking validation library with IBAN, credit card, fee calculator..." />
+    <div class="define-btns">
+      <button class="btn skill-btn" id="btn-interview" onclick="openInterview()">interview-me</button>
+      <button class="btn skill-btn" id="btn-idea" onclick="openIdeaRefine()">idea-refine</button>
+      <button class="btn primary" id="btn-spec" onclick="runGlobalSpec()">/spec</button>
+    </div>
+  </div>
+  <div class="define-output" id="define-output"></div>
+</div>
+
+<!-- ══ SPEC TABLE ══════════════════════════════════════════ -->
+<div class="specs" id="spec-table"></div>
+
+<!-- ══ FILTER BAR ══════════════════════════════════════════ -->
+<div class="filter-bar" id="filter-bar" style="display:none">
+  <span class="label">Stage</span>
+  <button class="filter-btn active" data-f="all" onclick="setFilter('all')">All <span class="fc" id="fc-all">0</span></button>
+  <button class="filter-btn" data-f="spec" onclick="setFilter('spec')">Spec <span class="fc" id="fc-spec">0</span></button>
+  <button class="filter-btn" data-f="plan" onclick="setFilter('plan')">Plan <span class="fc" id="fc-plan">0</span></button>
+  <button class="filter-btn" data-f="build" onclick="setFilter('build')">Build <span class="fc" id="fc-build">0</span></button>
+  <button class="filter-btn" data-f="review" onclick="setFilter('review')">Review <span class="fc" id="fc-review">0</span></button>
+  <button class="filter-btn" data-f="ship" onclick="setFilter('ship')">Ship <span class="fc" id="fc-ship">0</span></button>
+  <button class="filter-btn" data-f="shipped" onclick="setFilter('shipped')">Shipped <span class="fc" id="fc-shipped">0</span></button>
+</div>
+
+<!-- ══ LANES ═══════════════════════════════════════════════ -->
+<div id="lanes-container"></div>
+
+</div><!-- .container -->
+
+<!-- ══ INTERVIEW MODAL ════════════════════════════════════ -->
+<div class="modal-overlay" id="interview-modal">
+  <div class="modal">
+    <h2>interview-me <span style="font-size:11px;color:var(--text-dim);font-weight:400">skill — requirements refinement</span><span class="close" onclick="closeInterview()">&times;</span></h2>
+    <div class="chat-area" id="interview-chat"></div>
+    <div class="chat-input-row">
+      <input id="interview-input" placeholder="Your answer..." onkeydown="if(event.key==='Enter')submitInterview()" />
+      <button class="btn primary" onclick="submitInterview()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IDEA-REFINE MODAL ══════════════════════════════════ -->
+<div class="modal-overlay" id="idea-modal">
+  <div class="modal">
+    <h2>idea-refine <span style="font-size:11px;color:var(--text-dim);font-weight:400">skill — scope exploration</span><span class="close" onclick="closeIdeaRefine()">&times;</span></h2>
+    <div class="chat-area" id="idea-chat"></div>
+    <div class="chat-input-row">
+      <input id="idea-input" placeholder="Your thoughts..." onkeydown="if(event.key==='Enter')submitIdeaRefine()" />
+      <button class="btn primary" onclick="submitIdeaRefine()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHIP DRAWER ════════════════════════════════════════ -->
+<div class="drawer-overlay" id="ship-overlay" onclick="if(event.target===this)closeShipDrawer()">
+  <div class="drawer" id="ship-drawer">
+    <h2>/ship — pre-launch review <span class="close" onclick="closeShipDrawer()">&times;</span></h2>
+    <div class="persona-cards" id="ship-personas"></div>
+    <div class="merge-banner" id="ship-merge"><span class="spinner-inline"></span> Merging reports...</div>
+    <div class="decision-banner" id="ship-decision"></div>
+    <div class="findings-list" id="ship-findings"></div>
+    <button class="btn drawer-close-btn" id="ship-close-btn" onclick="closeShipDrawer()" style="display:none">Close</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DATA & CONSTANTS
+   ══════════════════════════════════════════════════════════ */
+const INTERVIEW_QS = [
+  "Who is the primary audience for this library? (e.g. internal team, open-source, fintech product)",
+  "What runtime environment? (Node.js, browser, both, Deno, edge...)",
+  "Are there regulatory constraints? (PSD2, PCI-DSS, ISO 13616, none that you know of)"
+];
+
+const IDEA_DIRECTIONS = [
+  "Direction A: Pure validation library — zero dependencies, tree-shakeable, returns boolean + error message.",
+  "Direction B: Validation + formatting — IBAN/card pretty-print, masked display, locale-aware currency.",
+  "Direction C: Full financial toolkit — validation + fee calculation + FX rates via plugin architecture.",
+  "Direction D: Micro-libraries — publish each validator as a separate npm package with a shared core.",
+  "Recommendation: Direction B balances scope and utility. Direction C risks scope creep."
+];
+
+const FEATURE_TEMPLATES = {
+  'IBAN validator':        { tasks: [{n:'mod97 algorithm',f:'src/validators/mod97.ts',a:'mod97("GB29NWBK60161331926819") === 1'},{n:'country length map',f:'src/validators/iban-lengths.ts',a:'validate("DE89...") => true, validate("DE8") => false'},{n:'pretty-print IBAN',f:'src/formatters/iban.ts',a:'format("GB29NWBK...") => "GB29 NWBK 6016 ..."'}] },
+  'Credit card validator': { tasks: [{n:'Luhn algorithm',f:'src/validators/luhn.ts',a:'validate("4532015112830366") => true'},{n:'card brand detection',f:'src/validators/brands.ts',a:'brand("4532...") => "visa"'},{n:'expiry check',f:'src/validators/expiry.ts',a:'isExpired(12,2025) => true'}] },
+  'Fee calculator':        { tasks: [{n:'domestic fee schedule',f:'src/calculators/domestic.ts',a:'domestic(1000,"USD") => 15.00'},{n:'international corridor',f:'src/calculators/intl.ts',a:'intl(1000,"USD","EUR") => 25.50'},{n:'tiered pricing',f:'src/calculators/tiers.ts',a:'tiered(50000,"USD") => 12.00 (volume discount)'},{n:'fee summary report',f:'src/calculators/summary.ts',a:'summary(txns) => {total, avg, breakdown}'}] },
+  'SWIFT / BIC validator': { tasks: [{n:'format validation',f:'src/validators/bic.ts',a:'validate("DEUTDEFF") => true'},{n:'institution lookup',f:'src/validators/bic-registry.ts',a:'lookup("DEUTDEFF") => "Deutsche Bank"'},{n:'branch code parse',f:'src/validators/bic-branch.ts',a:'branch("DEUTDEFF500") => "500"'}] },
+  'Account masking':       { tasks: [{n:'mask utility',f:'src/formatters/mask.ts',a:'mask("12345678") => "****5678"'},{n:'configurable mask',f:'src/formatters/mask-config.ts',a:'mask("123",{show:1,char:"X"}) => "XX3"'}] },
+};
+
+const REVIEW_SUBSTEPS = ['code-review','code-simplify','security','performance'];
+const REVIEW_LABELS = {
+  'code-review':  '/review (five-axis)',
+  'code-simplify':'/code-simplify',
+  'security':     'security-and-hardening',
+  'performance':  'performance-optimization'
+};
+
+const SHIP_PERSONAS = [
+  { name: 'code-reviewer',    icon: '◎' },
+  { name: 'security-auditor', icon: '⬡' },
+  { name: 'test-engineer',    icon: '◆' }
+];
+
+const SHIP_FINDINGS_GO = [
+  { sev: 'minor', text: 'Consider adding JSDoc to exported functions' },
+  { sev: 'minor', text: 'One TODO comment remaining in test file' },
+];
+const SHIP_FINDINGS_NOGO = [
+  { sev: 'critical', text: 'Missing input sanitization on user-supplied IBAN string' },
+  { sev: 'important', text: 'No test coverage for edge case: IBAN with lowercase letters' },
+  { sev: 'minor', text: 'Unused import in bic-registry.ts' },
+];
+const PHASE_D_TASKS = [
+  { text: 'Add input sanitization to IBAN validator', sev: 'CRITICAL' },
+  { text: 'Add lowercase letter edge-case tests', sev: 'IMPORTANT' },
+];
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════════════ */
+let lanes = [];
+let laneCounter = 0;
+let detectedFeatures = [];
+let addedFeatures = new Set();
+let activeFilter = 'all';
+let shipLaneId = null;
+
+/* Interview state */
+let ivState = { qIdx: 0, answers: [] };
+
+/* ══════════════════════════════════════════════════════════
+   THEME
+   ══════════════════════════════════════════════════════════ */
+function toggleTheme() {
+  const r = document.documentElement;
+  if (r.dataset.theme === 'light') {
+    r.removeAttribute('data-theme');
+    document.getElementById('theme-toggle').textContent = '◑ Light';
+    localStorage.setItem('sim-theme','dark');
+  } else {
+    r.dataset.theme = 'light';
+    document.getElementById('theme-toggle').textContent = '◐ Dark';
+    localStorage.setItem('sim-theme','light');
+  }
+}
+(function initTheme() {
+  const saved = localStorage.getItem('sim-theme');
+  if (saved === 'dark') { document.documentElement.removeAttribute('data-theme'); document.getElementById('theme-toggle').textContent = '◑ Light'; }
+})();
+
+/* ══════════════════════════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════════════════════════ */
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function getLane(id) { return lanes.find(l => l.id === id); }
+
+function phaseOf(lane) {
+  if (lane.phase === 'shipped') return 'shipped';
+  if (lane.phase === 'fixing') return 'build';
+  if (lane.ss.ship === 'active' || lane.ss.ship === 'running') return 'ship';
+  if (REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running')) return 'review';
+  if (lane.ss.tasks.some(t => t === 'active' || t === 'running') || lane.ss.verify.some(v => v === 'active' || v === 'running')) return 'build';
+  if (lane.ss.plan === 'active' || lane.ss.plan === 'running') return 'plan';
+  return 'spec';
+}
+
+/* ══════════════════════════════════════════════════════════
+   INTERVIEW-ME
+   ══════════════════════════════════════════════════════════ */
+function openInterview() {
+  ivState = { qIdx: 0, answers: [] };
+  const chat = document.getElementById('interview-chat');
+  chat.innerHTML = '';
+  appendChatMsg(chat, 'agent', INTERVIEW_QS[0]);
+  document.getElementById('interview-modal').classList.add('open');
+  document.getElementById('interview-input').focus();
+}
+function closeInterview() { document.getElementById('interview-modal').classList.remove('open'); }
+function submitInterview() {
+  const inp = document.getElementById('interview-input');
+  const ans = inp.value.trim();
+  if (!ans) return;
+  inp.value = '';
+  const chat = document.getElementById('interview-chat');
+  appendChatMsg(chat, 'user', ans);
+  ivState.answers.push(ans);
+  ivState.qIdx++;
+  if (ivState.qIdx < INTERVIEW_QS.length) {
+    setTimeout(() => appendChatMsg(chat, 'agent', INTERVIEW_QS[ivState.qIdx]), 500);
+  } else {
+    setTimeout(() => {
+      const summary = `Interview complete.\n\nAudience: ${ivState.answers[0]}\nRuntime: ${ivState.answers[1]}\nRegulatory: ${ivState.answers[2]}\n\nAppending context to your input.`;
+      appendChatMsg(chat, 'agent', summary);
+      const gi = document.getElementById('global-input');
+      gi.value += `  [audience: ${ivState.answers[0]}] [runtime: ${ivState.answers[1]}] [regulatory: ${ivState.answers[2]}]`;
+    }, 600);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   IDEA-REFINE
+   ══════════════════════════════════════════════════════════ */
+function openIdeaRefine() {
+  const chat = document.getElementById('idea-chat');
+  chat.innerHTML = '';
+  const inp = document.getElementById('global-input').value.trim();
+  if (!inp) { appendChatMsg(chat, 'agent', 'Type your idea in the input field first, then click idea-refine.'); }
+  else {
+    appendChatMsg(chat, 'agent', `Exploring directions for: "${inp}"\n\nGenerating 4 variations...`);
+    setTimeout(() => {
+      appendChatMsg(chat, 'agent', IDEA_DIRECTIONS.join('\n\n'));
+    }, 1200);
+  }
+  document.getElementById('idea-modal').classList.add('open');
+}
+function closeIdeaRefine() { document.getElementById('idea-modal').classList.remove('open'); }
+function submitIdeaRefine() {
+  const inp = document.getElementById('idea-input');
+  const txt = inp.value.trim(); if (!txt) return; inp.value = '';
+  const chat = document.getElementById('idea-chat');
+  appendChatMsg(chat, 'user', txt);
+  setTimeout(() => appendChatMsg(chat, 'agent', 'Got it. You can now click /spec to generate the top-level specification.'), 600);
+}
+
+function appendChatMsg(container, role, text) {
+  const d = document.createElement('div');
+  d.className = 'chat-msg ' + role;
+  d.innerHTML = `<span class="role">${role === 'agent' ? '◈ agent' : '▶ you'}</span><div class="content">${esc(text)}</div>`;
+  container.appendChild(d);
+  container.scrollTop = container.scrollHeight;
+}
+
+/* ══════════════════════════════════════════════════════════
+   GLOBAL /spec
+   ══════════════════════════════════════════════════════════ */
+function runGlobalSpec() {
+  const inp = document.getElementById('global-input').value.trim();
+  if (!inp) { document.getElementById('global-input').focus(); return; }
+
+  const out = document.getElementById('define-output');
+  out.classList.add('visible');
+  out.innerHTML = '<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> generating top-level SPEC.md...\n<span class="spinner-inline"></span> analyzing requirements...</div>';
+
+  document.getElementById('btn-spec').disabled = true;
+
+  setTimeout(() => {
+    detectedFeatures = detectFeatures(inp);
+    const featureList = detectedFeatures.map((f,i) => `  ${i+1}. ${f}`).join('\n');
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> top-level SPEC.md generated.\n\nObjective: ${esc(inp.substring(0,80))}...\nTesting: vitest, coverage > 90%\nBoundaries: no runtime dependencies\n\nDetected features:\n${esc(featureList)}\n\nEach feature will follow: /spec → /plan → /build ↔ /verify → Review → /ship</div>`;
+    renderSpecTable();
+    document.getElementById('filter-bar').style.display = 'flex';
+  }, 1800);
+}
+
+function detectFeatures(text) {
+  const kw = Object.keys(FEATURE_TEMPLATES);
+  const found = kw.filter(k => {
+    const words = k.toLowerCase().split(/\s+/);
+    return words.some(w => text.toLowerCase().includes(w));
+  });
+  return found.length ? found : [text.substring(0, 40)];
+}
+
+/* ══════════════════════════════════════════════════════════
+   SPEC TABLE
+   ══════════════════════════════════════════════════════════ */
+function renderSpecTable() {
+  const el = document.getElementById('spec-table');
+  let html = `<div class="specs-header"><span class="label">Features from SPEC.md</span><span id="spec-count"></span></div>`;
+  for (let i = 0; i < detectedFeatures.length; i++) {
+    const f = detectedFeatures[i];
+    const started = addedFeatures.has(f);
+    const lane = started ? lanes.find(l => l.name === f) : null;
+    const status = lane ? statusLabel(lane) : { dot: 'idle', text: 'not started' };
+    html += `<div class="spec-row" id="sr-${slug(f)}">
+      <span class="num">${i+1}</span><span class="name">${esc(f)}</span>
+      <span class="status"><span class="status-dot ${status.dot}"></span>${status.text}</span>
+      <span class="spec-action"><button class="btn${started?' ':' primary '}" ${started?'disabled':''}
+        onclick="startFeature('${esc(f)}')">${started?'✓ Started':'+ Start'}</button></span>
+    </div>`;
+  }
+  html += `<div class="spec-row spec-add-row"><span class="num">+</span>
+    <span class="name"><input id="add-feature-input" placeholder="Add a feature... (re-enters /spec)" /></span>
+    <span></span><span class="spec-action"><button class="btn" onclick="addManualFeature()">+ Add</button></span></div>`;
+  el.innerHTML = html;
+  el.classList.add('visible');
+  updateSpecCount();
+}
+
+function statusLabel(lane) {
+  const p = lane.phase;
+  if (p === 'shipped') return { dot: 'done', text: 'shipped' };
+  if (p === 'fixing') return { dot: 'fixing', text: 'fixing' };
+  const ph = phaseOf(lane);
+  if (ph === 'spec') return { dot: 'active', text: 'speccing' };
+  if (ph === 'plan') return { dot: 'active', text: 'planning' };
+  if (ph === 'build') return { dot: 'active', text: 'building' };
+  if (ph === 'review') return { dot: 'active', text: 'reviewing' };
+  if (ph === 'ship') return { dot: 'active', text: 'shipping' };
+  return { dot: 'idle', text: 'unknown' };
+}
+
+function updateSpecCount() {
+  const total = detectedFeatures.length;
+  const started = addedFeatures.size;
+  const shipped = lanes.filter(l => l.phase === 'shipped').length;
+  const el = document.getElementById('spec-count');
+  if (el) el.textContent = `${started} started · ${shipped} shipped · ${total} total`;
+}
+
+function addManualFeature() {
+  const inp = document.getElementById('add-feature-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (!detectedFeatures.includes(name)) detectedFeatures.push(name);
+  inp.value = '';
+  renderSpecTable();
+}
+
+/* ══════════════════════════════════════════════════════════
+   LANE CREATION
+   ══════════════════════════════════════════════════════════ */
+function startFeature(name) {
+  if (addedFeatures.has(name)) return;
+  addedFeatures.add(name);
+  laneCounter++;
+  const tmpl = FEATURE_TEMPLATES[name] || { tasks: [{n:'task 1',f:'src/feature.ts',a:'works correctly'}] };
+  const lane = {
+    id: 'lane-' + laneCounter,
+    num: laneCounter,
+    name,
+    phase: 'speccing',
+    ss: {
+      spec: 'active',
+      plan: 'idle',
+      tasks: tmpl.tasks.map(() => 'idle'),
+      verify: tmpl.tasks.map(() => 'idle'),
+      review: { 'code-review':'idle', 'code-simplify':'idle', 'security':'idle', 'performance':'idle' },
+      ship: 'idle',
+    },
+    tasks: tmpl.tasks.map(t => ({...t})),
+    buildIter: 0,
+    artifacts: {},
+    shipDecision: null,
+    fixTasks: [],
+    fixTaskStates: [],
+    lastOutput: null,
+  };
+  lanes.push(lane);
+  renderLane(lane);
+  renderSpecTable();
+  updateFilters();
+  document.getElementById(lane.id).scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ══════════════════════════════════════════════════════════
+   LANE RENDERING
+   ══════════════════════════════════════════════════════════ */
+function renderLane(lane) {
+  let el = document.getElementById(lane.id);
+  const isNew = !el;
+  if (isNew) {
+    el = document.createElement('div');
+    el.id = lane.id;
+    document.getElementById('lanes-container').appendChild(el);
+  }
+
+  const p = phaseOf(lane);
+  const allTasksDone = lane.ss.tasks.every(t => t === 'done') && lane.ss.verify.every(v => v === 'done');
+  const allReviewDone = REVIEW_SUBSTEPS.every(k => lane.ss.review[k] === 'done');
+
+  let cls = 'lane';
+  if (lane.phase === 'shipped') cls += ' shipped';
+  if (lane.phase === 'fixing') cls += ' fixing';
+  if (isNew) cls += ' pulse-in';
+  el.className = cls;
+  el.dataset.phase = p;
+
+  const badgeClass = lane.phase === 'shipped' ? 'badge-shipped' :
+    lane.phase === 'fixing' ? 'badge-fixing' :
+    p === 'spec' ? 'badge-spec' : p === 'plan' ? 'badge-plan' :
+    p === 'build' ? 'badge-build' : p === 'review' ? 'badge-review' :
+    p === 'ship' ? 'badge-ship' : 'badge-spec';
+  const badgeText = lane.phase === 'shipped' ? '✓ shipped' :
+    lane.phase === 'fixing' ? 'NO-GO · fixing' :
+    p === 'spec' ? 'drafting feature spec' : p === 'plan' ? 'planning' :
+    p === 'build' ? `building · iteration ${lane.buildIter}` :
+    p === 'review' ? 'reviewing' : p === 'ship' ? 'shipping' : '';
+
+  let html = `<div class="lane-header">
+    <div class="lane-title"><span class="num">#${lane.num}</span>${esc(lane.name)}</div>
+    <span class="phase-badge ${badgeClass}">${badgeText}</span>
+  </div>`;
+
+  /* Pipeline */
+  html += '<div class="pipeline">';
+  html += renderStation(lane, 'spec',  '/spec',  'feature scope',  's-spec');
+  html += `<div class="arrow ${lane.ss.spec==='done'?'done':''}"></div>`;
+  html += renderStation(lane, 'plan',  '/plan',  lane.ss.plan==='done'?`${lane.tasks.length} tasks`:'decompose', 's-plan');
+  html += `<div class="arrow ${lane.ss.plan==='done'?'done':''}"></div>`;
+  html += renderBuildVerify(lane);
+  html += `<div class="arrow ${allTasksDone?'done':''}"></div>`;
+  html += renderReviewStation(lane);
+  html += `<div class="arrow ${allReviewDone?'done':''}"></div>`;
+  html += renderShipStation(lane);
+  html += '</div>';
+
+  /* Step output */
+  if (lane.lastOutput) {
+    html += `<div class="step-output"><div class="step-block">${lane.lastOutput}</div></div>`;
+  }
+
+  /* NO-GO loop */
+  if (lane.phase === 'fixing') {
+    const remaining = lane.fixTaskStates.filter(s => s !== 'done').length;
+    html += `<div class="nogo-loop"><span class="fix-label">Phase D · ${remaining} fix${remaining!==1?'es':''} remaining</span><span class="arrow-back"></span><span>loops back to /build then re-ships</span></div>`;
+  }
+
+  /* Artifact track */
+  html += renderArtifactTrack(lane);
+
+  el.innerHTML = html;
+  applyFilter();
+}
+
+function renderStation(lane, key, cmd, sub, cls) {
+  const st = lane.ss[key];
+  return `<div class="station ${st} ${cls}">
+    <div class="station-box" onclick="${st==='active'?`clickStep('${lane.id}','${key}')`:''}" title="${st==='active'?'Click to run':''}">
+      <div class="station-cmd">${cmd}</div>
+      <div class="station-sub">${sub}</div>
+      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+    </div>
+  </div>`;
+}
+
+function renderBuildVerify(lane) {
+  const anyActive = lane.ss.tasks.some(t => t === 'active' || t === 'running') || lane.ss.verify.some(v => v === 'active' || v === 'running');
+  const allDone = lane.ss.tasks.every(t => t === 'done') && lane.ss.verify.every(v => v === 'done');
+  const isFixing = lane.phase === 'fixing';
+  const doneCount = lane.ss.tasks.filter(t => t === 'done').length;
+  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
+  const borderStyle = isFixing ? `border-color:var(--nogo);background:var(--nogo-bg);box-shadow:0 0 0 3px rgba(248,113,113,.12)` : '';
+  const clickable = anyActive;
+  const activeIdx = lane.ss.tasks.findIndex(t => t === 'active');
+  const verifyIdx = lane.ss.verify.findIndex(v => v === 'active');
+
+  let iterText = '';
+  if (allDone) iterText = `${lane.tasks.length}/${lane.tasks.length} done`;
+  else if (anyActive && activeIdx >= 0) iterText = `task ${activeIdx+1}/${lane.tasks.length}`;
+  else if (anyActive && verifyIdx >= 0) iterText = `verifying task ${verifyIdx+1}`;
+  if (isFixing) {
+    const fixDone = lane.fixTaskStates.filter(s => s === 'done').length;
+    iterText = `fix ${fixDone+1}/${lane.fixTasks.length}`;
+  }
+  if (lane.buildIter > 0) iterText += ` · loop x${lane.buildIter}`;
+
+  return `<div class="station composite-bv ${st} s-build">
+    <div class="composite-inner" ${borderStyle?`style="${borderStyle}"`:''} onclick="${clickable?`clickBuild('${lane.id}')`:''}" title="${clickable?'Click to run next build/verify':''}">
+      <div class="sub-station"><div class="sub-cmd">/build</div><div class="sub-sub">incremental + TDD</div></div>
+      <div class="loop-icon" ${isFixing?'style="color:var(--nogo)"':''}>⟳</div>
+      <div class="sub-station"><div class="sub-cmd">verify</div><div class="sub-sub">devtools · debug</div></div>
+      ${iterText?`<span class="iter-badge" ${isFixing?'style="background:var(--nogo)"':''}>${iterText}</span>`:''}
+    </div>
+  </div>`;
+}
+
+function renderReviewStation(lane) {
+  const anyActive = REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running');
+  const allDone = REVIEW_SUBSTEPS.every(k => lane.ss.review[k] === 'done');
+  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
+  const doneCount = REVIEW_SUBSTEPS.filter(k => lane.ss.review[k] === 'done').length;
+
+  let subHtml = '';
+  for (const k of REVIEW_SUBSTEPS) {
+    const s = lane.ss.review[k];
+    subHtml += `<div class="rsub-item ${s}" onclick="${s==='active'?`clickReviewSub('${lane.id}','${k}')`:''}" title="${s==='active'?'Click to run':''}">
+      <span class="rdot"></span>${REVIEW_LABELS[k]}</div>`;
+  }
+
+  return `<div class="station composite-review ${st} s-review" id="rev-${lane.id}">
+    <div class="station-box" onclick="toggleReviewExpand('${lane.id}')">
+      <span class="review-expand-hint">▾</span>
+      <div class="station-cmd">Review</div>
+      <div class="station-sub">${allDone?'all pass':`${doneCount}/4`}</div>
+      <span class="station-marker">${allDone?'✓':anyActive?'●':'○'}</span>
+    </div>
+    <div class="review-sublist">${subHtml}</div>
+  </div>`;
+}
+
+function renderShipStation(lane) {
+  const st = lane.ss.ship;
+  const isNogo = lane.shipDecision === 'nogo';
+  let extra = '';
+  if (lane.shipDecision === 'go') extra = `<div class="ship-outcome go" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:999px;background:var(--ship);color:#fff;display:inline-block">GO</div>`;
+  if (isNogo) extra = `<div class="ship-outcome nogo" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:999px;background:var(--nogo);color:#fff;display:inline-block">NO-GO</div>`;
+
+  return `<div class="station ${st} s-ship ${isNogo?'nogo':''}">
+    <div class="station-box" onclick="${st==='active'?`clickShip('${lane.id}')`:''}" title="${st==='active'?'Click to run /ship':''}">
+      <div class="station-cmd">/ship</div>
+      <div class="station-sub">3 personas</div>
+      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+    </div>
+    ${extra}
+  </div>`;
+}
+
+function renderArtifactTrack(lane) {
+  const items = [
+    { name: 'SPEC.md',          done: lane.ss.spec === 'done',  active: lane.ss.spec === 'running' },
+    { name: 'plan.md',          done: lane.ss.plan === 'done',  active: lane.ss.plan === 'running' },
+    { name: 'todo.md',          done: lane.ss.tasks.every(t=>t==='done'), active: lane.ss.tasks.some(t=>t==='active'||t==='running') },
+    { name: 'review-report.md', done: REVIEW_SUBSTEPS.every(k=>lane.ss.review[k]==='done'), active: REVIEW_SUBSTEPS.some(k=>lane.ss.review[k]==='active'||lane.ss.review[k]==='running') },
+    { name: 'ship-decision.md', done: lane.ss.ship === 'done',  active: lane.ss.ship === 'running' },
+  ];
+  let html = '<div class="artifact-track"><span class="at-label">artifacts</span>';
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i];
+    const cls = a.done ? 'done' : a.active ? 'active' : '';
+    html += `<span class="at-pill ${cls}">${a.name}</span>`;
+    if (i < items.length - 1) html += '<span class="at-sep">→</span>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function toggleReviewExpand(laneId) {
+  const el = document.getElementById('rev-' + laneId);
+  if (el) el.classList.toggle('expanded');
+}
+
+/* ══════════════════════════════════════════════════════════
+   STEP HANDLERS
+   ══════════════════════════════════════════════════════════ */
+async function clickStep(laneId, step) {
+  const lane = getLane(laneId);
+  if (!lane || lane.ss[step] !== 'active') return;
+
+  lane.ss[step] = 'running';
+  const d = step === 'spec' ? 1600 : 1800;
+  renderOutput(lane, step, 'running');
+  renderLane(lane);
+
+  await delay(d + Math.random() * 600);
+
+  lane.ss[step] = 'done';
+
+  if (step === 'spec') {
+    lane.ss.plan = 'active';
+    lane.phase = 'planning';
+    renderOutput(lane, 'spec', 'done');
+  } else if (step === 'plan') {
+    lane.ss.tasks[0] = 'active';
+    lane.phase = 'building';
+    lane.buildIter = 1;
+    renderOutput(lane, 'plan', 'done');
+  }
+  renderLane(lane);
+  renderSpecTable();
+  updateFilters();
+}
+
+async function clickBuild(laneId) {
+  const lane = getLane(laneId);
+  if (!lane) return;
+
+  if (lane.phase === 'fixing') {
+    await runFixTask(lane);
+    return;
+  }
+
+  const taskIdx = lane.ss.tasks.findIndex(t => t === 'active');
+  const verifyIdx = lane.ss.verify.findIndex(v => v === 'active');
+
+  if (taskIdx >= 0) {
+    lane.ss.tasks[taskIdx] = 'running';
+    renderOutput(lane, 'build-task', 'running', taskIdx);
+    renderLane(lane);
+    await delay(1400 + Math.random() * 800);
+    lane.ss.tasks[taskIdx] = 'done';
+    lane.ss.verify[taskIdx] = 'active';
+    lane.buildIter++;
+    renderOutput(lane, 'build-task', 'done', taskIdx);
+    renderLane(lane);
+  } else if (verifyIdx >= 0) {
+    lane.ss.verify[verifyIdx] = 'running';
+    renderOutput(lane, 'verify', 'running', verifyIdx);
+    renderLane(lane);
+    await delay(1000 + Math.random() * 600);
+    lane.ss.verify[verifyIdx] = 'done';
+    renderOutput(lane, 'verify', 'done', verifyIdx);
+
+    const nextTask = verifyIdx + 1;
+    if (nextTask < lane.ss.tasks.length) {
+      lane.ss.tasks[nextTask] = 'active';
+    } else {
+      lane.ss.review['code-review'] = 'active';
+      lane.phase = 'reviewing';
+    }
+    renderLane(lane);
+  }
+  renderSpecTable();
+  updateFilters();
+}
+
+async function runFixTask(lane) {
+  const idx = lane.fixTaskStates.findIndex(s => s === 'active');
+  if (idx < 0) return;
+  lane.fixTaskStates[idx] = 'running';
+  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> <span class="spinner-inline"></span> Applying fix: ${esc(lane.fixTasks[idx].text)}...`;
+  renderLane(lane);
+
+  await delay(1400 + Math.random() * 800);
+  lane.fixTaskStates[idx] = 'done';
+  lane.buildIter++;
+  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Fix applied: ${esc(lane.fixTasks[idx].text)}\n  ✓ Tests pass`;
+
+  const next = idx + 1;
+  if (next < lane.fixTaskStates.length) {
+    lane.fixTaskStates[next] = 'active';
+  } else {
+    lane.phase = 'shipping';
+    lane.ss.ship = 'active';
+    lane.shipDecision = null;
+    lane.fixTasks = [];
+    lane.fixTaskStates = [];
+    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> All Phase D fixes applied. Ready to re-ship.`;
+  }
+  renderLane(lane);
+  renderSpecTable();
+  updateFilters();
+}
+
+async function clickReviewSub(laneId, subKey) {
+  const lane = getLane(laneId);
+  if (!lane || lane.ss.review[subKey] !== 'active') return;
+
+  lane.ss.review[subKey] = 'running';
+  renderOutput(lane, 'review-' + subKey, 'running');
+  renderLane(lane);
+
+  await delay(1200 + Math.random() * 600);
+  lane.ss.review[subKey] = 'done';
+  renderOutput(lane, 'review-' + subKey, 'done');
+
+  const idx = REVIEW_SUBSTEPS.indexOf(subKey);
+  if (idx < REVIEW_SUBSTEPS.length - 1) {
+    lane.ss.review[REVIEW_SUBSTEPS[idx + 1]] = 'active';
+  } else {
+    lane.ss.ship = 'active';
+    lane.phase = 'shipping';
+  }
+  renderLane(lane);
+  updateFilters();
+}
+
+/* ══════════════════════════════════════════════════════════
+   /SHIP
+   ══════════════════════════════════════════════════════════ */
+async function clickShip(laneId) {
+  const lane = getLane(laneId);
+  if (!lane || lane.ss.ship !== 'active') return;
+
+  lane.ss.ship = 'running';
+  shipLaneId = laneId;
+  renderLane(lane);
+  openShipDrawer(lane);
+}
+
+function openShipDrawer(lane) {
+  const overlay = document.getElementById('ship-overlay');
+  overlay.classList.add('open');
+
+  const personas = document.getElementById('ship-personas');
+  personas.innerHTML = SHIP_PERSONAS.map(p =>
+    `<div class="persona-card" id="sp-${slug(p.name)}"><div class="icon">${p.icon}</div><div class="pname">${p.name}</div><div class="pstate">waiting...</div></div>`
+  ).join('');
+
+  document.getElementById('ship-merge').style.display = 'none';
+  document.getElementById('ship-decision').style.display = 'none';
+  document.getElementById('ship-findings').innerHTML = '';
+  document.getElementById('ship-close-btn').style.display = 'none';
+
+  const isSecondShip = lanes.filter(l => l.id === lane.id && l.shipDecision === 'nogo').length > 0 || lane.buildIter > 5;
+  const willGo = isSecondShip || Math.random() > 0.45;
+
+  runShipAnimation(lane, willGo);
+}
+
+async function runShipAnimation(lane, willGo) {
+  const timings = [1800, 2400, 3000];
+  const results = willGo ? ['pass','pass','pass'] : ['pass','fail','warn'];
+
+  for (let i = 0; i < 3; i++) {
+    await delay(600);
+    const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
+    card.className = 'persona-card running';
+    card.querySelector('.pstate').textContent = 'analyzing...';
+  }
+
+  for (let i = 0; i < 3; i++) {
+    await delay(timings[i] - (i > 0 ? timings[i-1] : 0) + 400);
+    const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
+    card.className = 'persona-card ' + results[i];
+    card.querySelector('.pstate').textContent = results[i] === 'pass' ? '✓ pass' : results[i] === 'fail' ? '✗ issues found' : '⚠ warnings';
+  }
+
+  await delay(800);
+  document.getElementById('ship-merge').style.display = 'block';
+  await delay(1200);
+  document.getElementById('ship-merge').style.display = 'none';
+
+  const dec = document.getElementById('ship-decision');
+  dec.style.display = 'block';
+  if (willGo) {
+    dec.className = 'decision-banner go';
+    dec.textContent = 'GO — ready to ship';
+    lane.ss.ship = 'done';
+    lane.shipDecision = 'go';
+    lane.phase = 'shipped';
+    lane.lastOutput = `<span class="lbl lbl-ship">◈ /ship</span> Decision: GO\n  All three personas passed. Feature is ready to ship.`;
+  } else {
+    dec.className = 'decision-banner nogo';
+    dec.textContent = 'NO-GO — fixes required';
+    lane.ss.ship = 'done';
+    lane.shipDecision = 'nogo';
+    lane.phase = 'fixing';
+    lane.fixTasks = [...PHASE_D_TASKS];
+    lane.fixTaskStates = lane.fixTasks.map((_, i) => i === 0 ? 'active' : 'idle');
+    lane.lastOutput = `<span class="lbl lbl-nogo">◈ /ship</span> Decision: NO-GO\n  ${lane.fixTasks.length} fix tasks added to todo.md.\n  Looping back to /build to apply fixes, then re-shipping.`;
+  }
+
+  const findings = willGo ? SHIP_FINDINGS_GO : SHIP_FINDINGS_NOGO;
+  const findingsEl = document.getElementById('ship-findings');
+  findingsEl.innerHTML = findings.map(f => `<div class="finding ${f.sev}"><strong>${f.sev.toUpperCase()}</strong>: ${esc(f.text)}</div>`).join('');
+
+  document.getElementById('ship-close-btn').style.display = 'block';
+  renderLane(lane);
+  renderSpecTable();
+  updateFilters();
+}
+
+function closeShipDrawer() {
+  document.getElementById('ship-overlay').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════════════════
+   STEP OUTPUT (inline terminal messages)
+   ══════════════════════════════════════════════════════════ */
+function renderOutput(lane, step, state, idx) {
+  if (step === 'spec' && state === 'running') {
+    lane.lastOutput = `<span class="lbl lbl-spec">◈ /spec</span> <span class="spinner-inline"></span> Writing feature specification for "${esc(lane.name)}"...\n  Defining objective, acceptance criteria, boundaries...`;
+  } else if (step === 'spec' && state === 'done') {
+    lane.lastOutput = `<span class="lbl lbl-spec">◈ /spec</span> Feature SPEC.md complete.\n  Objective: Implement ${esc(lane.name)}\n  Acceptance: ${lane.tasks.length} core requirements identified\n  Boundaries: No external API calls, pure validation logic\n  Testing: vitest, coverage > 90%`;
+  } else if (step === 'plan' && state === 'running') {
+    lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> <span class="spinner-inline"></span> Decomposing "${esc(lane.name)}" into tasks...`;
+  } else if (step === 'plan' && state === 'done') {
+    const taskList = lane.tasks.map((t, i) => `  ${i + 1}. ${t.n} → ${t.f}`).join('\n');
+    lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> Plan complete. ${lane.tasks.length} tasks:\n${esc(taskList)}\n\n  Saved: tasks/plan.md, tasks/todo.md`;
+  } else if (step === 'build-task' && state === 'running') {
+    const t = lane.tasks[idx];
+    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> <span class="spinner-inline"></span> Task ${idx + 1}: ${esc(t.n)}\n  File: ${esc(t.f)}\n  Writing failing test... implementing...`;
+  } else if (step === 'build-task' && state === 'done') {
+    const t = lane.tasks[idx];
+    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Task ${idx + 1} complete: ${esc(t.n)}\n  ✓ ${esc(t.a)}\n  ✓ Tests pass · committed`;
+  } else if (step === 'verify' && state === 'running') {
+    lane.lastOutput = `<span class="lbl lbl-verify">◈ verify</span> <span class="spinner-inline"></span> Running verification for task ${idx + 1}...\n  Checking with devtools, testing edge cases...`;
+  } else if (step === 'verify' && state === 'done') {
+    lane.lastOutput = `<span class="lbl lbl-verify">◈ verify</span> Task ${idx + 1} verified.\n  ✓ Edge cases pass · no regressions detected`;
+  } else if (step.startsWith('review-') && state === 'running') {
+    const sub = step.replace('review-', '');
+    lane.lastOutput = `<span class="lbl lbl-review">◈ ${esc(REVIEW_LABELS[sub])}</span> <span class="spinner-inline"></span> Running...`;
+  } else if (step.startsWith('review-') && state === 'done') {
+    const sub = step.replace('review-', '');
+    const msgs = {
+      'code-review': 'Five-axis review complete. No blocking issues.',
+      'code-simplify': 'Complexity reduced. 2 functions simplified, no behavior change.',
+      'security': 'No vulnerabilities found. Input validation confirmed.',
+      'performance': 'No bottlenecks. O(n) complexity maintained.'
+    };
+    lane.lastOutput = `<span class="lbl lbl-review">◈ ${esc(REVIEW_LABELS[sub])}</span> ✓ ${msgs[sub] || 'Done.'}`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FILTERS
+   ══════════════════════════════════════════════════════════ */
+function updateFilters() {
+  const counts = { all: lanes.length, spec: 0, plan: 0, build: 0, review: 0, ship: 0, shipped: 0 };
+  for (const l of lanes) {
+    const p = phaseOf(l);
+    if (p === 'shipped') counts.shipped++;
+    else if (counts[p] !== undefined) counts[p]++;
+  }
+  for (const k of Object.keys(counts)) {
+    const el = document.getElementById('fc-' + k);
+    if (el) el.textContent = counts[k];
+  }
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  applyFilter();
+}
+
+function applyFilter() {
+  document.querySelectorAll('.lane').forEach(el => {
+    if (activeFilter === 'all') { el.classList.remove('filter-hidden'); return; }
+    const lane = getLane(el.id);
+    if (!lane) return;
+    const p = phaseOf(lane);
+    el.classList.toggle('filter-hidden', p !== activeFilter);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════ */
+document.getElementById('global-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runGlobalSpec();
+});
+</script>
+</body>
+</html>
