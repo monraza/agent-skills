@@ -70,6 +70,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .btn.primary:hover{filter:brightness(1.1)}
 .btn.skill-btn{border-style:dashed;color:var(--text-muted)}
 .btn.skill-btn:hover{border-color:var(--define);color:var(--define)}
+/* Grilling banner — drops from the top during feature append */
+.grilling-banner{position:fixed;top:48px;left:50%;transform:translate(-50%,-100%);z-index:15;background:var(--define-bg);border:1px solid var(--define);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow-md);min-width:380px;opacity:0;transition:transform .3s,opacity .3s}
+.grilling-banner.visible{transform:translate(-50%,0);opacity:1}
+.grilling-banner .g-inner{display:flex;flex-direction:column;gap:6px}
+.grilling-banner .g-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.grilling-banner .g-label{font-weight:600;color:var(--define);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.grilling-banner .g-name{font-family:var(--mono);color:var(--text)}
+.grilling-banner .g-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-family:var(--mono)}
+.grilling-banner .g-chip.active{border-color:var(--define);color:var(--define);background:var(--surface);animation:pulse 1.6s infinite}
+.grilling-banner .g-chip.done{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
+.grilling-banner .g-sep{color:var(--text-dim);font-family:var(--mono);font-size:11px;margin:0 2px}
+
 .define-output{margin-top:12px;display:none}
 .define-output.visible{display:block}
 .define-output .agent-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;font-family:var(--mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;color:var(--text-muted)}
@@ -80,6 +92,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .specs.visible{display:block}
 .specs-header{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface-2)}
 .specs-header .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);font-weight:600}
+.specs-header .sublabel{display:block;font-size:11px;color:var(--text-dim);margin-top:3px;font-weight:400;font-style:italic;letter-spacing:0;text-transform:none}
 .spec-row{display:grid;grid-template-columns:32px 1fr 120px 100px;align-items:center;padding:8px 18px;border-bottom:1px solid var(--border);gap:10px;font-size:13px}
 .spec-row:last-child{border-bottom:none}
 .spec-row .num{color:var(--text-dim);font-family:var(--mono);font-size:12px}
@@ -90,8 +103,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .status-dot.done{background:var(--done)}.status-dot.fixing{background:var(--nogo)}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 .spec-action{text-align:right}
-.spec-add-row{background:var(--surface-2)}
-.spec-add-row input{width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;color:var(--text);font-size:12px;font-family:var(--font)}
+.spec-add-row{background:var(--surface-2);border-top:1px dashed var(--border-strong)}
+.spec-add-row .num{color:var(--define);font-weight:600}
+.spec-add-row input{width:100%;padding:5px 8px;background:var(--input-bg);border:1px dashed var(--input-border);border-radius:4px;color:var(--text);font-size:12px;font-family:var(--font)}
+.spec-add-row .gate-hint{font-size:10px;color:var(--text-dim);margin-top:2px;font-style:italic}
+.at-pill.shared{background:var(--define-bg);border-color:var(--define);color:var(--define);font-weight:600}
+.at-pill.shared .shared-tag{font-size:8px;background:var(--define);color:#fff;padding:0 4px;border-radius:3px;margin-left:4px;font-weight:500}
 
 /* ── Filter bar ───────────────────────────────────────────── */
 .filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
@@ -303,7 +320,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <div class="filter-bar" id="filter-bar" style="display:none">
   <span class="label">Stage</span>
   <button class="filter-btn active" data-f="all" onclick="setFilter('all')">All <span class="fc" id="fc-all">0</span></button>
-  <button class="filter-btn" data-f="spec" onclick="setFilter('spec')">Spec <span class="fc" id="fc-spec">0</span></button>
   <button class="filter-btn" data-f="plan" onclick="setFilter('plan')">Plan <span class="fc" id="fc-plan">0</span></button>
   <button class="filter-btn" data-f="build" onclick="setFilter('build')">Build <span class="fc" id="fc-build">0</span></button>
   <button class="filter-btn" data-f="test" onclick="setFilter('test')">Test <span class="fc" id="fc-test">0</span></button>
@@ -456,8 +472,7 @@ function phaseOf(lane) {
   if (REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running')) return 'review';
   if (lane.ss.test.some(v => v === 'active' || v === 'running')) return 'test';
   if (lane.ss.tasks.some(t => t === 'active' || t === 'running')) return 'build';
-  if (lane.ss.plan === 'active' || lane.ss.plan === 'running') return 'plan';
-  return 'spec';
+  return 'plan';
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -484,11 +499,20 @@ function submitInterview() {
   if (ivState.qIdx < INTERVIEW_QS.length) {
     setTimeout(() => appendChatMsg(chat, 'agent', INTERVIEW_QS[ivState.qIdx]), 500);
   } else {
+    const isGrilling = document.getElementById('interview-modal').dataset.mode === 'grilling';
     setTimeout(() => {
-      const summary = `Interview complete.\n\nAudience: ${ivState.answers[0]}\nRuntime: ${ivState.answers[1]}\nRegulatory: ${ivState.answers[2]}\n\nAppending context to your input.`;
+      const summary = `Interview complete.\n\nAudience: ${ivState.answers[0]}\nRuntime: ${ivState.answers[1]}\nRegulatory: ${ivState.answers[2]}`;
       appendChatMsg(chat, 'agent', summary);
-      const gi = document.getElementById('global-input');
-      gi.value += `  [audience: ${ivState.answers[0]}] [runtime: ${ivState.answers[1]}] [regulatory: ${ivState.answers[2]}]`;
+      if (isGrilling) {
+        setTimeout(() => {
+          closeInterview();
+          document.getElementById('interview-modal').dataset.mode = '';
+          finishGrilling();
+        }, 900);
+      } else {
+        const gi = document.getElementById('global-input');
+        if (gi) gi.value += `  [audience: ${ivState.answers[0]}] [runtime: ${ivState.answers[1]}] [regulatory: ${ivState.answers[2]}]`;
+      }
     }, 600);
   }
 }
@@ -562,7 +586,10 @@ function detectFeatures(text) {
    ══════════════════════════════════════════════════════════ */
 function renderSpecTable() {
   const el = document.getElementById('spec-table');
-  let html = `<div class="specs-header"><span class="label">Features from SPEC.md</span><span id="spec-count"></span></div>`;
+  let html = `<div class="specs-header">
+    <div><span class="label">Features in SPEC.md</span><span class="sublabel">each validated through interview → refine → /spec</span></div>
+    <span id="spec-count"></span>
+  </div>`;
   for (let i = 0; i < detectedFeatures.length; i++) {
     const f = detectedFeatures[i];
     const started = addedFeatures.has(f);
@@ -576,8 +603,11 @@ function renderSpecTable() {
     </div>`;
   }
   html += `<div class="spec-row spec-add-row"><span class="num">+</span>
-    <span class="name"><input id="add-feature-input" placeholder="Add a feature... (re-enters /spec)" /></span>
-    <span></span><span class="spec-action"><button class="btn" onclick="addManualFeature()">+ Add</button></span></div>`;
+    <span class="name">
+      <input id="add-feature-input" placeholder="Feature name..." onkeydown="if(event.key==='Enter')addManualFeature()" />
+      <div class="gate-hint">requires grilling: interview → refine → /spec append</div>
+    </span>
+    <span></span><span class="spec-action"><button class="btn primary" onclick="addManualFeature()">+ Add</button></span></div>`;
   el.innerHTML = html;
   el.classList.add('visible');
   updateSpecCount();
@@ -588,7 +618,6 @@ function statusLabel(lane) {
   if (p === 'shipped') return { dot: 'done', text: 'shipped' };
   if (p === 'fixing') return { dot: 'fixing', text: 'fixing' };
   const ph = phaseOf(lane);
-  if (ph === 'spec') return { dot: 'active', text: 'speccing' };
   if (ph === 'plan') return { dot: 'active', text: 'planning' };
   if (ph === 'build') return { dot: 'active', text: 'building' };
   if (ph === 'test') return { dot: 'active', text: 'testing' };
@@ -609,9 +638,89 @@ function addManualFeature() {
   const inp = document.getElementById('add-feature-input');
   const name = inp.value.trim();
   if (!name) return;
-  if (!detectedFeatures.includes(name)) detectedFeatures.push(name);
+  if (detectedFeatures.includes(name)) { inp.value = ''; return; }
   inp.value = '';
+  startGrilling(name);
+}
+
+/* ══════════════════════════════════════════════════════════
+   GRILLING (append a feature through interview → refine → /spec)
+   ══════════════════════════════════════════════════════════ */
+let grillingState = null;
+
+function startGrilling(name) {
+  grillingState = { name, step: 'interview', answers: [] };
+  showGrillingBanner();
+  openGrillingInterview();
+}
+
+function showGrillingBanner() {
+  let banner = document.getElementById('grilling-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'grilling-banner';
+    banner.className = 'grilling-banner';
+    document.body.appendChild(banner);
+  }
+  renderGrillingBanner();
+}
+
+function renderGrillingBanner() {
+  const banner = document.getElementById('grilling-banner');
+  if (!banner || !grillingState) return;
+  const steps = ['interview', 'idea-refine', 'spec-append'];
+  const labels = { 'interview': 'interview-me', 'idea-refine': 'idea-refine', 'spec-append': '/spec append' };
+  const curIdx = steps.indexOf(grillingState.step);
+  const chips = steps.map((s, i) => {
+    const cls = i < curIdx ? 'done' : i === curIdx ? 'active' : 'idle';
+    const mark = i < curIdx ? '✓' : i === curIdx ? '●' : '○';
+    return `<span class="g-chip ${cls}">${mark} ${labels[s]}</span>`;
+  }).join('<span class="g-sep">→</span>');
+  banner.innerHTML = `<div class="g-inner">
+    <div class="g-row"><span class="g-label">Appending to SPEC.md</span><span class="g-name">"${esc(grillingState.name)}"</span></div>
+    <div class="g-row">${chips}</div>
+  </div>`;
+  banner.classList.add('visible');
+}
+
+function hideGrillingBanner() {
+  const banner = document.getElementById('grilling-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+function openGrillingInterview() {
+  ivState = { qIdx: 0, answers: [] };
+  const chat = document.getElementById('interview-chat');
+  chat.innerHTML = '';
+  appendChatMsg(chat, 'agent', `Adding "${grillingState.name}" to SPEC.md. First a few quick questions.\n\n${INTERVIEW_QS[0]}`);
+  document.getElementById('interview-modal').dataset.mode = 'grilling';
+  document.getElementById('interview-modal').classList.add('open');
+  setTimeout(() => document.getElementById('interview-input').focus(), 50);
+}
+
+async function finishGrilling() {
+  grillingState.answers = ivState.answers.slice();
+
+  grillingState.step = 'idea-refine';
+  renderGrillingBanner();
+  await delay(1200);
+
+  grillingState.step = 'spec-append';
+  renderGrillingBanner();
+  const out = document.getElementById('define-output');
+  if (out) {
+    out.classList.add('visible');
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> <span class="spinner-inline"></span> Appending "${esc(grillingState.name)}" to SPEC.md...\n  audience: ${esc(grillingState.answers[0] || 'n/a')}\n  runtime: ${esc(grillingState.answers[1] || 'n/a')}\n  regulatory: ${esc(grillingState.answers[2] || 'n/a')}</div>`;
+  }
+  await delay(1600);
+
+  detectedFeatures.push(grillingState.name);
+  if (out) {
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> SPEC.md updated.\n  + Added feature: ${esc(grillingState.name)}\n  ${detectedFeatures.length} features total.</div>`;
+  }
   renderSpecTable();
+  hideGrillingBanner();
+  grillingState = null;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -626,10 +735,9 @@ function startFeature(name) {
     id: 'lane-' + laneCounter,
     num: laneCounter,
     name,
-    phase: 'speccing',
+    phase: 'planning',
     ss: {
-      spec: 'active',
-      plan: 'idle',
+      plan: 'active',
       tasks: tmpl.tasks.map(() => 'idle'),
       test: tmpl.tasks.map(() => 'idle'),
       review: { 'code-review':'idle', 'code-simplify':'idle', 'security':'idle', 'performance':'idle' },
@@ -676,15 +784,15 @@ function renderLane(lane) {
 
   const badgeClass = lane.phase === 'shipped' ? 'badge-shipped' :
     lane.phase === 'fixing' ? 'badge-fixing' :
-    p === 'spec' ? 'badge-spec' : p === 'plan' ? 'badge-plan' :
+    p === 'plan' ? 'badge-plan' :
     p === 'build' ? 'badge-build' : p === 'test' ? 'badge-test' :
     p === 'review' ? 'badge-review' :
-    p === 'ship' ? 'badge-ship' : 'badge-spec';
+    p === 'ship' ? 'badge-ship' : 'badge-plan';
   const buildIdx = lane.ss.tasks.findIndex(t => t === 'active' || t === 'running');
   const testIdx = lane.ss.test.findIndex(t => t === 'active' || t === 'running');
   const badgeText = lane.phase === 'shipped' ? '✓ shipped' :
     lane.phase === 'fixing' ? 'NO-GO · fixing' :
-    p === 'spec' ? 'drafting feature spec' : p === 'plan' ? 'planning' :
+    p === 'plan' ? 'planning' :
     p === 'build' ? `building · task ${buildIdx+1}/${lane.tasks.length} · loop x${lane.buildIter}` :
     p === 'test' ? `testing · task ${testIdx+1}/${lane.ss.test.length}` :
     p === 'review' ? 'reviewing' : p === 'ship' ? 'shipping' : '';
@@ -696,8 +804,6 @@ function renderLane(lane) {
 
   /* Pipeline */
   html += '<div class="pipeline">';
-  html += renderStation(lane, 'spec',  '/spec',  'feature scope',  's-spec');
-  html += `<div class="arrow ${lane.ss.spec==='done'?'done':''}"></div>`;
   html += renderStation(lane, 'plan',  '/plan',  lane.ss.plan==='done'?`${lane.tasks.length} tasks`:'decompose', 's-plan');
   html += `<div class="arrow ${lane.ss.plan==='done'?'done':''}"></div>`;
   html += renderBuildStation(lane);
@@ -839,7 +945,7 @@ function renderShipStation(lane) {
 
 function renderArtifactTrack(lane) {
   const items = [
-    { name: 'SPEC.md',          done: lane.ss.spec === 'done',  active: lane.ss.spec === 'running' },
+    { name: 'SPEC.md',          done: true,                     active: false, shared: true },
     { name: 'plan.md',          done: lane.ss.plan === 'done',  active: lane.ss.plan === 'running' },
     { name: 'todo.md',          done: lane.ss.tasks.every(t=>t==='done'), active: lane.ss.tasks.some(t=>t==='active'||t==='running') },
     { name: 'test-coverage.md', done: lane.ss.test.every(t=>t==='done'),  active: lane.ss.test.some(t=>t==='active'||t==='running') },
@@ -849,8 +955,9 @@ function renderArtifactTrack(lane) {
   let html = '<div class="artifact-track"><span class="at-label">artifacts</span>';
   for (let i = 0; i < items.length; i++) {
     const a = items[i];
-    const cls = a.done ? 'done' : a.active ? 'active' : '';
-    html += `<span class="at-pill ${cls}">${a.name}</span>`;
+    const cls = a.shared ? 'shared' : a.done ? 'done' : a.active ? 'active' : '';
+    const title = a.shared ? 'Shared project-level spec' : '';
+    html += `<span class="at-pill ${cls}" ${title?`title="${title}"`:''}>${a.name}${a.shared?' <span class="shared-tag">shared</span>':''}</span>`;
     if (i < items.length - 1) html += '<span class="at-sep">→</span>';
   }
   html += '</div>';
@@ -870,19 +977,14 @@ async function clickStep(laneId, step) {
   if (!lane || lane.ss[step] !== 'active') return;
 
   lane.ss[step] = 'running';
-  const d = step === 'spec' ? 1600 : 1800;
   renderOutput(lane, step, 'running');
   renderLane(lane);
 
-  await delay(d + Math.random() * 600);
+  await delay(1800 + Math.random() * 600);
 
   lane.ss[step] = 'done';
 
-  if (step === 'spec') {
-    lane.ss.plan = 'active';
-    lane.phase = 'planning';
-    renderOutput(lane, 'spec', 'done');
-  } else if (step === 'plan') {
+  if (step === 'plan') {
     lane.ss.tasks[0] = 'active';
     lane.phase = 'building';
     lane.buildIter = 1;
@@ -1091,11 +1193,7 @@ function closeShipDrawer() {
    STEP OUTPUT (inline terminal messages)
    ══════════════════════════════════════════════════════════ */
 function renderOutput(lane, step, state, idx) {
-  if (step === 'spec' && state === 'running') {
-    lane.lastOutput = `<span class="lbl lbl-spec">◈ /spec</span> <span class="spinner-inline"></span> Writing feature specification for "${esc(lane.name)}"...\n  Defining objective, acceptance criteria, boundaries...`;
-  } else if (step === 'spec' && state === 'done') {
-    lane.lastOutput = `<span class="lbl lbl-spec">◈ /spec</span> Feature SPEC.md complete.\n  Objective: Implement ${esc(lane.name)}\n  Acceptance: ${lane.tasks.length} core requirements identified\n  Boundaries: No external API calls, pure validation logic\n  Testing: vitest, coverage > 90%`;
-  } else if (step === 'plan' && state === 'running') {
+  if (step === 'plan' && state === 'running') {
     lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> <span class="spinner-inline"></span> Decomposing "${esc(lane.name)}" into tasks...`;
   } else if (step === 'plan' && state === 'done') {
     const taskList = lane.tasks.map((t, i) => `  ${i + 1}. ${t.n} → ${t.f}`).join('\n');
@@ -1129,7 +1227,7 @@ function renderOutput(lane, step, state, idx) {
    FILTERS
    ══════════════════════════════════════════════════════════ */
 function updateFilters() {
-  const counts = { all: lanes.length, spec: 0, plan: 0, build: 0, test: 0, review: 0, ship: 0, shipped: 0 };
+  const counts = { all: lanes.length, plan: 0, build: 0, test: 0, review: 0, ship: 0, shipped: 0 };
   for (const l of lanes) {
     const p = phaseOf(l);
     if (p === 'shipped') counts.shipped++;
