@@ -103,6 +103,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .filter-btn.active[data-f="spec"]{background:var(--define);border-color:var(--define)}
 .filter-btn.active[data-f="plan"]{background:var(--plan);border-color:var(--plan)}
 .filter-btn.active[data-f="build"]{background:var(--build);border-color:var(--build)}
+.filter-btn.active[data-f="test"]{background:var(--verify);border-color:var(--verify)}
 .filter-btn.active[data-f="review"]{background:var(--review);border-color:var(--review)}
 .filter-btn.active[data-f="ship"]{background:var(--ship);border-color:var(--ship)}
 .filter-btn.active[data-f="shipped"]{background:var(--done);border-color:var(--done)}
@@ -119,6 +120,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .badge-spec{background:var(--define-bg);color:var(--define);border:1px solid var(--define-border)}
 .badge-plan{background:var(--plan-bg);color:var(--plan);border:1px solid var(--plan-border)}
 .badge-build{background:var(--build-bg);color:var(--build);border:1px solid var(--build-border)}
+.badge-test{background:var(--verify-bg);color:var(--verify);border:1px solid var(--verify-border)}
 .badge-review{background:var(--review-bg);color:var(--review);border:1px solid var(--review-border)}
 .badge-ship{background:var(--ship-bg);color:var(--ship);border:1px solid var(--ship-border)}
 .badge-shipped{background:var(--ship-bg);color:var(--done);border:1px solid var(--ship-border)}
@@ -146,27 +148,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .station.active.s-spec .station-box,.station.running.s-spec .station-box{background:var(--define-bg);border-color:var(--define)}
 .station.active.s-plan .station-box,.station.running.s-plan .station-box{background:var(--plan-bg);border-color:var(--plan)}
 .station.active.s-build .station-box,.station.running.s-build .station-box{background:var(--build-bg);border-color:var(--build)}
+.station.s-build.fixing .station-box{background:var(--nogo-bg);border-color:var(--nogo);box-shadow:0 0 0 3px rgba(248,113,113,.15)}
+.station.active.s-test .station-box,.station.running.s-test .station-box{background:var(--verify-bg);border-color:var(--verify)}
 .station.active.s-review .station-box,.station.running.s-review .station-box{background:var(--review-bg);border-color:var(--review)}
 .station.active.s-ship .station-box,.station.running.s-ship .station-box{background:var(--ship-bg);border-color:var(--ship)}
+
+/* Iteration pill under build/test stations */
+.iter-pill{margin-top:7px;font-size:9px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--build);color:#fff;white-space:nowrap;letter-spacing:.02em}
+.iter-pill.test{background:var(--verify)}
+.iter-pill.fixing{background:var(--nogo)}
+.station.done .iter-pill{background:var(--done)}
 
 /* Arrow */
 .arrow{flex:0 0 auto;align-self:flex-start;margin-top:18px;width:32px;height:2px;background:var(--border-strong);position:relative}
 .arrow::after{content:'';position:absolute;right:-1px;top:50%;width:0;height:0;border-left:6px solid var(--border-strong);border-top:4px solid transparent;border-bottom:4px solid transparent;transform:translateY(-50%)}
 .arrow.done{background:var(--done)}.arrow.done::after{border-left-color:var(--done)}
-
-/* ── Composite Build/Verify station ───────────────────────── */
-.station.composite-bv{min-width:180px}
-.composite-inner{display:flex;align-items:stretch;gap:0;background:var(--surface-2);border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);padding:7px 10px;position:relative;cursor:pointer;transition:transform .15s}
-.composite-inner:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
-.station.active.composite-bv .composite-inner,.station.running.composite-bv .composite-inner{border-color:var(--build);background:var(--build-bg);box-shadow:0 0 0 3px rgba(249,115,22,.15)}
-.station.done.composite-bv .composite-inner{border-style:solid;border-color:var(--ship-border);background:var(--ship-bg)}
-.sub-station{flex:1;text-align:center;padding:2px 6px}
-.sub-cmd{font-family:var(--mono);font-size:11px;font-weight:600}
-.sub-sub{font-size:9px;color:var(--text-muted);margin-top:1px}
-.loop-icon{align-self:center;font-size:15px;padding:0 4px;color:var(--build)}
-.station.done .loop-icon{color:var(--done)}
-.iter-badge{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--build);color:#fff;font-size:9px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
-.station.done .iter-badge{background:var(--done)}
 
 /* ── Composite Review station ─────────────────────────────── */
 .station.composite-review{min-width:120px}
@@ -191,7 +187,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .step-block .lbl-spec{color:var(--define)}
 .step-block .lbl-plan{color:var(--plan)}
 .step-block .lbl-build{color:var(--build)}
-.step-block .lbl-verify{color:var(--verify)}
+.step-block .lbl-test{color:var(--verify)}
 .step-block .lbl-review{color:var(--review)}
 .step-block .lbl-ship{color:var(--ship)}
 .step-block .lbl-nogo{color:var(--nogo)}
@@ -310,6 +306,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <button class="filter-btn" data-f="spec" onclick="setFilter('spec')">Spec <span class="fc" id="fc-spec">0</span></button>
   <button class="filter-btn" data-f="plan" onclick="setFilter('plan')">Plan <span class="fc" id="fc-plan">0</span></button>
   <button class="filter-btn" data-f="build" onclick="setFilter('build')">Build <span class="fc" id="fc-build">0</span></button>
+  <button class="filter-btn" data-f="test" onclick="setFilter('test')">Test <span class="fc" id="fc-test">0</span></button>
   <button class="filter-btn" data-f="review" onclick="setFilter('review')">Review <span class="fc" id="fc-review">0</span></button>
   <button class="filter-btn" data-f="ship" onclick="setFilter('ship')">Ship <span class="fc" id="fc-ship">0</span></button>
   <button class="filter-btn" data-f="shipped" onclick="setFilter('shipped')">Shipped <span class="fc" id="fc-shipped">0</span></button>
@@ -457,7 +454,8 @@ function phaseOf(lane) {
   if (lane.phase === 'fixing') return 'build';
   if (lane.ss.ship === 'active' || lane.ss.ship === 'running') return 'ship';
   if (REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running')) return 'review';
-  if (lane.ss.tasks.some(t => t === 'active' || t === 'running') || lane.ss.verify.some(v => v === 'active' || v === 'running')) return 'build';
+  if (lane.ss.test.some(v => v === 'active' || v === 'running')) return 'test';
+  if (lane.ss.tasks.some(t => t === 'active' || t === 'running')) return 'build';
   if (lane.ss.plan === 'active' || lane.ss.plan === 'running') return 'plan';
   return 'spec';
 }
@@ -544,7 +542,7 @@ function runGlobalSpec() {
   setTimeout(() => {
     detectedFeatures = detectFeatures(inp);
     const featureList = detectedFeatures.map((f,i) => `  ${i+1}. ${f}`).join('\n');
-    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> top-level SPEC.md generated.\n\nObjective: ${esc(inp.substring(0,80))}...\nTesting: vitest, coverage > 90%\nBoundaries: no runtime dependencies\n\nDetected features:\n${esc(featureList)}\n\nEach feature will follow: /spec → /plan → /build ↔ /verify → Review → /ship</div>`;
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> top-level SPEC.md generated.\n\nObjective: ${esc(inp.substring(0,80))}...\nTesting: vitest, coverage > 90%\nBoundaries: no runtime dependencies\n\nDetected features:\n${esc(featureList)}\n\nEach feature will follow: /spec → /plan → /build → /test → Review → /ship</div>`;
     renderSpecTable();
     document.getElementById('filter-bar').style.display = 'flex';
   }, 1800);
@@ -593,6 +591,7 @@ function statusLabel(lane) {
   if (ph === 'spec') return { dot: 'active', text: 'speccing' };
   if (ph === 'plan') return { dot: 'active', text: 'planning' };
   if (ph === 'build') return { dot: 'active', text: 'building' };
+  if (ph === 'test') return { dot: 'active', text: 'testing' };
   if (ph === 'review') return { dot: 'active', text: 'reviewing' };
   if (ph === 'ship') return { dot: 'active', text: 'shipping' };
   return { dot: 'idle', text: 'unknown' };
@@ -632,7 +631,7 @@ function startFeature(name) {
       spec: 'active',
       plan: 'idle',
       tasks: tmpl.tasks.map(() => 'idle'),
-      verify: tmpl.tasks.map(() => 'idle'),
+      test: tmpl.tasks.map(() => 'idle'),
       review: { 'code-review':'idle', 'code-simplify':'idle', 'security':'idle', 'performance':'idle' },
       ship: 'idle',
     },
@@ -664,7 +663,8 @@ function renderLane(lane) {
   }
 
   const p = phaseOf(lane);
-  const allTasksDone = lane.ss.tasks.every(t => t === 'done') && lane.ss.verify.every(v => v === 'done');
+  const allBuildDone = lane.ss.tasks.every(t => t === 'done');
+  const allTestDone = lane.ss.test.every(v => v === 'done');
   const allReviewDone = REVIEW_SUBSTEPS.every(k => lane.ss.review[k] === 'done');
 
   let cls = 'lane';
@@ -677,12 +677,16 @@ function renderLane(lane) {
   const badgeClass = lane.phase === 'shipped' ? 'badge-shipped' :
     lane.phase === 'fixing' ? 'badge-fixing' :
     p === 'spec' ? 'badge-spec' : p === 'plan' ? 'badge-plan' :
-    p === 'build' ? 'badge-build' : p === 'review' ? 'badge-review' :
+    p === 'build' ? 'badge-build' : p === 'test' ? 'badge-test' :
+    p === 'review' ? 'badge-review' :
     p === 'ship' ? 'badge-ship' : 'badge-spec';
+  const buildIdx = lane.ss.tasks.findIndex(t => t === 'active' || t === 'running');
+  const testIdx = lane.ss.test.findIndex(t => t === 'active' || t === 'running');
   const badgeText = lane.phase === 'shipped' ? '✓ shipped' :
     lane.phase === 'fixing' ? 'NO-GO · fixing' :
     p === 'spec' ? 'drafting feature spec' : p === 'plan' ? 'planning' :
-    p === 'build' ? `building · iteration ${lane.buildIter}` :
+    p === 'build' ? `building · task ${buildIdx+1}/${lane.tasks.length} · loop x${lane.buildIter}` :
+    p === 'test' ? `testing · task ${testIdx+1}/${lane.ss.test.length}` :
     p === 'review' ? 'reviewing' : p === 'ship' ? 'shipping' : '';
 
   let html = `<div class="lane-header">
@@ -696,8 +700,10 @@ function renderLane(lane) {
   html += `<div class="arrow ${lane.ss.spec==='done'?'done':''}"></div>`;
   html += renderStation(lane, 'plan',  '/plan',  lane.ss.plan==='done'?`${lane.tasks.length} tasks`:'decompose', 's-plan');
   html += `<div class="arrow ${lane.ss.plan==='done'?'done':''}"></div>`;
-  html += renderBuildVerify(lane);
-  html += `<div class="arrow ${allTasksDone?'done':''}"></div>`;
+  html += renderBuildStation(lane);
+  html += `<div class="arrow ${allBuildDone?'done':''}"></div>`;
+  html += renderTestStation(lane);
+  html += `<div class="arrow ${allTestDone?'done':''}"></div>`;
   html += renderReviewStation(lane);
   html += `<div class="arrow ${allReviewDone?'done':''}"></div>`;
   html += renderShipStation(lane);
@@ -732,34 +738,61 @@ function renderStation(lane, key, cmd, sub, cls) {
   </div>`;
 }
 
-function renderBuildVerify(lane) {
-  const anyActive = lane.ss.tasks.some(t => t === 'active' || t === 'running') || lane.ss.verify.some(v => v === 'active' || v === 'running');
-  const allDone = lane.ss.tasks.every(t => t === 'done') && lane.ss.verify.every(v => v === 'done');
+function renderBuildStation(lane) {
   const isFixing = lane.phase === 'fixing';
-  const doneCount = lane.ss.tasks.filter(t => t === 'done').length;
-  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
-  const borderStyle = isFixing ? `border-color:var(--nogo);background:var(--nogo-bg);box-shadow:0 0 0 3px rgba(248,113,113,.12)` : '';
-  const clickable = anyActive;
+  const fixActive = isFixing && lane.fixTaskStates.some(s => s === 'active' || s === 'running');
+  const taskActive = lane.ss.tasks.some(t => t === 'active' || t === 'running');
+  const allDone = lane.ss.tasks.every(t => t === 'done');
   const activeIdx = lane.ss.tasks.findIndex(t => t === 'active');
-  const verifyIdx = lane.ss.verify.findIndex(v => v === 'active');
 
-  let iterText = '';
-  if (allDone) iterText = `${lane.tasks.length}/${lane.tasks.length} done`;
-  else if (anyActive && activeIdx >= 0) iterText = `task ${activeIdx+1}/${lane.tasks.length}`;
-  else if (anyActive && verifyIdx >= 0) iterText = `verifying task ${verifyIdx+1}`;
+  let st = 'idle';
+  if (isFixing) st = fixActive ? 'active' : 'done';
+  else if (allDone) st = 'done';
+  else if (taskActive) st = 'active';
+
+  const clickable = isFixing
+    ? lane.fixTaskStates.some(s => s === 'active')
+    : (activeIdx >= 0 && lane.ss.tasks[activeIdx] === 'active');
+
+  let pillText = '';
   if (isFixing) {
     const fixDone = lane.fixTaskStates.filter(s => s === 'done').length;
-    iterText = `fix ${fixDone+1}/${lane.fixTasks.length}`;
+    pillText = `fix ${Math.min(fixDone+1, lane.fixTasks.length)}/${lane.fixTasks.length}`;
+  } else if (allDone) {
+    pillText = `${lane.tasks.length}/${lane.tasks.length} done`;
+  } else if (activeIdx >= 0) {
+    pillText = `task ${activeIdx+1}/${lane.tasks.length}`;
   }
-  if (lane.buildIter > 0) iterText += ` · loop x${lane.buildIter}`;
+  if (lane.buildIter > 0 && !allDone && !isFixing) pillText += ` · loop x${lane.buildIter}`;
 
-  return `<div class="station composite-bv ${st} s-build">
-    <div class="composite-inner" ${borderStyle?`style="${borderStyle}"`:''} onclick="${clickable?`clickBuild('${lane.id}')`:''}" title="${clickable?'Click to run next build/verify':''}">
-      <div class="sub-station"><div class="sub-cmd">/build</div><div class="sub-sub">incremental + TDD</div></div>
-      <div class="loop-icon" ${isFixing?'style="color:var(--nogo)"':''}>⟳</div>
-      <div class="sub-station"><div class="sub-cmd">verify</div><div class="sub-sub">devtools · debug</div></div>
-      ${iterText?`<span class="iter-badge" ${isFixing?'style="background:var(--nogo)"':''}>${iterText}</span>`:''}
+  return `<div class="station ${st} s-build${isFixing?' fixing':''}">
+    <div class="station-box" onclick="${clickable?`clickBuild('${lane.id}')`:''}" title="${clickable?'Click to run /build':''}">
+      <div class="station-cmd">/build</div>
+      <div class="station-sub">incremental + TDD</div>
+      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
     </div>
+    ${pillText?`<div class="iter-pill ${isFixing?'fixing':''}">${pillText}</div>`:''}
+  </div>`;
+}
+
+function renderTestStation(lane) {
+  const anyActive = lane.ss.test.some(t => t === 'active' || t === 'running');
+  const allDone = lane.ss.test.every(t => t === 'done');
+  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
+  const clickable = anyActive;
+  const activeIdx = lane.ss.test.findIndex(t => t === 'active');
+
+  let pillText = '';
+  if (allDone) pillText = 'all pass';
+  else if (activeIdx >= 0) pillText = `task ${activeIdx+1}/${lane.ss.test.length}`;
+
+  return `<div class="station ${st} s-test">
+    <div class="station-box" onclick="${clickable?`clickTest('${lane.id}')`:''}" title="${clickable?'Click to run /test':''}">
+      <div class="station-cmd">/test</div>
+      <div class="station-sub">TDD · coverage audit</div>
+      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+    </div>
+    ${pillText?`<div class="iter-pill test">${pillText}</div>`:''}
   </div>`;
 }
 
@@ -809,6 +842,7 @@ function renderArtifactTrack(lane) {
     { name: 'SPEC.md',          done: lane.ss.spec === 'done',  active: lane.ss.spec === 'running' },
     { name: 'plan.md',          done: lane.ss.plan === 'done',  active: lane.ss.plan === 'running' },
     { name: 'todo.md',          done: lane.ss.tasks.every(t=>t==='done'), active: lane.ss.tasks.some(t=>t==='active'||t==='running') },
+    { name: 'test-coverage.md', done: lane.ss.test.every(t=>t==='done'),  active: lane.ss.test.some(t=>t==='active'||t==='running') },
     { name: 'review-report.md', done: REVIEW_SUBSTEPS.every(k=>lane.ss.review[k]==='done'), active: REVIEW_SUBSTEPS.some(k=>lane.ss.review[k]==='active'||lane.ss.review[k]==='running') },
     { name: 'ship-decision.md', done: lane.ss.ship === 'done',  active: lane.ss.ship === 'running' },
   ];
@@ -869,35 +903,45 @@ async function clickBuild(laneId) {
   }
 
   const taskIdx = lane.ss.tasks.findIndex(t => t === 'active');
-  const verifyIdx = lane.ss.verify.findIndex(v => v === 'active');
+  if (taskIdx < 0) return;
 
-  if (taskIdx >= 0) {
-    lane.ss.tasks[taskIdx] = 'running';
-    renderOutput(lane, 'build-task', 'running', taskIdx);
-    renderLane(lane);
-    await delay(1400 + Math.random() * 800);
-    lane.ss.tasks[taskIdx] = 'done';
-    lane.ss.verify[taskIdx] = 'active';
-    lane.buildIter++;
-    renderOutput(lane, 'build-task', 'done', taskIdx);
-    renderLane(lane);
-  } else if (verifyIdx >= 0) {
-    lane.ss.verify[verifyIdx] = 'running';
-    renderOutput(lane, 'verify', 'running', verifyIdx);
-    renderLane(lane);
-    await delay(1000 + Math.random() * 600);
-    lane.ss.verify[verifyIdx] = 'done';
-    renderOutput(lane, 'verify', 'done', verifyIdx);
+  lane.ss.tasks[taskIdx] = 'running';
+  renderOutput(lane, 'build-task', 'running', taskIdx);
+  renderLane(lane);
+  await delay(1400 + Math.random() * 800);
+  lane.ss.tasks[taskIdx] = 'done';
+  lane.ss.test[taskIdx] = 'active';
+  lane.phase = 'testing';
+  lane.buildIter++;
+  renderOutput(lane, 'build-task', 'done', taskIdx);
+  renderLane(lane);
+  renderSpecTable();
+  updateFilters();
+}
 
-    const nextTask = verifyIdx + 1;
-    if (nextTask < lane.ss.tasks.length) {
-      lane.ss.tasks[nextTask] = 'active';
-    } else {
-      lane.ss.review['code-review'] = 'active';
-      lane.phase = 'reviewing';
-    }
-    renderLane(lane);
+async function clickTest(laneId) {
+  const lane = getLane(laneId);
+  if (!lane) return;
+
+  const testIdx = lane.ss.test.findIndex(t => t === 'active');
+  if (testIdx < 0) return;
+
+  lane.ss.test[testIdx] = 'running';
+  renderOutput(lane, 'test', 'running', testIdx);
+  renderLane(lane);
+  await delay(1000 + Math.random() * 600);
+  lane.ss.test[testIdx] = 'done';
+  renderOutput(lane, 'test', 'done', testIdx);
+
+  const nextTask = testIdx + 1;
+  if (nextTask < lane.ss.tasks.length) {
+    lane.ss.tasks[nextTask] = 'active';
+    lane.phase = 'building';
+  } else {
+    lane.ss.review['code-review'] = 'active';
+    lane.phase = 'reviewing';
   }
+  renderLane(lane);
   renderSpecTable();
   updateFilters();
 }
@@ -1062,10 +1106,10 @@ function renderOutput(lane, step, state, idx) {
   } else if (step === 'build-task' && state === 'done') {
     const t = lane.tasks[idx];
     lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Task ${idx + 1} complete: ${esc(t.n)}\n  ✓ ${esc(t.a)}\n  ✓ Tests pass · committed`;
-  } else if (step === 'verify' && state === 'running') {
-    lane.lastOutput = `<span class="lbl lbl-verify">◈ verify</span> <span class="spinner-inline"></span> Running verification for task ${idx + 1}...\n  Checking with devtools, testing edge cases...`;
-  } else if (step === 'verify' && state === 'done') {
-    lane.lastOutput = `<span class="lbl lbl-verify">◈ verify</span> Task ${idx + 1} verified.\n  ✓ Edge cases pass · no regressions detected`;
+  } else if (step === 'test' && state === 'running') {
+    lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> <span class="spinner-inline"></span> Running tests for task ${idx + 1}...\n  Writing failing test → impl check → coverage audit...`;
+  } else if (step === 'test' && state === 'done') {
+    lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> Task ${idx + 1} tested.\n  ✓ All tests pass · coverage > 90% · no regressions`;
   } else if (step.startsWith('review-') && state === 'running') {
     const sub = step.replace('review-', '');
     lane.lastOutput = `<span class="lbl lbl-review">◈ ${esc(REVIEW_LABELS[sub])}</span> <span class="spinner-inline"></span> Running...`;
@@ -1085,7 +1129,7 @@ function renderOutput(lane, step, state, idx) {
    FILTERS
    ══════════════════════════════════════════════════════════ */
 function updateFilters() {
-  const counts = { all: lanes.length, spec: 0, plan: 0, build: 0, review: 0, ship: 0, shipped: 0 };
+  const counts = { all: lanes.length, spec: 0, plan: 0, build: 0, test: 0, review: 0, ship: 0, shipped: 0 };
   for (const l of lanes) {
     const p = phaseOf(l);
     if (p === 'shipped') counts.shipped++;
