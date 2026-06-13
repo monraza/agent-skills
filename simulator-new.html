@@ -148,16 +148,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .badge-shipped{background:var(--ship-bg);color:var(--done);border:1px solid var(--ship-border)}
 .badge-fixing{background:var(--nogo-bg);color:var(--nogo);border:1px solid var(--nogo-border)}
 
-/* ── Lane flow ────────────────────────────────────────────── */
-.lane-flow{padding:14px 16px 4px}
-.flow-stage{display:flex;align-items:flex-start;gap:10px}
-.flow-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:10px 0 2px}
-.flow-connector{width:2px;background:var(--border-strong);height:12px;margin-left:18px}
-.flow-connector.done{background:var(--done)}
+/* ── Lane flow (horizontal pipeline with branching) ──────── */
+.lane-flow{padding:20px 16px 8px;overflow-x:auto}
+.pipeline-h{display:flex;align-items:center;gap:0;min-width:max-content;padding-bottom:4px}
+
+.arrow-h{flex:0 0 auto;width:26px;height:2px;background:var(--border-strong);position:relative;align-self:center;margin:0 2px}
+.arrow-h::after{content:'';position:absolute;right:-1px;top:50%;width:0;height:0;border-left:6px solid var(--border-strong);border-top:4px solid transparent;border-bottom:4px solid transparent;transform:translateY(-50%)}
+.arrow-h.done{background:var(--done)}
+.arrow-h.done::after{border-left-color:var(--done)}
 
 /* Station (plan / review / ship) */
-.station{display:flex;flex-direction:column;align-items:flex-start}
-.station-box{background:var(--surface-2);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 14px;min-width:96px;text-align:center;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
+.station{display:flex;flex-direction:column;align-items:center;flex:0 0 auto}
+.station-box{background:var(--surface-2);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 14px;min-width:92px;text-align:center;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
 .station-box:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .station-cmd{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
 .station-sub{font-size:10px;color:var(--text-muted);margin-top:1px}
@@ -173,23 +175,38 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .station.active.s-review .station-box,.station.running.s-review .station-box{background:var(--review-bg);border-color:var(--review)}
 .station.active.s-ship .station-box,.station.running.s-ship .station-box{background:var(--ship-bg);border-color:var(--ship)}
 
-/* Fix note */
-.fix-note{margin:10px 0 4px;padding:6px 10px;background:var(--nogo-bg);border:1px solid var(--nogo-border);border-radius:var(--radius-sm);font-size:11px;color:var(--nogo);font-family:var(--mono);display:flex;align-items:center;gap:6px}
+/* Branch zone — fan out from /plan, converge into /review */
+.branch-zone{flex:0 0 auto;position:relative;display:flex;flex-direction:column;gap:8px;padding:6px 22px}
+.branch-zone.single{padding:6px 4px}
+.branch-zone:not(.single)::before,
+.branch-zone:not(.single)::after{
+  content:'';position:absolute;width:2px;background:var(--border-strong);
+  top:28px;bottom:28px;
+}
+.branch-zone:not(.single)::before{left:14px}
+.branch-zone:not(.single)::after{right:14px}
 
-/* Task list */
-.task-list{display:flex;flex-direction:column;gap:8px;margin:8px 0}
-.task-row{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;transition:border-color .2s;animation:fadeIn .3s}
+.task-row{position:relative;display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;transition:border-color .2s;animation:fadeIn .3s;min-width:340px}
 .task-row.active{border-color:var(--build)}
 .task-row.done{border-color:var(--ship-border)}
 .task-row.fix{border-left:3px solid var(--nogo)}
+.branch-zone:not(.single) .task-row::before,
+.branch-zone:not(.single) .task-row::after{
+  content:'';position:absolute;top:50%;width:8px;height:2px;background:var(--border-strong);transform:translateY(-50%)
+}
+.branch-zone:not(.single) .task-row::before{left:-8px}
+.branch-zone:not(.single) .task-row::after{right:-8px}
+.task-row.done::before,.task-row.done::after{background:var(--done)!important}
+
 .task-idx{width:22px;height:22px;border-radius:50%;background:var(--border-strong);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:var(--mono)}
 .task-row.done .task-idx{background:var(--done)}
 .task-row.active .task-idx{background:var(--build)}
 .task-info{flex:1;min-width:0}
-.task-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.task-name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
 .task-file{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .task-badge{font-size:9px;padding:1px 6px;border-radius:999px;background:var(--nogo);color:#fff;font-weight:600;letter-spacing:.03em}
 .task-pipe{display:flex;align-items:center;flex:0 0 auto}
+
 .mini{display:flex;flex-direction:column;align-items:center}
 .mini-box{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:5px 11px;text-align:center;background:var(--surface);position:relative;cursor:default;transition:transform .15s,box-shadow .15s;min-width:58px}
 .mini.clickable .mini-box{cursor:pointer}
@@ -206,16 +223,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .mini.active .mini-mark{background:var(--active);border-color:var(--active);color:#fff;animation:pulse 1.6s infinite}
 .mini.running .mini-mark{background:var(--active);border-color:var(--active);color:#fff;animation:spin .8s linear infinite}
 .mini.done .mini-mark{background:var(--done);border-color:var(--done);color:#fff}
-.mini-arrow{width:16px;height:2px;background:var(--border-strong);margin:0 5px;align-self:center}
+.mini-arrow{width:14px;height:2px;background:var(--border-strong);margin:0 4px;align-self:center}
 .mini-arrow.done{background:var(--done)}
 
-/* Finalize row (review + ship) */
-.finalize{margin-top:8px;gap:20px;align-items:flex-start;flex-wrap:wrap}
-.fin-block{display:flex;flex-direction:column;gap:8px}
-.review-axes{display:flex;flex-wrap:wrap;gap:5px;max-width:330px}
-.axis-chip{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2)}
+/* Stations laid out with content below */
+.below-station{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:120px}
+.review-axes{display:flex;flex-direction:column;gap:3px;margin-top:4px;align-items:stretch;max-width:200px}
+.axis-chip{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2);white-space:nowrap;text-align:left}
 .axis-chip.running{border-color:var(--review);color:var(--review);animation:pulse 1.4s infinite}
 .axis-chip.done{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
+
+/* Ship inline progress (while /ship runs) */
+.ship-inline{margin-top:6px;display:flex;flex-direction:column;gap:4px;min-width:170px;max-width:220px}
+.ship-pm{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);padding:3px 8px;border-radius:var(--radius-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted)}
+.ship-pm.analyzing{border-color:var(--active);color:var(--active)}
+.ship-pm.pass{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
+.ship-pm.warn{border-color:var(--plan);color:var(--plan)}
+.ship-pm.fail{border-color:var(--nogo);color:var(--nogo);background:var(--nogo-bg)}
+.ship-pm .pi{font-size:11px}
+
+/* Fix note (above branch zone when fixing) */
+.fix-note{flex:0 0 auto;padding:6px 10px;background:var(--nogo-bg);border:1px solid var(--nogo-border);border-radius:var(--radius-sm);font-size:10px;color:var(--nogo);font-family:var(--mono);align-self:center;margin:0 2px;max-width:140px;text-align:center;line-height:1.3}
 
 /* Ship summary in lane */
 .ship-summary{margin-top:4px;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;border:1px solid;max-width:330px}
@@ -771,6 +799,7 @@ function startLaneFromFeature(name) {
     ship: 'idle',
     shipDecision: null,
     shipSummary: null,
+    shipProgress: null,
     shipRuns: 0,
     lastOutput: null,
   };
@@ -817,31 +846,34 @@ function renderLane(lane) {
     <span class="phase-badge ${badgeClass}">${badgeText}</span>
   </div>`;
 
-  html += '<div class="lane-flow">';
+  html += '<div class="lane-flow"><div class="pipeline-h">';
 
   /* PLAN */
   html += renderPlanStation(lane);
 
-  /* TASKS + REVIEW + SHIP (only after plan done) */
+  /* TASKS branch + REVIEW + SHIP (only after plan done) */
   if (lane.plan === 'done') {
-    html += `<div class="flow-connector ${lane.tasks[0] && lane.tasks[0].build==='done' ? 'done':''}"></div>`;
+    const branchDone = allTasksDone(lane);
+    html += `<div class="arrow-h ${lane.tasks.some(t=>t.build!=='idle')?'done':''}"></div>`;
+
     if (pendingFixCount(lane) > 0) {
-      html += `<div class="fix-note">↩ ${pendingFixCount(lane)} fix task(s) from NO-GO /ship — build &amp; test, then re-review</div>`;
+      html += `<div class="fix-note">↩ ${pendingFixCount(lane)} fix from NO-GO</div>`;
+      html += `<div class="arrow-h"></div>`;
     }
-    html += `<div class="flow-label">Tasks — each builds &amp; tests independently</div>`;
-    html += '<div class="task-list">';
+
+    /* Branch zone: /plan fans out to N task rows, converging into /review */
+    const single = lane.tasks.length === 1;
+    html += `<div class="branch-zone ${single?'single':''}">`;
     lane.tasks.forEach((t, i) => { html += renderTaskRow(lane, t, i); });
     html += '</div>';
 
-    /* REVIEW + SHIP */
-    html += `<div class="flow-label">Whole-plan review &amp; ship</div>`;
-    html += '<div class="flow-stage finalize">';
+    html += `<div class="arrow-h ${branchDone?'done':''}"></div>`;
     html += renderReviewBlock(lane);
+    html += `<div class="arrow-h ${lane.review==='done'?'done':''}"></div>`;
     html += renderShipBlock(lane);
-    html += '</div>';
   }
 
-  html += '</div>'; /* .lane-flow */
+  html += '</div></div>'; /* .pipeline-h .lane-flow */
 
   /* terminal output */
   if (lane.lastOutput) {
@@ -901,8 +933,8 @@ function renderReviewBlock(lane) {
   const axesHtml = (st !== 'idle')
     ? `<div class="review-axes">${lane.reviewAxes.map(a =>
         `<span class="axis-chip ${a.state}">${a.key}${a.state==='done'?' ✓':a.state==='running'?' ⟳':''}</span>`).join('')}</div>`
-    : `<div class="review-axes"><span class="axis-chip">5 internal axes</span></div>`;
-  return `<div class="fin-block">
+    : '';
+  return `<div class="below-station">
     <div class="station ${st} s-review">
       <div class="station-box" onclick="${st==='active'?`clickReview('${lane.id}')`:''}" title="${st==='active'?'Click to run /review':''}">
         <div class="station-cmd">/review</div>
@@ -916,23 +948,28 @@ function renderReviewBlock(lane) {
 
 function renderShipBlock(lane) {
   const st = lane.ship;
-  let summaryHtml = '';
-  if (lane.shipSummary) {
+  let belowHtml = '';
+
+  /* While /ship runs, show persona progress inline in the lane */
+  if (lane.shipProgress) {
+    belowHtml = `<div class="ship-inline">${lane.shipProgress.map(p =>
+      `<div class="ship-pm ${p.state}"><span class="pi">${p.icon}</span>${p.name}${
+        p.state==='analyzing'?' <span class="spinner-inline"></span>':
+        p.state==='pass'?' ✓':p.state==='fail'?' ✗':p.state==='warn'?' ⚠':''}</div>`).join('')}</div>`;
+  } else if (lane.shipSummary) {
+    /* After decision: compact summary inline; details only on click */
     const s = lane.shipSummary;
-    const personas = s.personas.map(p =>
-      `<span class="ssp ${p.result}">${p.icon} ${p.name} ${p.result==='pass'?'✓':p.result==='fail'?'✗':'⚠'}</span>`).join('');
     const fixCount = s.findings.filter(f => f.sev==='critical'||f.sev==='important').length;
     const line = s.decision === 'go'
-      ? `${s.findings.length} minor finding(s), none blocking`
-      : `${fixCount} blocking finding(s) → ${fixCount} fix task(s) added to todo.md`;
-    summaryHtml = `<div class="ship-summary ${s.decision}">
-      <div class="ss-head">${s.decision==='go'?'GO — ready to ship':'NO-GO — fixes required'}</div>
-      <div class="ss-personas">${personas}</div>
+      ? `${s.findings.length} minor, none blocking`
+      : `${fixCount} blocking → ${fixCount} fix task(s)`;
+    belowHtml = `<div class="ship-summary ${s.decision}">
+      <div class="ss-head">${s.decision==='go'?'GO':'NO-GO'}</div>
       <div class="ss-line">${line}</div>
       <button class="btn ss-details" onclick="openShipDrawerFromSummary('${lane.id}')">View details →</button>
     </div>`;
   }
-  return `<div class="fin-block">
+  return `<div class="below-station">
     <div class="station ${st} s-ship">
       <div class="station-box" onclick="${st==='active'?`clickShip('${lane.id}')`:''}" title="${st==='active'?'Click to run /ship':''}">
         <div class="station-cmd">/ship</div>
@@ -940,7 +977,7 @@ function renderShipBlock(lane) {
         <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
       </div>
     </div>
-    ${summaryHtml}
+    ${belowHtml}
   </div>`;
 }
 
@@ -1053,35 +1090,40 @@ async function clickShip(laneId) {
   const lane = getLane(laneId);
   if (!lane || lane.ship !== 'active') return;
   lane.ship = 'running';
-  renderLane(lane);
+  lane.shipSummary = null;
 
   const willGo = lane.shipRuns > 0 ? true : (Math.random() > 0.5);
   lane.shipRuns++;
+  const results = willGo ? ['pass','pass','pass'] : ['pass','fail','warn'];
 
-  openShipDrawerShell();
-  await animatePersonas(willGo);
+  /* Inline persona progress in the lane (no drawer) */
+  lane.shipProgress = SHIP_PERSONAS.map(p => ({ name: p.name, icon: p.icon, state: 'waiting' }));
+  lane.lastOutput = `<span class="lbl lbl-ship">◈ /ship</span> <span class="spinner-inline"></span> Running 3 personas in parallel...`;
+  renderLane(lane);
 
-  /* merge */
-  document.getElementById('ship-merge').style.display = 'block';
-  await delay(1100);
-  document.getElementById('ship-merge').style.display = 'none';
+  for (let i = 0; i < 3; i++) {
+    await delay(450);
+    lane.shipProgress[i].state = 'analyzing';
+    renderLane(lane);
+  }
+  for (let i = 0; i < 3; i++) {
+    await delay(650 + i*350);
+    lane.shipProgress[i].state = results[i];
+    renderLane(lane);
+  }
+  await delay(600);
 
-  const personas = SHIP_PERSONAS.map((p, i) => ({
-    name: p.name, icon: p.icon,
-    result: (willGo ? ['pass','pass','pass'] : ['pass','fail','warn'])[i]
-  }));
+  const personas = SHIP_PERSONAS.map((p, i) => ({ name: p.name, icon: p.icon, result: results[i] }));
   const findings = willGo ? SHIP_FINDINGS_GO : SHIP_FINDINGS_NOGO;
   lane.shipSummary = { decision: willGo ? 'go' : 'nogo', personas, findings };
   lane.shipDecision = willGo ? 'go' : 'nogo';
-
-  renderDrawerDecision(lane.shipSummary);
+  lane.shipProgress = null;
 
   if (willGo) {
     lane.ship = 'done';
     lane.phase = 'shipped';
     lane.lastOutput = `<span class="lbl lbl-ship">◈ /ship</span> Decision: GO\n  All three personas passed. Feature shipped.`;
   } else {
-    /* add fix tasks, fall back to build */
     lane.ship = 'idle';
     lane.review = 'idle';
     lane.reviewAxes.forEach(a => a.state = 'idle');
@@ -1103,35 +1145,7 @@ function addFixTasks(lane, findings) {
   if (firstFix) firstFix.build = 'active';
 }
 
-/* ── Drawer ── */
-function openShipDrawerShell() {
-  document.getElementById('ship-overlay').classList.add('open');
-  document.getElementById('ship-drawer-sub').textContent = 'pre-launch review — 3 personas in parallel';
-  document.getElementById('ship-personas').innerHTML = SHIP_PERSONAS.map(p =>
-    `<div class="persona-card" id="sp-${slug(p.name)}"><div class="icon">${p.icon}</div><div class="pname">${p.name}</div><div class="pstate">waiting...</div></div>`
-  ).join('');
-  document.getElementById('ship-merge').style.display = 'none';
-  document.getElementById('ship-decision').style.display = 'none';
-  document.getElementById('ship-findings').innerHTML = '';
-  document.getElementById('ship-close-btn').style.display = 'none';
-}
-
-async function animatePersonas(willGo) {
-  const results = willGo ? ['pass','pass','pass'] : ['pass','fail','warn'];
-  for (let i = 0; i < 3; i++) {
-    await delay(500);
-    const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
-    card.className = 'persona-card running';
-    card.querySelector('.pstate').textContent = 'analyzing...';
-  }
-  for (let i = 0; i < 3; i++) {
-    await delay(700 + i*400);
-    const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
-    card.className = 'persona-card ' + results[i];
-    card.querySelector('.pstate').textContent = results[i]==='pass'?'✓ pass':results[i]==='fail'?'✗ issues':'⚠ warnings';
-  }
-}
-
+/* ── Drawer (opens only on "View details") ── */
 function renderDrawerDecision(summary) {
   const dec = document.getElementById('ship-decision');
   dec.style.display = 'block';
