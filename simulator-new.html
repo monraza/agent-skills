@@ -44,6 +44,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
 
 /* ── App bar ──────────────────────────────────────────────── */
 .appbar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
@@ -68,24 +72,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .btn:disabled{opacity:.45;cursor:default}
 .btn.primary{background:var(--define);color:#fff;border-color:var(--define)}
 .btn.primary:hover{filter:brightness(1.1)}
-.btn.skill-btn{border-style:dashed;color:var(--text-muted)}
-.btn.skill-btn:hover{border-color:var(--define);color:var(--define)}
+
+/* Spec stepper (3-step wizard indicator) */
+.spec-stepper{display:none;margin-top:12px;gap:6px;align-items:center;flex-wrap:wrap}
+.spec-stepper.visible{display:flex}
+.sw-step{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2)}
+.sw-step .sw-num{width:17px;height:17px;border-radius:50%;background:var(--border-strong);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--mono)}
+.sw-step.active{border-color:var(--define);color:var(--define);background:var(--define-bg)}
+.sw-step.active .sw-num{background:var(--define);animation:pulse 1.6s infinite}
+.sw-step.done{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
+.sw-step.done .sw-num{background:var(--done)}
+.sw-arrow{color:var(--text-dim);font-family:var(--mono)}
+
 /* Grilling banner — drops from the top during feature append */
-.grilling-banner{position:fixed;top:48px;left:50%;transform:translate(-50%,-100%);z-index:15;background:var(--define-bg);border:1px solid var(--define);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow-md);min-width:380px;opacity:0;transition:transform .3s,opacity .3s}
+.grilling-banner{position:fixed;top:48px;left:50%;transform:translate(-50%,-130%);z-index:15;background:var(--define-bg);border:1px solid var(--define);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow-md);min-width:420px;opacity:0;transition:transform .3s,opacity .3s}
 .grilling-banner.visible{transform:translate(-50%,0);opacity:1}
-.grilling-banner .g-inner{display:flex;flex-direction:column;gap:6px}
-.grilling-banner .g-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.grilling-banner .g-inner{display:flex;flex-direction:column;gap:8px}
+.grilling-banner .g-row{display:flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap}
 .grilling-banner .g-label{font-weight:600;color:var(--define);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .grilling-banner .g-name{font-family:var(--mono);color:var(--text)}
-.grilling-banner .g-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-family:var(--mono)}
-.grilling-banner .g-chip.active{border-color:var(--define);color:var(--define);background:var(--surface);animation:pulse 1.6s infinite}
-.grilling-banner .g-chip.done{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
-.grilling-banner .g-sep{color:var(--text-dim);font-family:var(--mono);font-size:11px;margin:0 2px}
 
 .define-output{margin-top:12px;display:none}
 .define-output.visible{display:block}
-.define-output .agent-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;font-family:var(--mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;color:var(--text-muted)}
-.define-output .agent-block .agent-label{color:var(--define);font-weight:600}
+.define-output .agent-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;font-family:var(--mono);white-space:pre-wrap;max-height:220px;overflow-y:auto;color:var(--text-muted)}
 
 /* ── Spec table ───────────────────────────────────────────── */
 .specs{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;display:none}
@@ -93,7 +102,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .specs-header{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface-2)}
 .specs-header .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);font-weight:600}
 .specs-header .sublabel{display:block;font-size:11px;color:var(--text-dim);margin-top:3px;font-weight:400;font-style:italic;letter-spacing:0;text-transform:none}
-.spec-row{display:grid;grid-template-columns:32px 1fr 120px 100px;align-items:center;padding:8px 18px;border-bottom:1px solid var(--border);gap:10px;font-size:13px}
+.spec-row{display:grid;grid-template-columns:32px 1fr 130px 110px;align-items:center;padding:8px 18px;border-bottom:1px solid var(--border);gap:10px;font-size:13px}
 .spec-row:last-child{border-bottom:none}
 .spec-row .num{color:var(--text-dim);font-family:var(--mono);font-size:12px}
 .spec-row .name{font-weight:500}
@@ -101,14 +110,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .status-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 .status-dot.idle{background:var(--idle)}.status-dot.active{background:var(--active);animation:pulse 1.6s infinite}
 .status-dot.done{background:var(--done)}.status-dot.fixing{background:var(--nogo)}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 .spec-action{text-align:right}
 .spec-add-row{background:var(--surface-2);border-top:1px dashed var(--border-strong)}
 .spec-add-row .num{color:var(--define);font-weight:600}
 .spec-add-row input{width:100%;padding:5px 8px;background:var(--input-bg);border:1px dashed var(--input-border);border-radius:4px;color:var(--text);font-size:12px;font-family:var(--font)}
 .spec-add-row .gate-hint{font-size:10px;color:var(--text-dim);margin-top:2px;font-style:italic}
-.at-pill.shared{background:var(--define-bg);border-color:var(--define);color:var(--define);font-weight:600}
-.at-pill.shared .shared-tag{font-size:8px;background:var(--define);color:#fff;padding:0 4px;border-radius:3px;margin-left:4px;font-weight:500}
 
 /* ── Filter bar ───────────────────────────────────────────── */
 .filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
@@ -117,7 +123,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .filter-btn:hover{border-color:var(--text-muted)}
 .filter-btn.active{color:#fff;font-weight:600}
 .filter-btn.active[data-f="all"]{background:var(--text-muted);border-color:var(--text-muted)}
-.filter-btn.active[data-f="spec"]{background:var(--define);border-color:var(--define)}
 .filter-btn.active[data-f="plan"]{background:var(--plan);border-color:var(--plan)}
 .filter-btn.active[data-f="build"]{background:var(--build);border-color:var(--build)}
 .filter-btn.active[data-f="test"]{background:var(--verify);border-color:var(--verify)}
@@ -130,11 +135,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 /* ── Lane card ────────────────────────────────────────────── */
 .lane{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow-sm);overflow:hidden;transition:box-shadow .2s}
 .lane:hover{box-shadow:var(--shadow-md)}
+.lane.pulse-in{animation:fadeIn .4s}
 .lane-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
 .lane-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .lane-title .num{font-family:var(--mono);color:var(--text-dim);font-size:12px;font-weight:400}
 .phase-badge{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500}
-.badge-spec{background:var(--define-bg);color:var(--define);border:1px solid var(--define-border)}
 .badge-plan{background:var(--plan-bg);color:var(--plan);border:1px solid var(--plan-border)}
 .badge-build{background:var(--build-bg);color:var(--build);border:1px solid var(--build-border)}
 .badge-test{background:var(--verify-bg);color:var(--verify);border:1px solid var(--verify-border)}
@@ -143,10 +148,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .badge-shipped{background:var(--ship-bg);color:var(--done);border:1px solid var(--ship-border)}
 .badge-fixing{background:var(--nogo-bg);color:var(--nogo);border:1px solid var(--nogo-border)}
 
-/* ── Pipeline (horizontal stations) ───────────────────────── */
-.pipeline{padding:16px 16px 4px;display:flex;align-items:flex-start;gap:0;overflow-x:auto}
-.station{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;min-width:100px}
-.station-box{background:var(--surface-2);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 12px;min-width:88px;text-align:center;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
+/* ── Lane flow ────────────────────────────────────────────── */
+.lane-flow{padding:14px 16px 4px}
+.flow-stage{display:flex;align-items:flex-start;gap:10px}
+.flow-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:10px 0 2px}
+.flow-connector{width:2px;background:var(--border-strong);height:12px;margin-left:18px}
+.flow-connector.done{background:var(--done)}
+
+/* Station (plan / review / ship) */
+.station{display:flex;flex-direction:column;align-items:flex-start}
+.station-box{background:var(--surface-2);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 14px;min-width:96px;text-align:center;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
 .station-box:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .station-cmd{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
 .station-sub{font-size:10px;color:var(--text-muted);margin-top:1px}
@@ -154,54 +165,75 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .station.done .station-box{background:var(--ship-bg);border-color:var(--ship-border)}
 .station.done .station-marker{background:var(--done);border-color:var(--done);color:#fff}
 .station.done .station-cmd{color:var(--done)}
-.station.active .station-box{border-color:var(--active);box-shadow:0 0 0 3px rgba(251,191,36,.18)}
 .station.active .station-marker{background:var(--active);border-color:var(--active);color:#fff;animation:pulse 1.6s infinite}
-.station.running .station-box{border-color:var(--active);box-shadow:0 0 0 3px rgba(251,191,36,.25)}
 .station.running .station-marker{background:var(--active);border-color:var(--active);color:#fff;animation:spin .8s linear infinite}
-@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .station.idle .station-box{opacity:.5;cursor:default}
 .station.idle .station-box:hover{transform:none;box-shadow:none}
-
-.station.active.s-spec .station-box,.station.running.s-spec .station-box{background:var(--define-bg);border-color:var(--define)}
 .station.active.s-plan .station-box,.station.running.s-plan .station-box{background:var(--plan-bg);border-color:var(--plan)}
-.station.active.s-build .station-box,.station.running.s-build .station-box{background:var(--build-bg);border-color:var(--build)}
-.station.s-build.fixing .station-box{background:var(--nogo-bg);border-color:var(--nogo);box-shadow:0 0 0 3px rgba(248,113,113,.15)}
-.station.active.s-test .station-box,.station.running.s-test .station-box{background:var(--verify-bg);border-color:var(--verify)}
 .station.active.s-review .station-box,.station.running.s-review .station-box{background:var(--review-bg);border-color:var(--review)}
 .station.active.s-ship .station-box,.station.running.s-ship .station-box{background:var(--ship-bg);border-color:var(--ship)}
 
-/* Iteration pill under build/test stations */
-.iter-pill{margin-top:7px;font-size:9px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--build);color:#fff;white-space:nowrap;letter-spacing:.02em}
-.iter-pill.test{background:var(--verify)}
-.iter-pill.fixing{background:var(--nogo)}
-.station.done .iter-pill{background:var(--done)}
+/* Fix note */
+.fix-note{margin:10px 0 4px;padding:6px 10px;background:var(--nogo-bg);border:1px solid var(--nogo-border);border-radius:var(--radius-sm);font-size:11px;color:var(--nogo);font-family:var(--mono);display:flex;align-items:center;gap:6px}
 
-/* Arrow */
-.arrow{flex:0 0 auto;align-self:flex-start;margin-top:18px;width:32px;height:2px;background:var(--border-strong);position:relative}
-.arrow::after{content:'';position:absolute;right:-1px;top:50%;width:0;height:0;border-left:6px solid var(--border-strong);border-top:4px solid transparent;border-bottom:4px solid transparent;transform:translateY(-50%)}
-.arrow.done{background:var(--done)}.arrow.done::after{border-left-color:var(--done)}
+/* Task list */
+.task-list{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.task-row{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;transition:border-color .2s;animation:fadeIn .3s}
+.task-row.active{border-color:var(--build)}
+.task-row.done{border-color:var(--ship-border)}
+.task-row.fix{border-left:3px solid var(--nogo)}
+.task-idx{width:22px;height:22px;border-radius:50%;background:var(--border-strong);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:var(--mono)}
+.task-row.done .task-idx{background:var(--done)}
+.task-row.active .task-idx{background:var(--build)}
+.task-info{flex:1;min-width:0}
+.task-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.task-file{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-badge{font-size:9px;padding:1px 6px;border-radius:999px;background:var(--nogo);color:#fff;font-weight:600;letter-spacing:.03em}
+.task-pipe{display:flex;align-items:center;flex:0 0 auto}
+.mini{display:flex;flex-direction:column;align-items:center}
+.mini-box{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:5px 11px;text-align:center;background:var(--surface);position:relative;cursor:default;transition:transform .15s,box-shadow .15s;min-width:58px}
+.mini.clickable .mini-box{cursor:pointer}
+.mini.clickable .mini-box:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.mini-cmd{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text)}
+.mini.idle .mini-box{opacity:.45}
+.mini.active.b .mini-box{background:var(--build-bg);border-color:var(--build);box-shadow:0 0 0 3px rgba(249,115,22,.15)}
+.mini.running.b .mini-box{background:var(--build-bg);border-color:var(--build)}
+.mini.active.t .mini-box{background:var(--verify-bg);border-color:var(--verify);box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+.mini.running.t .mini-box{background:var(--verify-bg);border-color:var(--verify)}
+.mini.done .mini-box{background:var(--ship-bg);border-color:var(--ship-border)}
+.mini.done .mini-cmd{color:var(--done)}
+.mini-mark{position:absolute;top:-6px;right:-6px;width:15px;height:15px;border-radius:50%;background:var(--surface);border:2px solid var(--idle);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--idle)}
+.mini.active .mini-mark{background:var(--active);border-color:var(--active);color:#fff;animation:pulse 1.6s infinite}
+.mini.running .mini-mark{background:var(--active);border-color:var(--active);color:#fff;animation:spin .8s linear infinite}
+.mini.done .mini-mark{background:var(--done);border-color:var(--done);color:#fff}
+.mini-arrow{width:16px;height:2px;background:var(--border-strong);margin:0 5px;align-self:center}
+.mini-arrow.done{background:var(--done)}
 
-/* ── Composite Review station ─────────────────────────────── */
-.station.composite-review{min-width:120px}
-.review-expand-hint{position:absolute;right:5px;top:5px;font-size:9px;color:var(--text-dim)}
-.review-sublist{display:none;margin-top:6px;padding:7px 8px;background:var(--review-bg);border:1px dashed var(--review-border);border-radius:var(--radius-sm);text-align:left;min-width:190px}
-.station.composite-review.expanded .review-sublist{display:block}
-.rsub-item{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 2px;font-family:var(--mono);color:var(--text-muted);cursor:pointer;border-radius:3px}
-.rsub-item:hover{background:rgba(167,139,250,.08)}
-.rsub-item .rdot{width:6px;height:6px;border-radius:50%;flex:0 0 6px}
-.rsub-item.idle .rdot{background:var(--idle);opacity:.4}
-.rsub-item.active .rdot{background:var(--review);animation:pulse 1.4s infinite}
-.rsub-item.running .rdot{background:var(--review);animation:spin .6s linear infinite}
-.rsub-item.done .rdot{background:var(--done)}
-.rsub-item.done{color:var(--done)}
+/* Finalize row (review + ship) */
+.finalize{margin-top:8px;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.fin-block{display:flex;flex-direction:column;gap:8px}
+.review-axes{display:flex;flex-wrap:wrap;gap:5px;max-width:330px}
+.axis-chip{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2)}
+.axis-chip.running{border-color:var(--review);color:var(--review);animation:pulse 1.4s infinite}
+.axis-chip.done{border-color:var(--done);color:var(--done);background:var(--ship-bg)}
+
+/* Ship summary in lane */
+.ship-summary{margin-top:4px;border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;border:1px solid;max-width:330px}
+.ship-summary.go{background:var(--ship-bg);border-color:var(--ship-border)}
+.ship-summary.nogo{background:var(--nogo-bg);border-color:var(--nogo-border)}
+.ss-head{font-weight:700;font-size:13px;margin-bottom:5px}
+.ship-summary.go .ss-head{color:var(--done)}
+.ship-summary.nogo .ss-head{color:var(--nogo)}
+.ss-personas{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.ssp{font-size:10px;font-family:var(--mono);display:inline-flex;align-items:center;gap:3px}
+.ssp.pass{color:var(--done)}.ssp.warn{color:var(--plan)}.ssp.fail{color:var(--nogo)}
+.ss-line{font-size:11px;color:var(--text-muted);margin-bottom:7px}
+.ss-details{font-size:11px;padding:3px 10px}
 
 /* ── Step output (inline terminal) ────────────────────────── */
 .step-output{padding:0 16px 12px}
 .step-block{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-top:8px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;color:var(--text-muted);max-height:180px;overflow-y:auto;animation:fadeIn .3s}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .step-block .lbl{font-weight:600}
-.step-block .lbl-agent{color:var(--define)}
-.step-block .lbl-spec{color:var(--define)}
 .step-block .lbl-plan{color:var(--plan)}
 .step-block .lbl-build{color:var(--build)}
 .step-block .lbl-test{color:var(--verify)}
@@ -216,49 +248,44 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .at-pill{font-family:var(--mono);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:3px;color:var(--text-dim)}
 .at-pill.done{color:var(--text);border-color:var(--ship-border);background:var(--ship-bg)}
 .at-pill.active{color:var(--define);border-color:var(--define);background:var(--define-bg);font-weight:600}
+.at-pill.shared{background:var(--define-bg);border-color:var(--define);color:var(--define);font-weight:600}
+.at-pill.shared .shared-tag{font-size:8px;background:var(--define);color:#fff;padding:0 4px;border-radius:3px;margin-left:4px;font-weight:500}
 .at-sep{color:var(--text-dim)}
-
-/* ── NO-GO loop indicator ─────────────────────────────────── */
-.nogo-loop{padding:4px 16px 10px;font-size:11px;color:var(--nogo);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
-.nogo-loop .arrow-back{flex:1;height:0;border-top:1.5px dashed var(--nogo)}
-.nogo-loop .fix-label{background:var(--nogo-bg);border:1px solid var(--nogo-border);padding:2px 8px;border-radius:var(--radius-sm)}
 
 /* ── Ship drawer ──────────────────────────────────────────── */
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30;display:none;opacity:0;transition:opacity .25s}
 .drawer-overlay.open{display:flex;justify-content:flex-end;opacity:1}
 .drawer{width:440px;max-width:90vw;background:var(--surface);border-left:1px solid var(--border);height:100%;overflow-y:auto;padding:20px;animation:slideIn .3s}
-@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-.drawer h2{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.drawer h2{font-size:16px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .drawer h2 .close{cursor:pointer;margin-left:auto;color:var(--text-muted);font-size:18px}
+.drawer .drawer-sub{font-size:12px;color:var(--text-muted);margin-bottom:14px}
 .persona-cards{display:flex;gap:8px;margin-bottom:16px}
 .persona-card{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:11px;transition:border-color .3s}
 .persona-card .icon{font-size:20px;margin-bottom:4px}
 .persona-card .pname{font-weight:600;font-size:12px}
 .persona-card .pstate{margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--text-dim)}
-.persona-card.running{border-color:var(--active)}
-.persona-card.running .pstate{color:var(--active)}
-.persona-card.pass{border-color:var(--done)}
-.persona-card.pass .pstate{color:var(--done)}
-.persona-card.warn{border-color:var(--plan)}
-.persona-card.warn .pstate{color:var(--plan)}
-.persona-card.fail{border-color:var(--nogo)}
-.persona-card.fail .pstate{color:var(--nogo)}
+.persona-card.running{border-color:var(--active)}.persona-card.running .pstate{color:var(--active)}
+.persona-card.pass{border-color:var(--done)}.persona-card.pass .pstate{color:var(--done)}
+.persona-card.warn{border-color:var(--plan)}.persona-card.warn .pstate{color:var(--plan)}
+.persona-card.fail{border-color:var(--nogo)}.persona-card.fail .pstate{color:var(--nogo)}
 .merge-banner{text-align:center;padding:10px;margin:12px 0;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);display:none}
 .decision-banner{text-align:center;padding:14px;margin:12px 0;border-radius:var(--radius-sm);font-size:15px;font-weight:700;display:none}
 .decision-banner.go{background:var(--ship-bg);color:var(--done);border:2px solid var(--ship-border)}
 .decision-banner.nogo{background:var(--nogo-bg);color:var(--nogo);border:2px solid var(--nogo-border)}
 .findings-list{margin-top:12px;font-size:12px}
-.findings-list .finding{padding:6px 10px;border-left:3px solid var(--border);margin-bottom:6px;background:var(--surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
-.findings-list .finding.critical{border-left-color:var(--nogo)}
-.findings-list .finding.important{border-left-color:var(--plan)}
-.findings-list .finding.minor{border-left-color:var(--text-dim)}
+.findings-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin-bottom:8px}
+.finding{padding:6px 10px;border-left:3px solid var(--border);margin-bottom:6px;background:var(--surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.finding.critical{border-left-color:var(--nogo)}
+.finding.important{border-left-color:var(--plan)}
+.finding.minor{border-left-color:var(--text-dim)}
 .drawer-close-btn{margin-top:16px;width:100%}
 
-/* ── Interview / Idea-refine modal ────────────────────────── */
+/* ── Modals ───────────────────────────────────────────────── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25;display:none;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:480px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-md)}
-.modal h2{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.modal h2{font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.modal .modal-step{font-size:11px;color:var(--define);font-weight:600;margin-bottom:10px;font-family:var(--mono)}
 .modal h2 .close{cursor:pointer;margin-left:auto;color:var(--text-muted);font-size:18px}
 .chat-area{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;max-height:260px;overflow-y:auto;margin-bottom:10px}
 .chat-msg{margin-bottom:8px;font-size:12px}
@@ -269,18 +296,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .chat-input-row{display:flex;gap:6px}
 .chat-input-row input{flex:1;padding:7px 10px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-family:var(--font)}
 .chat-input-row input:focus{outline:none;border-color:var(--define)}
+.modal-continue{width:100%;margin-top:10px;display:none}
+.modal-continue.visible{display:block}
 
-/* Shipped lane */
+/* Shipped / fixing lane accents */
 .lane.shipped{border-color:var(--ship-border)}
 .lane.shipped .lane-header{background:linear-gradient(to right,var(--ship-bg),var(--surface-2))}
 .lane.fixing{border-color:var(--nogo-border)}
 .lane.fixing .lane-header{background:linear-gradient(to right,var(--nogo-bg),var(--surface-2))}
 
 @media(max-width:700px){
-  .pipeline{padding:12px 10px}.station{min-width:80px}.station-box{min-width:72px;padding:6px 8px}
-  .arrow{width:20px}.define-input-row{flex-direction:column}
+  .define-input-row{flex-direction:column}
   .spec-row{grid-template-columns:24px 1fr 90px}.spec-row .status{display:none}
+  .task-row{flex-wrap:wrap}
   .drawer{width:100%}
+  .grilling-banner{min-width:0;width:92vw}
 }
 </style>
 </head>
@@ -305,11 +335,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="define-input-row">
     <input id="global-input" placeholder="What do you want to build?  e.g. banking validation library with IBAN, credit card, fee calculator..." />
     <div class="define-btns">
-      <button class="btn skill-btn" id="btn-interview" onclick="openInterview()">interview-me</button>
-      <button class="btn skill-btn" id="btn-idea" onclick="openIdeaRefine()">idea-refine</button>
-      <button class="btn primary" id="btn-spec" onclick="runGlobalSpec()">/spec</button>
+      <button class="btn primary" id="btn-spec" onclick="startSpecWizard('global')">/spec ▶</button>
     </div>
   </div>
+  <div class="spec-stepper" id="global-stepper"></div>
   <div class="define-output" id="define-output"></div>
 </div>
 
@@ -336,7 +365,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <!-- ══ INTERVIEW MODAL ════════════════════════════════════ -->
 <div class="modal-overlay" id="interview-modal">
   <div class="modal">
-    <h2>interview-me <span style="font-size:11px;color:var(--text-dim);font-weight:400">skill — requirements refinement</span><span class="close" onclick="closeInterview()">&times;</span></h2>
+    <h2>interview-me <span class="close" onclick="closeInterview()">&times;</span></h2>
+    <div class="modal-step">Step 1 of 3 — requirements interview</div>
     <div class="chat-area" id="interview-chat"></div>
     <div class="chat-input-row">
       <input id="interview-input" placeholder="Your answer..." onkeydown="if(event.key==='Enter')submitInterview()" />
@@ -348,19 +378,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <!-- ══ IDEA-REFINE MODAL ══════════════════════════════════ -->
 <div class="modal-overlay" id="idea-modal">
   <div class="modal">
-    <h2>idea-refine <span style="font-size:11px;color:var(--text-dim);font-weight:400">skill — scope exploration</span><span class="close" onclick="closeIdeaRefine()">&times;</span></h2>
+    <h2>idea-refine <span class="close" onclick="closeIdeaRefine()">&times;</span></h2>
+    <div class="modal-step">Step 2 of 3 — scope exploration</div>
     <div class="chat-area" id="idea-chat"></div>
     <div class="chat-input-row">
-      <input id="idea-input" placeholder="Your thoughts..." onkeydown="if(event.key==='Enter')submitIdeaRefine()" />
-      <button class="btn primary" onclick="submitIdeaRefine()">Send</button>
+      <input id="idea-input" placeholder="Refine the direction..." onkeydown="if(event.key==='Enter')submitIdeaRefine()" />
+      <button class="btn" onclick="submitIdeaRefine()">Send</button>
     </div>
+    <button class="btn primary modal-continue" id="idea-continue" onclick="advanceFromIdea()">Continue to step 3 — /spec write ▶</button>
   </div>
 </div>
 
 <!-- ══ SHIP DRAWER ════════════════════════════════════════ -->
 <div class="drawer-overlay" id="ship-overlay" onclick="if(event.target===this)closeShipDrawer()">
   <div class="drawer" id="ship-drawer">
-    <h2>/ship — pre-launch review <span class="close" onclick="closeShipDrawer()">&times;</span></h2>
+    <h2>/ship <span class="close" onclick="closeShipDrawer()">&times;</span></h2>
+    <div class="drawer-sub" id="ship-drawer-sub">pre-launch review — 3 personas in parallel</div>
     <div class="persona-cards" id="ship-personas"></div>
     <div class="merge-banner" id="ship-merge"><span class="spinner-inline"></span> Merging reports...</div>
     <div class="decision-banner" id="ship-decision"></div>
@@ -374,33 +407,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
    DATA & CONSTANTS
    ══════════════════════════════════════════════════════════ */
 const INTERVIEW_QS = [
-  "Who is the primary audience for this library? (e.g. internal team, open-source, fintech product)",
+  "Who is the primary audience? (e.g. internal team, open-source, fintech product)",
   "What runtime environment? (Node.js, browser, both, Deno, edge...)",
-  "Are there regulatory constraints? (PSD2, PCI-DSS, ISO 13616, none that you know of)"
+  "Any regulatory constraints? (PSD2, PCI-DSS, ISO 13616, none that you know of)"
 ];
 
 const IDEA_DIRECTIONS = [
-  "Direction A: Pure validation library — zero dependencies, tree-shakeable, returns boolean + error message.",
-  "Direction B: Validation + formatting — IBAN/card pretty-print, masked display, locale-aware currency.",
-  "Direction C: Full financial toolkit — validation + fee calculation + FX rates via plugin architecture.",
-  "Direction D: Micro-libraries — publish each validator as a separate npm package with a shared core.",
-  "Recommendation: Direction B balances scope and utility. Direction C risks scope creep."
+  "Direction A: Pure validation — zero deps, tree-shakeable, boolean + error message.",
+  "Direction B: Validation + formatting — pretty-print, masked display, locale-aware.",
+  "Direction C: Full financial toolkit — validation + fees + FX via plugins.",
+  "Recommendation: Direction B balances scope and utility. C risks scope creep."
 ];
 
 const FEATURE_TEMPLATES = {
-  'IBAN validator':        { tasks: [{n:'mod97 algorithm',f:'src/validators/mod97.ts',a:'mod97("GB29NWBK60161331926819") === 1'},{n:'country length map',f:'src/validators/iban-lengths.ts',a:'validate("DE89...") => true, validate("DE8") => false'},{n:'pretty-print IBAN',f:'src/formatters/iban.ts',a:'format("GB29NWBK...") => "GB29 NWBK 6016 ..."'}] },
+  'IBAN validator':        { tasks: [{n:'mod97 algorithm',f:'src/validators/mod97.ts',a:'mod97("GB29NWBK60161331926819") === 1'},{n:'country length map',f:'src/validators/iban-lengths.ts',a:'validate("DE89...") => true'},{n:'pretty-print IBAN',f:'src/formatters/iban.ts',a:'format("GB29...") => "GB29 NWBK ..."'}] },
   'Credit card validator': { tasks: [{n:'Luhn algorithm',f:'src/validators/luhn.ts',a:'validate("4532015112830366") => true'},{n:'card brand detection',f:'src/validators/brands.ts',a:'brand("4532...") => "visa"'},{n:'expiry check',f:'src/validators/expiry.ts',a:'isExpired(12,2025) => true'}] },
-  'Fee calculator':        { tasks: [{n:'domestic fee schedule',f:'src/calculators/domestic.ts',a:'domestic(1000,"USD") => 15.00'},{n:'international corridor',f:'src/calculators/intl.ts',a:'intl(1000,"USD","EUR") => 25.50'},{n:'tiered pricing',f:'src/calculators/tiers.ts',a:'tiered(50000,"USD") => 12.00 (volume discount)'},{n:'fee summary report',f:'src/calculators/summary.ts',a:'summary(txns) => {total, avg, breakdown}'}] },
+  'Fee calculator':        { tasks: [{n:'domestic fee schedule',f:'src/calculators/domestic.ts',a:'domestic(1000,"USD") => 15.00'},{n:'international corridor',f:'src/calculators/intl.ts',a:'intl(1000,"USD","EUR") => 25.50'},{n:'tiered pricing',f:'src/calculators/tiers.ts',a:'tiered(50000,"USD") => 12.00'},{n:'fee summary report',f:'src/calculators/summary.ts',a:'summary(txns) => {total, avg}'}] },
   'SWIFT / BIC validator': { tasks: [{n:'format validation',f:'src/validators/bic.ts',a:'validate("DEUTDEFF") => true'},{n:'institution lookup',f:'src/validators/bic-registry.ts',a:'lookup("DEUTDEFF") => "Deutsche Bank"'},{n:'branch code parse',f:'src/validators/bic-branch.ts',a:'branch("DEUTDEFF500") => "500"'}] },
-  'Account masking':       { tasks: [{n:'mask utility',f:'src/formatters/mask.ts',a:'mask("12345678") => "****5678"'},{n:'configurable mask',f:'src/formatters/mask-config.ts',a:'mask("123",{show:1,char:"X"}) => "XX3"'}] },
+  'Account masking':       { tasks: [{n:'mask utility',f:'src/formatters/mask.ts',a:'mask("12345678") => "****5678"'},{n:'configurable mask',f:'src/formatters/mask-config.ts',a:'mask("123",{show:1}) => "**3"'}] },
 };
 
-const REVIEW_SUBSTEPS = ['code-review','code-simplify','security','performance'];
-const REVIEW_LABELS = {
-  'code-review':  '/review (five-axis)',
-  'code-simplify':'/code-simplify',
-  'security':     'security-and-hardening',
-  'performance':  'performance-optimization'
+/* /review runs five internal axes (shown as progress) */
+const REVIEW_AXES = ['correctness','readability','architecture','security','performance'];
+const REVIEW_AXIS_MSG = {
+  correctness:  'logic verified against acceptance criteria',
+  readability:  'naming and structure clear',
+  architecture: 'boundaries and layering sound',
+  security:     'inputs validated, no injection surface',
+  performance:  'no hot-path regressions'
 };
 
 const SHIP_PERSONAS = [
@@ -408,19 +442,14 @@ const SHIP_PERSONAS = [
   { name: 'security-auditor', icon: '⬡' },
   { name: 'test-engineer',    icon: '◆' }
 ];
-
 const SHIP_FINDINGS_GO = [
   { sev: 'minor', text: 'Consider adding JSDoc to exported functions' },
   { sev: 'minor', text: 'One TODO comment remaining in test file' },
 ];
 const SHIP_FINDINGS_NOGO = [
-  { sev: 'critical', text: 'Missing input sanitization on user-supplied IBAN string' },
-  { sev: 'important', text: 'No test coverage for edge case: IBAN with lowercase letters' },
-  { sev: 'minor', text: 'Unused import in bic-registry.ts' },
-];
-const PHASE_D_TASKS = [
-  { text: 'Add input sanitization to IBAN validator', sev: 'CRITICAL' },
-  { text: 'Add lowercase letter edge-case tests', sev: 'IMPORTANT' },
+  { sev: 'critical',  text: 'Missing input sanitization on user-supplied string', task: 'Add input sanitization', file: 'src/validators/sanitize.ts' },
+  { sev: 'important', text: 'No coverage for edge case: lowercase input', task: 'Add lowercase edge-case tests', file: 'src/validators/edge.test.ts' },
+  { sev: 'minor',     text: 'Unused import in registry module' },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -431,10 +460,8 @@ let laneCounter = 0;
 let detectedFeatures = [];
 let addedFeatures = new Set();
 let activeFilter = 'all';
-let shipLaneId = null;
-
-/* Interview state */
 let ivState = { qIdx: 0, answers: [] };
+let specWizard = null;   // { mode:'global'|'append', name, step:'interview'|'idea'|'spec', answers:[] }
 
 /* ══════════════════════════════════════════════════════════
    THEME
@@ -451,40 +478,96 @@ function toggleTheme() {
     localStorage.setItem('sim-theme','light');
   }
 }
-(function initTheme() {
-  const saved = localStorage.getItem('sim-theme');
-  if (saved === 'dark') { document.documentElement.removeAttribute('data-theme'); document.getElementById('theme-toggle').textContent = '◑ Light'; }
+(function initTheme(){
+  if (localStorage.getItem('sim-theme') === 'dark') {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('theme-toggle').textContent = '◑ Light';
+  }
 })();
 
 /* ══════════════════════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════════════════════ */
-const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 const delay = ms => new Promise(r => setTimeout(r, ms));
+const getLane = id => lanes.find(l => l.id === id);
 
-function getLane(id) { return lanes.find(l => l.id === id); }
+function allTasksDone(lane){ return lane.tasks.length > 0 && lane.tasks.every(t => t.build === 'done' && t.test === 'done'); }
+function pendingFixCount(lane){ return lane.tasks.filter(t => t.origin === 'fix' && !(t.build === 'done' && t.test === 'done')).length; }
 
-function phaseOf(lane) {
+function phaseOf(lane){
   if (lane.phase === 'shipped') return 'shipped';
-  if (lane.phase === 'fixing') return 'build';
-  if (lane.ss.ship === 'active' || lane.ss.ship === 'running') return 'ship';
-  if (REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running')) return 'review';
-  if (lane.ss.test.some(v => v === 'active' || v === 'running')) return 'test';
-  if (lane.ss.tasks.some(t => t === 'active' || t === 'running')) return 'build';
-  return 'plan';
+  if (lane.ship === 'active' || lane.ship === 'running') return 'ship';
+  if (lane.review === 'active' || lane.review === 'running') return 'review';
+  if (lane.tasks.some(t => t.test === 'active' || t.test === 'running')) return 'test';
+  if (lane.tasks.some(t => t.build === 'active' || t.build === 'running')) return 'build';
+  if (lane.plan === 'active' || lane.plan === 'running') return 'plan';
+  return lane.plan === 'done' ? 'build' : 'plan';
 }
 
 /* ══════════════════════════════════════════════════════════
-   INTERVIEW-ME
+   SPEC WIZARD (3 steps: interview → idea-refine → spec write)
+   shared by global define and per-feature append
    ══════════════════════════════════════════════════════════ */
+function startSpecWizard(mode, name) {
+  if (mode === 'global') {
+    const inp = document.getElementById('global-input').value.trim();
+    if (!inp) { document.getElementById('global-input').focus(); return; }
+  }
+  if (mode === 'append') {
+    if (!name) return;
+    if (detectedFeatures.includes(name)) return;
+  }
+  specWizard = { mode, name: name || null, step: 'interview', answers: [] };
+  if (mode === 'global') document.getElementById('global-stepper').classList.add('visible');
+  renderActiveStepper();
+  openInterview();
+}
+
+const WIZARD_STEPS = [
+  { key: 'interview', label: 'interview-me' },
+  { key: 'idea',      label: 'idea-refine' },
+  { key: 'spec',      label: 'spec write' },
+];
+
+function stepperChipsHtml() {
+  const curIdx = WIZARD_STEPS.findIndex(s => s.key === specWizard.step);
+  return WIZARD_STEPS.map((s, i) => {
+    const cls = i < curIdx ? 'done' : i === curIdx ? 'active' : '';
+    const mark = i < curIdx ? '✓' : (i + 1);
+    return `<span class="sw-step ${cls}"><span class="sw-num">${mark}</span>${s.label}</span>`;
+  }).join('<span class="sw-arrow">→</span>');
+}
+
+function renderActiveStepper() {
+  if (!specWizard) return;
+  if (specWizard.mode === 'global') {
+    document.getElementById('global-stepper').innerHTML = stepperChipsHtml();
+  } else {
+    showGrillingBanner();
+  }
+}
+
+function markStepperComplete() {
+  if (specWizard && specWizard.mode === 'global') {
+    const el = document.getElementById('global-stepper');
+    el.innerHTML = WIZARD_STEPS.map((s,i) =>
+      `<span class="sw-step done"><span class="sw-num">✓</span>${s.label}</span>`
+    ).join('<span class="sw-arrow">→</span>');
+  }
+}
+
+/* ── Step 1: interview ── */
 function openInterview() {
   ivState = { qIdx: 0, answers: [] };
   const chat = document.getElementById('interview-chat');
   chat.innerHTML = '';
-  appendChatMsg(chat, 'agent', INTERVIEW_QS[0]);
+  const intro = specWizard && specWizard.mode === 'append'
+    ? `Adding "${specWizard.name}" to SPEC.md. A few quick questions.\n\n` : '';
+  appendChatMsg(chat, 'agent', intro + INTERVIEW_QS[0]);
   document.getElementById('interview-modal').classList.add('open');
-  document.getElementById('interview-input').focus();
+  setTimeout(() => document.getElementById('interview-input').focus(), 50);
 }
 function closeInterview() { document.getElementById('interview-modal').classList.remove('open'); }
 function submitInterview() {
@@ -497,41 +580,35 @@ function submitInterview() {
   ivState.answers.push(ans);
   ivState.qIdx++;
   if (ivState.qIdx < INTERVIEW_QS.length) {
-    setTimeout(() => appendChatMsg(chat, 'agent', INTERVIEW_QS[ivState.qIdx]), 500);
+    setTimeout(() => appendChatMsg(chat, 'agent', INTERVIEW_QS[ivState.qIdx]), 450);
   } else {
-    const isGrilling = document.getElementById('interview-modal').dataset.mode === 'grilling';
     setTimeout(() => {
-      const summary = `Interview complete.\n\nAudience: ${ivState.answers[0]}\nRuntime: ${ivState.answers[1]}\nRegulatory: ${ivState.answers[2]}`;
-      appendChatMsg(chat, 'agent', summary);
-      if (isGrilling) {
-        setTimeout(() => {
-          closeInterview();
-          document.getElementById('interview-modal').dataset.mode = '';
-          finishGrilling();
-        }, 900);
-      } else {
-        const gi = document.getElementById('global-input');
-        if (gi) gi.value += `  [audience: ${ivState.answers[0]}] [runtime: ${ivState.answers[1]}] [regulatory: ${ivState.answers[2]}]`;
-      }
-    }, 600);
+      appendChatMsg(chat, 'agent', `Interview complete.\n  audience: ${ivState.answers[0]}\n  runtime: ${ivState.answers[1]}\n  regulatory: ${ivState.answers[2]}`);
+      setTimeout(advanceFromInterview, 900);
+    }, 500);
   }
 }
+function advanceFromInterview() {
+  specWizard.answers = ivState.answers.slice();
+  specWizard.step = 'idea';
+  renderActiveStepper();
+  closeInterview();
+  setTimeout(openIdeaRefine, 300);
+}
 
-/* ══════════════════════════════════════════════════════════
-   IDEA-REFINE
-   ══════════════════════════════════════════════════════════ */
+/* ── Step 2: idea-refine ── */
 function openIdeaRefine() {
   const chat = document.getElementById('idea-chat');
   chat.innerHTML = '';
-  const inp = document.getElementById('global-input').value.trim();
-  if (!inp) { appendChatMsg(chat, 'agent', 'Type your idea in the input field first, then click idea-refine.'); }
-  else {
-    appendChatMsg(chat, 'agent', `Exploring directions for: "${inp}"\n\nGenerating 4 variations...`);
-    setTimeout(() => {
-      appendChatMsg(chat, 'agent', IDEA_DIRECTIONS.join('\n\n'));
-    }, 1200);
-  }
+  document.getElementById('idea-continue').classList.remove('visible');
+  const subject = specWizard && specWizard.mode === 'append' ? specWizard.name
+    : document.getElementById('global-input').value.trim();
+  appendChatMsg(chat, 'agent', `Exploring directions for: "${subject}"\n\nGenerating variations...`);
   document.getElementById('idea-modal').classList.add('open');
+  setTimeout(() => {
+    appendChatMsg(chat, 'agent', IDEA_DIRECTIONS.join('\n\n'));
+    document.getElementById('idea-continue').classList.add('visible');
+  }, 1100);
 }
 function closeIdeaRefine() { document.getElementById('idea-modal').classList.remove('open'); }
 function submitIdeaRefine() {
@@ -539,7 +616,52 @@ function submitIdeaRefine() {
   const txt = inp.value.trim(); if (!txt) return; inp.value = '';
   const chat = document.getElementById('idea-chat');
   appendChatMsg(chat, 'user', txt);
-  setTimeout(() => appendChatMsg(chat, 'agent', 'Got it. You can now click /spec to generate the top-level specification.'), 600);
+  setTimeout(() => appendChatMsg(chat, 'agent', 'Noted — folding that into the recommended direction.'), 500);
+}
+function advanceFromIdea() {
+  specWizard.step = 'spec';
+  renderActiveStepper();
+  closeIdeaRefine();
+  setTimeout(writeSpec, 300);
+}
+
+/* ── Step 3: spec write ── */
+function writeSpec() {
+  if (specWizard.mode === 'global') {
+    const inp = document.getElementById('global-input').value.trim();
+    const out = document.getElementById('define-output');
+    out.classList.add('visible');
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-plan">◈ /spec</span> <span class="spinner-inline"></span> Writing top-level SPEC.md...</div>`;
+    document.getElementById('btn-spec').disabled = true;
+    setTimeout(() => {
+      detectedFeatures = detectFeatures(inp);
+      const featureList = detectedFeatures.map((f,i) => `  ${i+1}. ${f}`).join('\n');
+      out.innerHTML = `<div class="agent-block"><span class="lbl lbl-plan">◈ /spec</span> SPEC.md generated.\n\nObjective: ${esc(inp.substring(0,70))}...\nAudience: ${esc(specWizard.answers[0]||'n/a')}\nRuntime: ${esc(specWizard.answers[1]||'n/a')}\nTesting: vitest, coverage > 90%\n\nDetected features:\n${esc(featureList)}\n\nEach feature lane runs: /plan → (/build → /test)* → /review → /ship</div>`;
+      markStepperComplete();
+      renderSpecTable();
+      document.getElementById('filter-bar').style.display = 'flex';
+      specWizard = null;
+    }, 1500);
+  } else {
+    const name = specWizard.name;
+    renderGrillingBanner();
+    const out = document.getElementById('define-output');
+    out.classList.add('visible');
+    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-plan">◈ /spec</span> <span class="spinner-inline"></span> Appending "${esc(name)}" to SPEC.md...</div>`;
+    setTimeout(() => {
+      detectedFeatures.push(name);
+      out.innerHTML = `<div class="agent-block"><span class="lbl lbl-plan">◈ /spec</span> SPEC.md updated.\n  + Added feature: ${esc(name)} (${detectedFeatures.length} total)</div>`;
+      renderSpecTable();
+      hideGrillingBanner();
+      specWizard = null;
+    }, 1500);
+  }
+}
+
+function detectFeatures(text) {
+  const kw = Object.keys(FEATURE_TEMPLATES);
+  const found = kw.filter(k => k.toLowerCase().split(/\s+/).some(w => text.toLowerCase().includes(w)));
+  return found.length ? found : [text.substring(0, 40)];
 }
 
 function appendChatMsg(container, role, text) {
@@ -550,110 +672,7 @@ function appendChatMsg(container, role, text) {
   container.scrollTop = container.scrollHeight;
 }
 
-/* ══════════════════════════════════════════════════════════
-   GLOBAL /spec
-   ══════════════════════════════════════════════════════════ */
-function runGlobalSpec() {
-  const inp = document.getElementById('global-input').value.trim();
-  if (!inp) { document.getElementById('global-input').focus(); return; }
-
-  const out = document.getElementById('define-output');
-  out.classList.add('visible');
-  out.innerHTML = '<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> generating top-level SPEC.md...\n<span class="spinner-inline"></span> analyzing requirements...</div>';
-
-  document.getElementById('btn-spec').disabled = true;
-
-  setTimeout(() => {
-    detectedFeatures = detectFeatures(inp);
-    const featureList = detectedFeatures.map((f,i) => `  ${i+1}. ${f}`).join('\n');
-    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> top-level SPEC.md generated.\n\nObjective: ${esc(inp.substring(0,80))}...\nTesting: vitest, coverage > 90%\nBoundaries: no runtime dependencies\n\nDetected features:\n${esc(featureList)}\n\nEach feature will follow: /spec → /plan → /build → /test → Review → /ship</div>`;
-    renderSpecTable();
-    document.getElementById('filter-bar').style.display = 'flex';
-  }, 1800);
-}
-
-function detectFeatures(text) {
-  const kw = Object.keys(FEATURE_TEMPLATES);
-  const found = kw.filter(k => {
-    const words = k.toLowerCase().split(/\s+/);
-    return words.some(w => text.toLowerCase().includes(w));
-  });
-  return found.length ? found : [text.substring(0, 40)];
-}
-
-/* ══════════════════════════════════════════════════════════
-   SPEC TABLE
-   ══════════════════════════════════════════════════════════ */
-function renderSpecTable() {
-  const el = document.getElementById('spec-table');
-  let html = `<div class="specs-header">
-    <div><span class="label">Features in SPEC.md</span><span class="sublabel">each validated through interview → refine → /spec</span></div>
-    <span id="spec-count"></span>
-  </div>`;
-  for (let i = 0; i < detectedFeatures.length; i++) {
-    const f = detectedFeatures[i];
-    const started = addedFeatures.has(f);
-    const lane = started ? lanes.find(l => l.name === f) : null;
-    const status = lane ? statusLabel(lane) : { dot: 'idle', text: 'not started' };
-    html += `<div class="spec-row" id="sr-${slug(f)}">
-      <span class="num">${i+1}</span><span class="name">${esc(f)}</span>
-      <span class="status"><span class="status-dot ${status.dot}"></span>${status.text}</span>
-      <span class="spec-action"><button class="btn${started?' ':' primary '}" ${started?'disabled':''}
-        onclick="startFeature('${esc(f)}')">${started?'✓ Started':'+ Start'}</button></span>
-    </div>`;
-  }
-  html += `<div class="spec-row spec-add-row"><span class="num">+</span>
-    <span class="name">
-      <input id="add-feature-input" placeholder="Feature name..." onkeydown="if(event.key==='Enter')addManualFeature()" />
-      <div class="gate-hint">requires grilling: interview → refine → /spec append</div>
-    </span>
-    <span></span><span class="spec-action"><button class="btn primary" onclick="addManualFeature()">+ Add</button></span></div>`;
-  el.innerHTML = html;
-  el.classList.add('visible');
-  updateSpecCount();
-}
-
-function statusLabel(lane) {
-  const p = lane.phase;
-  if (p === 'shipped') return { dot: 'done', text: 'shipped' };
-  if (p === 'fixing') return { dot: 'fixing', text: 'fixing' };
-  const ph = phaseOf(lane);
-  if (ph === 'plan') return { dot: 'active', text: 'planning' };
-  if (ph === 'build') return { dot: 'active', text: 'building' };
-  if (ph === 'test') return { dot: 'active', text: 'testing' };
-  if (ph === 'review') return { dot: 'active', text: 'reviewing' };
-  if (ph === 'ship') return { dot: 'active', text: 'shipping' };
-  return { dot: 'idle', text: 'unknown' };
-}
-
-function updateSpecCount() {
-  const total = detectedFeatures.length;
-  const started = addedFeatures.size;
-  const shipped = lanes.filter(l => l.phase === 'shipped').length;
-  const el = document.getElementById('spec-count');
-  if (el) el.textContent = `${started} started · ${shipped} shipped · ${total} total`;
-}
-
-function addManualFeature() {
-  const inp = document.getElementById('add-feature-input');
-  const name = inp.value.trim();
-  if (!name) return;
-  if (detectedFeatures.includes(name)) { inp.value = ''; return; }
-  inp.value = '';
-  startGrilling(name);
-}
-
-/* ══════════════════════════════════════════════════════════
-   GRILLING (append a feature through interview → refine → /spec)
-   ══════════════════════════════════════════════════════════ */
-let grillingState = null;
-
-function startGrilling(name) {
-  grillingState = { name, step: 'interview', answers: [] };
-  showGrillingBanner();
-  openGrillingInterview();
-}
-
+/* ── Grilling banner (append mode stepper) ── */
 function showGrillingBanner() {
   let banner = document.getElementById('grilling-banner');
   if (!banner) {
@@ -664,91 +683,95 @@ function showGrillingBanner() {
   }
   renderGrillingBanner();
 }
-
 function renderGrillingBanner() {
   const banner = document.getElementById('grilling-banner');
-  if (!banner || !grillingState) return;
-  const steps = ['interview', 'idea-refine', 'spec-append'];
-  const labels = { 'interview': 'interview-me', 'idea-refine': 'idea-refine', 'spec-append': '/spec append' };
-  const curIdx = steps.indexOf(grillingState.step);
-  const chips = steps.map((s, i) => {
-    const cls = i < curIdx ? 'done' : i === curIdx ? 'active' : 'idle';
-    const mark = i < curIdx ? '✓' : i === curIdx ? '●' : '○';
-    return `<span class="g-chip ${cls}">${mark} ${labels[s]}</span>`;
-  }).join('<span class="g-sep">→</span>');
+  if (!banner || !specWizard) return;
   banner.innerHTML = `<div class="g-inner">
-    <div class="g-row"><span class="g-label">Appending to SPEC.md</span><span class="g-name">"${esc(grillingState.name)}"</span></div>
-    <div class="g-row">${chips}</div>
+    <div class="g-row"><span class="g-label">Adding to SPEC.md</span><span class="g-name">"${esc(specWizard.name)}"</span></div>
+    <div class="g-row spec-stepper visible" style="margin:0">${stepperChipsHtml()}</div>
   </div>`;
   banner.classList.add('visible');
 }
-
 function hideGrillingBanner() {
   const banner = document.getElementById('grilling-banner');
   if (banner) banner.classList.remove('visible');
 }
 
-function openGrillingInterview() {
-  ivState = { qIdx: 0, answers: [] };
-  const chat = document.getElementById('interview-chat');
-  chat.innerHTML = '';
-  appendChatMsg(chat, 'agent', `Adding "${grillingState.name}" to SPEC.md. First a few quick questions.\n\n${INTERVIEW_QS[0]}`);
-  document.getElementById('interview-modal').dataset.mode = 'grilling';
-  document.getElementById('interview-modal').classList.add('open');
-  setTimeout(() => document.getElementById('interview-input').focus(), 50);
+/* ══════════════════════════════════════════════════════════
+   SPEC TABLE
+   ══════════════════════════════════════════════════════════ */
+function renderSpecTable() {
+  const el = document.getElementById('spec-table');
+  let html = `<div class="specs-header">
+    <div><span class="label">Features in SPEC.md</span><span class="sublabel">each validated through interview → idea-refine → spec write</span></div>
+    <span id="spec-count"></span>
+  </div>`;
+  for (let i = 0; i < detectedFeatures.length; i++) {
+    const f = detectedFeatures[i];
+    const started = addedFeatures.has(f);
+    const lane = started ? lanes.find(l => l.name === f) : null;
+    const status = lane ? statusLabel(lane) : { dot: 'idle', text: 'ready to plan' };
+    html += `<div class="spec-row" id="sr-${slug(f)}">
+      <span class="num">${i+1}</span><span class="name">${esc(f)}</span>
+      <span class="status"><span class="status-dot ${status.dot}"></span>${status.text}</span>
+      <span class="spec-action"><button class="btn${started?'':' primary'}" ${started?'disabled':''}
+        onclick="startLaneFromFeature('${esc(f)}')">${started?'✓ in lanes':'▶ plan'}</button></span>
+    </div>`;
+  }
+  html += `<div class="spec-row spec-add-row"><span class="num">+</span>
+    <span class="name">
+      <input id="add-feature-input" placeholder="New feature name..." onkeydown="if(event.key==='Enter')addFeatureSpec()" />
+      <div class="gate-hint">3-step spec: interview → idea-refine → spec write</div>
+    </span>
+    <span></span><span class="spec-action"><button class="btn primary" onclick="addFeatureSpec()">spec</button></span></div>`;
+  el.innerHTML = html;
+  el.classList.add('visible');
+  updateSpecCount();
 }
 
-async function finishGrilling() {
-  grillingState.answers = ivState.answers.slice();
+function statusLabel(lane) {
+  if (lane.phase === 'shipped') return { dot: 'done', text: 'shipped' };
+  if (pendingFixCount(lane) > 0) return { dot: 'fixing', text: 'fixing' };
+  const ph = phaseOf(lane);
+  const map = { plan:'planning', build:'building', test:'testing', review:'reviewing', ship:'shipping' };
+  return { dot: 'active', text: map[ph] || 'in progress' };
+}
 
-  grillingState.step = 'idea-refine';
-  renderGrillingBanner();
-  await delay(1200);
+function updateSpecCount() {
+  const el = document.getElementById('spec-count');
+  if (el) el.textContent = `${addedFeatures.size} started · ${lanes.filter(l=>l.phase==='shipped').length} shipped · ${detectedFeatures.length} total`;
+}
 
-  grillingState.step = 'spec-append';
-  renderGrillingBanner();
-  const out = document.getElementById('define-output');
-  if (out) {
-    out.classList.add('visible');
-    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> <span class="spinner-inline"></span> Appending "${esc(grillingState.name)}" to SPEC.md...\n  audience: ${esc(grillingState.answers[0] || 'n/a')}\n  runtime: ${esc(grillingState.answers[1] || 'n/a')}\n  regulatory: ${esc(grillingState.answers[2] || 'n/a')}</div>`;
-  }
-  await delay(1600);
-
-  detectedFeatures.push(grillingState.name);
-  if (out) {
-    out.innerHTML = `<div class="agent-block"><span class="lbl lbl-agent">◈ /spec</span> SPEC.md updated.\n  + Added feature: ${esc(grillingState.name)}\n  ${detectedFeatures.length} features total.</div>`;
-  }
-  renderSpecTable();
-  hideGrillingBanner();
-  grillingState = null;
+function addFeatureSpec() {
+  const inp = document.getElementById('add-feature-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (detectedFeatures.includes(name)) { inp.value=''; return; }
+  inp.value = '';
+  startSpecWizard('append', name);
 }
 
 /* ══════════════════════════════════════════════════════════
-   LANE CREATION
+   LANE CREATION  (action: "plan")
    ══════════════════════════════════════════════════════════ */
-function startFeature(name) {
+function startLaneFromFeature(name) {
   if (addedFeatures.has(name)) return;
   addedFeatures.add(name);
   laneCounter++;
-  const tmpl = FEATURE_TEMPLATES[name] || { tasks: [{n:'task 1',f:'src/feature.ts',a:'works correctly'}] };
+  const tmpl = FEATURE_TEMPLATES[name] || { tasks: [{n:'core implementation',f:'src/feature.ts',a:'works correctly'}] };
   const lane = {
     id: 'lane-' + laneCounter,
     num: laneCounter,
     name,
     phase: 'planning',
-    ss: {
-      plan: 'active',
-      tasks: tmpl.tasks.map(() => 'idle'),
-      test: tmpl.tasks.map(() => 'idle'),
-      review: { 'code-review':'idle', 'code-simplify':'idle', 'security':'idle', 'performance':'idle' },
-      ship: 'idle',
-    },
-    tasks: tmpl.tasks.map(t => ({...t})),
-    buildIter: 0,
-    artifacts: {},
+    plan: 'active',
+    tasks: tmpl.tasks.map(t => ({ ...t, origin: 'plan', build: 'idle', test: 'idle' })),
+    review: 'idle',
+    reviewAxes: REVIEW_AXES.map(a => ({ key: a, state: 'idle' })),
+    ship: 'idle',
     shipDecision: null,
-    fixTasks: [],
-    fixTaskStates: [],
+    shipSummary: null,
+    shipRuns: 0,
     lastOutput: null,
   };
   lanes.push(lane);
@@ -771,332 +794,256 @@ function renderLane(lane) {
   }
 
   const p = phaseOf(lane);
-  const allBuildDone = lane.ss.tasks.every(t => t === 'done');
-  const allTestDone = lane.ss.test.every(v => v === 'done');
-  const allReviewDone = REVIEW_SUBSTEPS.every(k => lane.ss.review[k] === 'done');
-
   let cls = 'lane';
   if (lane.phase === 'shipped') cls += ' shipped';
-  if (lane.phase === 'fixing') cls += ' fixing';
+  else if (pendingFixCount(lane) > 0) cls += ' fixing';
   if (isNew) cls += ' pulse-in';
   el.className = cls;
-  el.dataset.phase = p;
 
-  const badgeClass = lane.phase === 'shipped' ? 'badge-shipped' :
-    lane.phase === 'fixing' ? 'badge-fixing' :
-    p === 'plan' ? 'badge-plan' :
-    p === 'build' ? 'badge-build' : p === 'test' ? 'badge-test' :
-    p === 'review' ? 'badge-review' :
-    p === 'ship' ? 'badge-ship' : 'badge-plan';
-  const buildIdx = lane.ss.tasks.findIndex(t => t === 'active' || t === 'running');
-  const testIdx = lane.ss.test.findIndex(t => t === 'active' || t === 'running');
-  const badgeText = lane.phase === 'shipped' ? '✓ shipped' :
-    lane.phase === 'fixing' ? 'NO-GO · fixing' :
+  /* badge */
+  const fixing = pendingFixCount(lane) > 0 && lane.phase !== 'shipped';
+  const badgeClass = lane.phase === 'shipped' ? 'badge-shipped' : fixing ? 'badge-fixing' :
+    p === 'plan' ? 'badge-plan' : p === 'build' ? 'badge-build' : p === 'test' ? 'badge-test' :
+    p === 'review' ? 'badge-review' : 'badge-ship';
+  const doneTasks = lane.tasks.filter(t => t.build==='done' && t.test==='done').length;
+  const badgeText = lane.phase === 'shipped' ? '✓ shipped' : fixing ? `NO-GO · ${pendingFixCount(lane)} fix pending` :
     p === 'plan' ? 'planning' :
-    p === 'build' ? `building · task ${buildIdx+1}/${lane.tasks.length} · loop x${lane.buildIter}` :
-    p === 'test' ? `testing · task ${testIdx+1}/${lane.ss.test.length}` :
-    p === 'review' ? 'reviewing' : p === 'ship' ? 'shipping' : '';
+    p === 'build' ? `building · ${doneTasks}/${lane.tasks.length} tasks` :
+    p === 'test' ? `testing · ${doneTasks}/${lane.tasks.length} tasks` :
+    p === 'review' ? 'reviewing' : 'shipping';
 
   let html = `<div class="lane-header">
     <div class="lane-title"><span class="num">#${lane.num}</span>${esc(lane.name)}</div>
     <span class="phase-badge ${badgeClass}">${badgeText}</span>
   </div>`;
 
-  /* Pipeline */
-  html += '<div class="pipeline">';
-  html += renderStation(lane, 'plan',  '/plan',  lane.ss.plan==='done'?`${lane.tasks.length} tasks`:'decompose', 's-plan');
-  html += `<div class="arrow ${lane.ss.plan==='done'?'done':''}"></div>`;
-  html += renderBuildStation(lane);
-  html += `<div class="arrow ${allBuildDone?'done':''}"></div>`;
-  html += renderTestStation(lane);
-  html += `<div class="arrow ${allTestDone?'done':''}"></div>`;
-  html += renderReviewStation(lane);
-  html += `<div class="arrow ${allReviewDone?'done':''}"></div>`;
-  html += renderShipStation(lane);
-  html += '</div>';
+  html += '<div class="lane-flow">';
 
-  /* Step output */
+  /* PLAN */
+  html += renderPlanStation(lane);
+
+  /* TASKS + REVIEW + SHIP (only after plan done) */
+  if (lane.plan === 'done') {
+    html += `<div class="flow-connector ${lane.tasks[0] && lane.tasks[0].build==='done' ? 'done':''}"></div>`;
+    if (pendingFixCount(lane) > 0) {
+      html += `<div class="fix-note">↩ ${pendingFixCount(lane)} fix task(s) from NO-GO /ship — build &amp; test, then re-review</div>`;
+    }
+    html += `<div class="flow-label">Tasks — each builds &amp; tests independently</div>`;
+    html += '<div class="task-list">';
+    lane.tasks.forEach((t, i) => { html += renderTaskRow(lane, t, i); });
+    html += '</div>';
+
+    /* REVIEW + SHIP */
+    html += `<div class="flow-label">Whole-plan review &amp; ship</div>`;
+    html += '<div class="flow-stage finalize">';
+    html += renderReviewBlock(lane);
+    html += renderShipBlock(lane);
+    html += '</div>';
+  }
+
+  html += '</div>'; /* .lane-flow */
+
+  /* terminal output */
   if (lane.lastOutput) {
     html += `<div class="step-output"><div class="step-block">${lane.lastOutput}</div></div>`;
   }
 
-  /* NO-GO loop */
-  if (lane.phase === 'fixing') {
-    const remaining = lane.fixTaskStates.filter(s => s !== 'done').length;
-    html += `<div class="nogo-loop"><span class="fix-label">Phase D · ${remaining} fix${remaining!==1?'es':''} remaining</span><span class="arrow-back"></span><span>loops back to /build then re-ships</span></div>`;
-  }
-
-  /* Artifact track */
+  /* artifacts */
   html += renderArtifactTrack(lane);
 
   el.innerHTML = html;
   applyFilter();
 }
 
-function renderStation(lane, key, cmd, sub, cls) {
-  const st = lane.ss[key];
-  return `<div class="station ${st} ${cls}">
-    <div class="station-box" onclick="${st==='active'?`clickStep('${lane.id}','${key}')`:''}" title="${st==='active'?'Click to run':''}">
-      <div class="station-cmd">${cmd}</div>
+function renderPlanStation(lane) {
+  const st = lane.plan;
+  const sub = st === 'done' ? `${lane.tasks.length} tasks` : 'decompose';
+  return `<div class="station ${st} s-plan">
+    <div class="station-box" onclick="${st==='active'?`clickPlan('${lane.id}')`:''}" title="${st==='active'?'Click to run /plan':''}">
+      <div class="station-cmd">/plan</div>
       <div class="station-sub">${sub}</div>
       <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
     </div>
   </div>`;
 }
 
-function renderBuildStation(lane) {
-  const isFixing = lane.phase === 'fixing';
-  const fixActive = isFixing && lane.fixTaskStates.some(s => s === 'active' || s === 'running');
-  const taskActive = lane.ss.tasks.some(t => t === 'active' || t === 'running');
-  const allDone = lane.ss.tasks.every(t => t === 'done');
-  const activeIdx = lane.ss.tasks.findIndex(t => t === 'active');
+function renderTaskRow(lane, t, i) {
+  const rowState = (t.build==='done' && t.test==='done') ? 'done' :
+    (t.build==='active'||t.build==='running'||t.test==='active'||t.test==='running') ? 'active' : '';
+  const bClickable = t.build === 'active';
+  const tClickable = t.test === 'active';
+  const bMark = t.build==='done'?'✓':t.build==='running'?'⟳':t.build==='active'?'●':'○';
+  const tMark = t.test==='done'?'✓':t.test==='running'?'⟳':t.test==='active'?'●':'○';
+  return `<div class="task-row ${rowState} ${t.origin==='fix'?'fix':''}">
+    <div class="task-idx">${i+1}</div>
+    <div class="task-info">
+      <div class="task-name">${esc(t.n)}${t.origin==='fix'?`<span class="task-badge">${esc((t.sev||'fix').toUpperCase())}</span>`:''}</div>
+      <div class="task-file">${esc(t.f)}</div>
+    </div>
+    <div class="task-pipe">
+      <div class="mini b ${t.build} ${bClickable?'clickable':''}">
+        <div class="mini-box" onclick="${bClickable?`clickTaskBuild('${lane.id}',${i})`:''}">
+          <div class="mini-cmd">/build</div><span class="mini-mark">${bMark}</span>
+        </div>
+      </div>
+      <div class="mini-arrow ${t.build==='done'?'done':''}"></div>
+      <div class="mini t ${t.test} ${tClickable?'clickable':''}">
+        <div class="mini-box" onclick="${tClickable?`clickTaskTest('${lane.id}',${i})`:''}">
+          <div class="mini-cmd">/test</div><span class="mini-mark">${tMark}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
-  let st = 'idle';
-  if (isFixing) st = fixActive ? 'active' : 'done';
-  else if (allDone) st = 'done';
-  else if (taskActive) st = 'active';
+function renderReviewBlock(lane) {
+  const st = lane.review;
+  const axesHtml = (st !== 'idle')
+    ? `<div class="review-axes">${lane.reviewAxes.map(a =>
+        `<span class="axis-chip ${a.state}">${a.key}${a.state==='done'?' ✓':a.state==='running'?' ⟳':''}</span>`).join('')}</div>`
+    : `<div class="review-axes"><span class="axis-chip">5 internal axes</span></div>`;
+  return `<div class="fin-block">
+    <div class="station ${st} s-review">
+      <div class="station-box" onclick="${st==='active'?`clickReview('${lane.id}')`:''}" title="${st==='active'?'Click to run /review':''}">
+        <div class="station-cmd">/review</div>
+        <div class="station-sub">five-axis</div>
+        <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+      </div>
+    </div>
+    ${axesHtml}
+  </div>`;
+}
 
-  const clickable = isFixing
-    ? lane.fixTaskStates.some(s => s === 'active')
-    : (activeIdx >= 0 && lane.ss.tasks[activeIdx] === 'active');
-
-  let pillText = '';
-  if (isFixing) {
-    const fixDone = lane.fixTaskStates.filter(s => s === 'done').length;
-    pillText = `fix ${Math.min(fixDone+1, lane.fixTasks.length)}/${lane.fixTasks.length}`;
-  } else if (allDone) {
-    pillText = `${lane.tasks.length}/${lane.tasks.length} done`;
-  } else if (activeIdx >= 0) {
-    pillText = `task ${activeIdx+1}/${lane.tasks.length}`;
+function renderShipBlock(lane) {
+  const st = lane.ship;
+  let summaryHtml = '';
+  if (lane.shipSummary) {
+    const s = lane.shipSummary;
+    const personas = s.personas.map(p =>
+      `<span class="ssp ${p.result}">${p.icon} ${p.name} ${p.result==='pass'?'✓':p.result==='fail'?'✗':'⚠'}</span>`).join('');
+    const fixCount = s.findings.filter(f => f.sev==='critical'||f.sev==='important').length;
+    const line = s.decision === 'go'
+      ? `${s.findings.length} minor finding(s), none blocking`
+      : `${fixCount} blocking finding(s) → ${fixCount} fix task(s) added to todo.md`;
+    summaryHtml = `<div class="ship-summary ${s.decision}">
+      <div class="ss-head">${s.decision==='go'?'GO — ready to ship':'NO-GO — fixes required'}</div>
+      <div class="ss-personas">${personas}</div>
+      <div class="ss-line">${line}</div>
+      <button class="btn ss-details" onclick="openShipDrawerFromSummary('${lane.id}')">View details →</button>
+    </div>`;
   }
-  if (lane.buildIter > 0 && !allDone && !isFixing) pillText += ` · loop x${lane.buildIter}`;
-
-  return `<div class="station ${st} s-build${isFixing?' fixing':''}">
-    <div class="station-box" onclick="${clickable?`clickBuild('${lane.id}')`:''}" title="${clickable?'Click to run /build':''}">
-      <div class="station-cmd">/build</div>
-      <div class="station-sub">incremental + TDD</div>
-      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+  return `<div class="fin-block">
+    <div class="station ${st} s-ship">
+      <div class="station-box" onclick="${st==='active'?`clickShip('${lane.id}')`:''}" title="${st==='active'?'Click to run /ship':''}">
+        <div class="station-cmd">/ship</div>
+        <div class="station-sub">3 personas</div>
+        <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
+      </div>
     </div>
-    ${pillText?`<div class="iter-pill ${isFixing?'fixing':''}">${pillText}</div>`:''}
-  </div>`;
-}
-
-function renderTestStation(lane) {
-  const anyActive = lane.ss.test.some(t => t === 'active' || t === 'running');
-  const allDone = lane.ss.test.every(t => t === 'done');
-  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
-  const clickable = anyActive;
-  const activeIdx = lane.ss.test.findIndex(t => t === 'active');
-
-  let pillText = '';
-  if (allDone) pillText = 'all pass';
-  else if (activeIdx >= 0) pillText = `task ${activeIdx+1}/${lane.ss.test.length}`;
-
-  return `<div class="station ${st} s-test">
-    <div class="station-box" onclick="${clickable?`clickTest('${lane.id}')`:''}" title="${clickable?'Click to run /test':''}">
-      <div class="station-cmd">/test</div>
-      <div class="station-sub">TDD · coverage audit</div>
-      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
-    </div>
-    ${pillText?`<div class="iter-pill test">${pillText}</div>`:''}
-  </div>`;
-}
-
-function renderReviewStation(lane) {
-  const anyActive = REVIEW_SUBSTEPS.some(k => lane.ss.review[k] === 'active' || lane.ss.review[k] === 'running');
-  const allDone = REVIEW_SUBSTEPS.every(k => lane.ss.review[k] === 'done');
-  const st = allDone ? 'done' : anyActive ? 'active' : 'idle';
-  const doneCount = REVIEW_SUBSTEPS.filter(k => lane.ss.review[k] === 'done').length;
-
-  let subHtml = '';
-  for (const k of REVIEW_SUBSTEPS) {
-    const s = lane.ss.review[k];
-    subHtml += `<div class="rsub-item ${s}" onclick="${s==='active'?`clickReviewSub('${lane.id}','${k}')`:''}" title="${s==='active'?'Click to run':''}">
-      <span class="rdot"></span>${REVIEW_LABELS[k]}</div>`;
-  }
-
-  return `<div class="station composite-review ${st} s-review" id="rev-${lane.id}">
-    <div class="station-box" onclick="toggleReviewExpand('${lane.id}')">
-      <span class="review-expand-hint">▾</span>
-      <div class="station-cmd">Review</div>
-      <div class="station-sub">${allDone?'all pass':`${doneCount}/4`}</div>
-      <span class="station-marker">${allDone?'✓':anyActive?'●':'○'}</span>
-    </div>
-    <div class="review-sublist">${subHtml}</div>
-  </div>`;
-}
-
-function renderShipStation(lane) {
-  const st = lane.ss.ship;
-  const isNogo = lane.shipDecision === 'nogo';
-  let extra = '';
-  if (lane.shipDecision === 'go') extra = `<div class="ship-outcome go" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:999px;background:var(--ship);color:#fff;display:inline-block">GO</div>`;
-  if (isNogo) extra = `<div class="ship-outcome nogo" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:999px;background:var(--nogo);color:#fff;display:inline-block">NO-GO</div>`;
-
-  return `<div class="station ${st} s-ship ${isNogo?'nogo':''}">
-    <div class="station-box" onclick="${st==='active'?`clickShip('${lane.id}')`:''}" title="${st==='active'?'Click to run /ship':''}">
-      <div class="station-cmd">/ship</div>
-      <div class="station-sub">3 personas</div>
-      <span class="station-marker">${st==='done'?'✓':st==='running'?'⟳':st==='active'?'●':'○'}</span>
-    </div>
-    ${extra}
+    ${summaryHtml}
   </div>`;
 }
 
 function renderArtifactTrack(lane) {
+  const buildActive = lane.tasks.some(t => t.build==='active'||t.build==='running');
+  const testActive = lane.tasks.some(t => t.test==='active'||t.test==='running');
   const items = [
-    { name: 'SPEC.md',          done: true,                     active: false, shared: true },
-    { name: 'plan.md',          done: lane.ss.plan === 'done',  active: lane.ss.plan === 'running' },
-    { name: 'todo.md',          done: lane.ss.tasks.every(t=>t==='done'), active: lane.ss.tasks.some(t=>t==='active'||t==='running') },
-    { name: 'test-coverage.md', done: lane.ss.test.every(t=>t==='done'),  active: lane.ss.test.some(t=>t==='active'||t==='running') },
-    { name: 'review-report.md', done: REVIEW_SUBSTEPS.every(k=>lane.ss.review[k]==='done'), active: REVIEW_SUBSTEPS.some(k=>lane.ss.review[k]==='active'||lane.ss.review[k]==='running') },
-    { name: 'ship-decision.md', done: lane.ss.ship === 'done',  active: lane.ss.ship === 'running' },
+    { name: 'SPEC.md',          shared: true },
+    { name: 'plan.md',          done: lane.plan==='done', active: lane.plan==='running' },
+    { name: 'todo.md',          done: lane.tasks.every(t=>t.build==='done'), active: buildActive },
+    { name: 'test-coverage.md', done: lane.tasks.every(t=>t.test==='done')&&allTasksDone(lane), active: testActive },
+    { name: 'review-report.md', done: lane.review==='done', active: lane.review==='running' },
+    { name: 'ship-decision.md', done: lane.ship==='done', active: lane.ship==='running' },
   ];
   let html = '<div class="artifact-track"><span class="at-label">artifacts</span>';
-  for (let i = 0; i < items.length; i++) {
-    const a = items[i];
+  items.forEach((a, i) => {
     const cls = a.shared ? 'shared' : a.done ? 'done' : a.active ? 'active' : '';
-    const title = a.shared ? 'Shared project-level spec' : '';
-    html += `<span class="at-pill ${cls}" ${title?`title="${title}"`:''}>${a.name}${a.shared?' <span class="shared-tag">shared</span>':''}</span>`;
+    html += `<span class="at-pill ${cls}">${a.name}${a.shared?' <span class="shared-tag">shared</span>':''}</span>`;
     if (i < items.length - 1) html += '<span class="at-sep">→</span>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function toggleReviewExpand(laneId) {
-  const el = document.getElementById('rev-' + laneId);
-  if (el) el.classList.toggle('expanded');
+  });
+  return html + '</div>';
 }
 
 /* ══════════════════════════════════════════════════════════
    STEP HANDLERS
    ══════════════════════════════════════════════════════════ */
-async function clickStep(laneId, step) {
+async function clickPlan(laneId) {
   const lane = getLane(laneId);
-  if (!lane || lane.ss[step] !== 'active') return;
-
-  lane.ss[step] = 'running';
-  renderOutput(lane, step, 'running');
+  if (!lane || lane.plan !== 'active') return;
+  lane.plan = 'running';
+  lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> <span class="spinner-inline"></span> Decomposing "${esc(lane.name)}" into tasks...`;
   renderLane(lane);
-
-  await delay(1800 + Math.random() * 600);
-
-  lane.ss[step] = 'done';
-
-  if (step === 'plan') {
-    lane.ss.tasks[0] = 'active';
-    lane.phase = 'building';
-    lane.buildIter = 1;
-    renderOutput(lane, 'plan', 'done');
-  }
-  renderLane(lane);
-  renderSpecTable();
-  updateFilters();
+  await delay(1600 + Math.random()*600);
+  lane.plan = 'done';
+  const taskList = lane.tasks.map((t,i) => `  ${i+1}. ${t.n} → ${t.f}`).join('\n');
+  lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> Plan complete. ${lane.tasks.length} tasks (each gets its own build + test):\n${esc(taskList)}\n\n  Saved: tasks/plan.md, tasks/todo.md`;
+  lane.tasks[0].build = 'active';
+  lane.phase = 'building';
+  renderLane(lane); renderSpecTable(); updateFilters();
 }
 
-async function clickBuild(laneId) {
+async function clickTaskBuild(laneId, idx) {
   const lane = getLane(laneId);
   if (!lane) return;
-
-  if (lane.phase === 'fixing') {
-    await runFixTask(lane);
-    return;
-  }
-
-  const taskIdx = lane.ss.tasks.findIndex(t => t === 'active');
-  if (taskIdx < 0) return;
-
-  lane.ss.tasks[taskIdx] = 'running';
-  renderOutput(lane, 'build-task', 'running', taskIdx);
+  const t = lane.tasks[idx];
+  if (!t || t.build !== 'active') return;
+  t.build = 'running';
+  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> <span class="spinner-inline"></span> Task ${idx+1}: ${esc(t.n)}\n  File: ${esc(t.f)}\n  Writing implementation...`;
   renderLane(lane);
-  await delay(1400 + Math.random() * 800);
-  lane.ss.tasks[taskIdx] = 'done';
-  lane.ss.test[taskIdx] = 'active';
+  await delay(1300 + Math.random()*700);
+  t.build = 'done';
+  t.test = 'active';
   lane.phase = 'testing';
-  lane.buildIter++;
-  renderOutput(lane, 'build-task', 'done', taskIdx);
-  renderLane(lane);
-  renderSpecTable();
-  updateFilters();
+  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Task ${idx+1} built: ${esc(t.n)}\n  ✓ committed → now /test`;
+  renderLane(lane); renderSpecTable(); updateFilters();
 }
 
-async function clickTest(laneId) {
+async function clickTaskTest(laneId, idx) {
   const lane = getLane(laneId);
   if (!lane) return;
-
-  const testIdx = lane.ss.test.findIndex(t => t === 'active');
-  if (testIdx < 0) return;
-
-  lane.ss.test[testIdx] = 'running';
-  renderOutput(lane, 'test', 'running', testIdx);
+  const t = lane.tasks[idx];
+  if (!t || t.test !== 'active') return;
+  t.test = 'running';
+  lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> <span class="spinner-inline"></span> Task ${idx+1}: ${esc(t.n)}\n  Failing test → implement → coverage audit...`;
   renderLane(lane);
-  await delay(1000 + Math.random() * 600);
-  lane.ss.test[testIdx] = 'done';
-  renderOutput(lane, 'test', 'done', testIdx);
+  await delay(1000 + Math.random()*600);
+  t.test = 'done';
+  lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> Task ${idx+1} tested: ${esc(t.a)}\n  ✓ pass · coverage > 90%`;
 
-  const nextTask = testIdx + 1;
-  if (nextTask < lane.ss.tasks.length) {
-    lane.ss.tasks[nextTask] = 'active';
+  /* activate next idle build, else move to review */
+  const next = lane.tasks.find(x => x.build === 'idle');
+  if (next) {
+    next.build = 'active';
     lane.phase = 'building';
   } else {
-    lane.ss.review['code-review'] = 'active';
+    lane.review = 'active';
     lane.phase = 'reviewing';
   }
-  renderLane(lane);
-  renderSpecTable();
-  updateFilters();
+  renderLane(lane); renderSpecTable(); updateFilters();
 }
 
-async function runFixTask(lane) {
-  const idx = lane.fixTaskStates.findIndex(s => s === 'active');
-  if (idx < 0) return;
-  lane.fixTaskStates[idx] = 'running';
-  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> <span class="spinner-inline"></span> Applying fix: ${esc(lane.fixTasks[idx].text)}...`;
-  renderLane(lane);
-
-  await delay(1400 + Math.random() * 800);
-  lane.fixTaskStates[idx] = 'done';
-  lane.buildIter++;
-  lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Fix applied: ${esc(lane.fixTasks[idx].text)}\n  ✓ Tests pass`;
-
-  const next = idx + 1;
-  if (next < lane.fixTaskStates.length) {
-    lane.fixTaskStates[next] = 'active';
-  } else {
-    lane.phase = 'shipping';
-    lane.ss.ship = 'active';
-    lane.shipDecision = null;
-    lane.fixTasks = [];
-    lane.fixTaskStates = [];
-    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> All Phase D fixes applied. Ready to re-ship.`;
-  }
-  renderLane(lane);
-  renderSpecTable();
-  updateFilters();
-}
-
-async function clickReviewSub(laneId, subKey) {
+async function clickReview(laneId) {
   const lane = getLane(laneId);
-  if (!lane || lane.ss.review[subKey] !== 'active') return;
-
-  lane.ss.review[subKey] = 'running';
-  renderOutput(lane, 'review-' + subKey, 'running');
+  if (!lane || lane.review !== 'active') return;
+  lane.review = 'running';
+  lane.reviewAxes.forEach(a => a.state = 'idle');
   renderLane(lane);
 
-  await delay(1200 + Math.random() * 600);
-  lane.ss.review[subKey] = 'done';
-  renderOutput(lane, 'review-' + subKey, 'done');
-
-  const idx = REVIEW_SUBSTEPS.indexOf(subKey);
-  if (idx < REVIEW_SUBSTEPS.length - 1) {
-    lane.ss.review[REVIEW_SUBSTEPS[idx + 1]] = 'active';
-  } else {
-    lane.ss.ship = 'active';
-    lane.phase = 'shipping';
+  /* /review runs its internal axes sequentially as visible progress */
+  for (let i = 0; i < lane.reviewAxes.length; i++) {
+    lane.reviewAxes[i].state = 'running';
+    lane.lastOutput = `<span class="lbl lbl-review">◈ /review</span> <span class="spinner-inline"></span> axis ${i+1}/5 — ${lane.reviewAxes[i].key}...`;
+    renderLane(lane);
+    await delay(650 + Math.random()*350);
+    lane.reviewAxes[i].state = 'done';
+    renderLane(lane);
   }
-  renderLane(lane);
-  updateFilters();
+  lane.review = 'done';
+  lane.ship = 'active';
+  lane.phase = 'shipping';
+  const axisLines = lane.reviewAxes.map(a => `  ✓ ${a.key} — ${REVIEW_AXIS_MSG[a.key]}`).join('\n');
+  lane.lastOutput = `<span class="lbl lbl-review">◈ /review</span> Five-axis review complete.\n${axisLines}\n\n  Saved: review-report.md`;
+  renderLane(lane); renderSpecTable(); updateFilters();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1104,85 +1051,109 @@ async function clickReviewSub(laneId, subKey) {
    ══════════════════════════════════════════════════════════ */
 async function clickShip(laneId) {
   const lane = getLane(laneId);
-  if (!lane || lane.ss.ship !== 'active') return;
-
-  lane.ss.ship = 'running';
-  shipLaneId = laneId;
+  if (!lane || lane.ship !== 'active') return;
+  lane.ship = 'running';
   renderLane(lane);
-  openShipDrawer(lane);
+
+  const willGo = lane.shipRuns > 0 ? true : (Math.random() > 0.5);
+  lane.shipRuns++;
+
+  openShipDrawerShell();
+  await animatePersonas(willGo);
+
+  /* merge */
+  document.getElementById('ship-merge').style.display = 'block';
+  await delay(1100);
+  document.getElementById('ship-merge').style.display = 'none';
+
+  const personas = SHIP_PERSONAS.map((p, i) => ({
+    name: p.name, icon: p.icon,
+    result: (willGo ? ['pass','pass','pass'] : ['pass','fail','warn'])[i]
+  }));
+  const findings = willGo ? SHIP_FINDINGS_GO : SHIP_FINDINGS_NOGO;
+  lane.shipSummary = { decision: willGo ? 'go' : 'nogo', personas, findings };
+  lane.shipDecision = willGo ? 'go' : 'nogo';
+
+  renderDrawerDecision(lane.shipSummary);
+
+  if (willGo) {
+    lane.ship = 'done';
+    lane.phase = 'shipped';
+    lane.lastOutput = `<span class="lbl lbl-ship">◈ /ship</span> Decision: GO\n  All three personas passed. Feature shipped.`;
+  } else {
+    /* add fix tasks, fall back to build */
+    lane.ship = 'idle';
+    lane.review = 'idle';
+    lane.reviewAxes.forEach(a => a.state = 'idle');
+    addFixTasks(lane, findings);
+    lane.phase = 'building';
+    const added = findings.filter(f => f.sev==='critical'||f.sev==='important').length;
+    lane.lastOutput = `<span class="lbl lbl-nogo">◈ /ship</span> Decision: NO-GO\n  ${added} fix task(s) appended to todo.md.\n  Status falls back to BUILD — build &amp; test the fixes, then re-review and re-ship.`;
+  }
+  renderLane(lane); renderSpecTable(); updateFilters();
 }
 
-function openShipDrawer(lane) {
-  const overlay = document.getElementById('ship-overlay');
-  overlay.classList.add('open');
+function addFixTasks(lane, findings) {
+  const fixes = findings.filter(f => f.sev==='critical' || f.sev==='important');
+  fixes.forEach(f => {
+    lane.tasks.push({ n: f.task || f.text, f: f.file || 'src/fix.ts', a: 'issue resolved', origin: 'fix', sev: f.sev, build: 'idle', test: 'idle' });
+  });
+  /* activate the first newly added fix task */
+  const firstFix = lane.tasks.find(t => t.origin==='fix' && t.build==='idle');
+  if (firstFix) firstFix.build = 'active';
+}
 
-  const personas = document.getElementById('ship-personas');
-  personas.innerHTML = SHIP_PERSONAS.map(p =>
+/* ── Drawer ── */
+function openShipDrawerShell() {
+  document.getElementById('ship-overlay').classList.add('open');
+  document.getElementById('ship-drawer-sub').textContent = 'pre-launch review — 3 personas in parallel';
+  document.getElementById('ship-personas').innerHTML = SHIP_PERSONAS.map(p =>
     `<div class="persona-card" id="sp-${slug(p.name)}"><div class="icon">${p.icon}</div><div class="pname">${p.name}</div><div class="pstate">waiting...</div></div>`
   ).join('');
-
   document.getElementById('ship-merge').style.display = 'none';
   document.getElementById('ship-decision').style.display = 'none';
   document.getElementById('ship-findings').innerHTML = '';
   document.getElementById('ship-close-btn').style.display = 'none';
-
-  const isSecondShip = lanes.filter(l => l.id === lane.id && l.shipDecision === 'nogo').length > 0 || lane.buildIter > 5;
-  const willGo = isSecondShip || Math.random() > 0.45;
-
-  runShipAnimation(lane, willGo);
 }
 
-async function runShipAnimation(lane, willGo) {
-  const timings = [1800, 2400, 3000];
+async function animatePersonas(willGo) {
   const results = willGo ? ['pass','pass','pass'] : ['pass','fail','warn'];
-
   for (let i = 0; i < 3; i++) {
-    await delay(600);
+    await delay(500);
     const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
     card.className = 'persona-card running';
     card.querySelector('.pstate').textContent = 'analyzing...';
   }
-
   for (let i = 0; i < 3; i++) {
-    await delay(timings[i] - (i > 0 ? timings[i-1] : 0) + 400);
+    await delay(700 + i*400);
     const card = document.getElementById('sp-' + slug(SHIP_PERSONAS[i].name));
     card.className = 'persona-card ' + results[i];
-    card.querySelector('.pstate').textContent = results[i] === 'pass' ? '✓ pass' : results[i] === 'fail' ? '✗ issues found' : '⚠ warnings';
+    card.querySelector('.pstate').textContent = results[i]==='pass'?'✓ pass':results[i]==='fail'?'✗ issues':'⚠ warnings';
   }
+}
 
-  await delay(800);
-  document.getElementById('ship-merge').style.display = 'block';
-  await delay(1200);
-  document.getElementById('ship-merge').style.display = 'none';
-
+function renderDrawerDecision(summary) {
   const dec = document.getElementById('ship-decision');
   dec.style.display = 'block';
-  if (willGo) {
-    dec.className = 'decision-banner go';
-    dec.textContent = 'GO — ready to ship';
-    lane.ss.ship = 'done';
-    lane.shipDecision = 'go';
-    lane.phase = 'shipped';
-    lane.lastOutput = `<span class="lbl lbl-ship">◈ /ship</span> Decision: GO\n  All three personas passed. Feature is ready to ship.`;
-  } else {
-    dec.className = 'decision-banner nogo';
-    dec.textContent = 'NO-GO — fixes required';
-    lane.ss.ship = 'done';
-    lane.shipDecision = 'nogo';
-    lane.phase = 'fixing';
-    lane.fixTasks = [...PHASE_D_TASKS];
-    lane.fixTaskStates = lane.fixTasks.map((_, i) => i === 0 ? 'active' : 'idle');
-    lane.lastOutput = `<span class="lbl lbl-nogo">◈ /ship</span> Decision: NO-GO\n  ${lane.fixTasks.length} fix tasks added to todo.md.\n  Looping back to /build to apply fixes, then re-shipping.`;
-  }
-
-  const findings = willGo ? SHIP_FINDINGS_GO : SHIP_FINDINGS_NOGO;
-  const findingsEl = document.getElementById('ship-findings');
-  findingsEl.innerHTML = findings.map(f => `<div class="finding ${f.sev}"><strong>${f.sev.toUpperCase()}</strong>: ${esc(f.text)}</div>`).join('');
-
+  dec.className = 'decision-banner ' + summary.decision;
+  dec.textContent = summary.decision === 'go' ? 'GO — ready to ship' : 'NO-GO — fixes required';
+  const fEl = document.getElementById('ship-findings');
+  fEl.innerHTML = `<div class="findings-title">Findings</div>` + summary.findings.map(f =>
+    `<div class="finding ${f.sev}"><strong>${f.sev.toUpperCase()}</strong>: ${esc(f.text)}</div>`).join('');
   document.getElementById('ship-close-btn').style.display = 'block';
-  renderLane(lane);
-  renderSpecTable();
-  updateFilters();
+}
+
+function openShipDrawerFromSummary(laneId) {
+  const lane = getLane(laneId);
+  if (!lane || !lane.shipSummary) return;
+  const s = lane.shipSummary;
+  document.getElementById('ship-overlay').classList.add('open');
+  document.getElementById('ship-drawer-sub').textContent = `${lane.name} — saved /ship decision`;
+  document.getElementById('ship-personas').innerHTML = s.personas.map(p =>
+    `<div class="persona-card ${p.result}" id="sp-${slug(p.name)}"><div class="icon">${p.icon}</div><div class="pname">${p.name}</div><div class="pstate">${p.result==='pass'?'✓ pass':p.result==='fail'?'✗ issues':'⚠ warnings'}</div></div>`
+  ).join('');
+  document.getElementById('ship-merge').style.display = 'none';
+  renderDrawerDecision(s);
 }
 
 function closeShipDrawer() {
@@ -1190,68 +1161,30 @@ function closeShipDrawer() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   STEP OUTPUT (inline terminal messages)
-   ══════════════════════════════════════════════════════════ */
-function renderOutput(lane, step, state, idx) {
-  if (step === 'plan' && state === 'running') {
-    lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> <span class="spinner-inline"></span> Decomposing "${esc(lane.name)}" into tasks...`;
-  } else if (step === 'plan' && state === 'done') {
-    const taskList = lane.tasks.map((t, i) => `  ${i + 1}. ${t.n} → ${t.f}`).join('\n');
-    lane.lastOutput = `<span class="lbl lbl-plan">◈ /plan</span> Plan complete. ${lane.tasks.length} tasks:\n${esc(taskList)}\n\n  Saved: tasks/plan.md, tasks/todo.md`;
-  } else if (step === 'build-task' && state === 'running') {
-    const t = lane.tasks[idx];
-    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> <span class="spinner-inline"></span> Task ${idx + 1}: ${esc(t.n)}\n  File: ${esc(t.f)}\n  Writing failing test... implementing...`;
-  } else if (step === 'build-task' && state === 'done') {
-    const t = lane.tasks[idx];
-    lane.lastOutput = `<span class="lbl lbl-build">◈ /build</span> Task ${idx + 1} complete: ${esc(t.n)}\n  ✓ ${esc(t.a)}\n  ✓ Tests pass · committed`;
-  } else if (step === 'test' && state === 'running') {
-    lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> <span class="spinner-inline"></span> Running tests for task ${idx + 1}...\n  Writing failing test → impl check → coverage audit...`;
-  } else if (step === 'test' && state === 'done') {
-    lane.lastOutput = `<span class="lbl lbl-test">◈ /test</span> Task ${idx + 1} tested.\n  ✓ All tests pass · coverage > 90% · no regressions`;
-  } else if (step.startsWith('review-') && state === 'running') {
-    const sub = step.replace('review-', '');
-    lane.lastOutput = `<span class="lbl lbl-review">◈ ${esc(REVIEW_LABELS[sub])}</span> <span class="spinner-inline"></span> Running...`;
-  } else if (step.startsWith('review-') && state === 'done') {
-    const sub = step.replace('review-', '');
-    const msgs = {
-      'code-review': 'Five-axis review complete. No blocking issues.',
-      'code-simplify': 'Complexity reduced. 2 functions simplified, no behavior change.',
-      'security': 'No vulnerabilities found. Input validation confirmed.',
-      'performance': 'No bottlenecks. O(n) complexity maintained.'
-    };
-    lane.lastOutput = `<span class="lbl lbl-review">◈ ${esc(REVIEW_LABELS[sub])}</span> ✓ ${msgs[sub] || 'Done.'}`;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════
    FILTERS
    ══════════════════════════════════════════════════════════ */
 function updateFilters() {
-  const counts = { all: lanes.length, plan: 0, build: 0, test: 0, review: 0, ship: 0, shipped: 0 };
+  const counts = { all: lanes.length, plan:0, build:0, test:0, review:0, ship:0, shipped:0 };
   for (const l of lanes) {
     const p = phaseOf(l);
-    if (p === 'shipped') counts.shipped++;
-    else if (counts[p] !== undefined) counts[p]++;
+    if (counts[p] !== undefined) counts[p]++;
   }
   for (const k of Object.keys(counts)) {
     const el = document.getElementById('fc-' + k);
     if (el) el.textContent = counts[k];
   }
 }
-
 function setFilter(f) {
   activeFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
   applyFilter();
 }
-
 function applyFilter() {
   document.querySelectorAll('.lane').forEach(el => {
     if (activeFilter === 'all') { el.classList.remove('filter-hidden'); return; }
     const lane = getLane(el.id);
     if (!lane) return;
-    const p = phaseOf(lane);
-    el.classList.toggle('filter-hidden', p !== activeFilter);
+    el.classList.toggle('filter-hidden', phaseOf(lane) !== activeFilter);
   });
 }
 
@@ -1259,7 +1192,7 @@ function applyFilter() {
    INIT
    ══════════════════════════════════════════════════════════ */
 document.getElementById('global-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') runGlobalSpec();
+  if (e.key === 'Enter') startSpecWizard('global');
 });
 </script>
 </body>
