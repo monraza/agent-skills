@@ -1,9 +1,11 @@
 description = "Run the whole SDLC loop autonomously — spec, plan, build, review, ship — stopping only for critical decisions"
 
 prompt = """
-Invoke the planning-and-task-breakdown, incremental-implementation, test-driven-development, code-review-and-quality, doubt-driven-development, and debugging-and-error-recovery skills as each phase demands.
+Invoke these skills as each phase demands: spec-driven-development, planning-and-task-breakdown, incremental-implementation, test-driven-development, browser-testing-with-devtools, code-review-and-quality, code-simplification, shipping-and-launch, doubt-driven-development, debugging-and-error-recovery.
 
-/sdlc chains the individual lifecycle commands into one supervised loop. The existing commands stop at every phase boundary by design; this one carries state across them so a run can go spec → ship with a single human gate, escalating only on the triggers listed below.
+/sdlc carries state across the lifecycle phases so a run can go spec → ship with a single human gate, escalating only on the triggers listed below.
+
+HOW A PHASE DOES ITS WORK — read this before running the loop. Every phase below names the skill it runs on. Load that skill and follow it. The /spec, /plan, /review, /ship names mark which command a phase corresponds to, for orientation only: writing a slash command into your output does not run it, because slash commands expand from what a human types, not from what you emit. A phase is never satisfied by announcing the command — load the skill, and where a command's body adds orchestration the skill doesn't carry (phase 4's per-task loop, phase 8's fan-out), follow the steps restated here.
 
 ## Modes
 
@@ -34,14 +36,21 @@ Autonomous is NOT a lower bar — every task is still test-driven, reviewed, and
 
 Run phases in order. Each phase has an exit condition — do not advance until it holds.
 
-1. DEFINE — /spec, skipped if a spec at SPEC.md, docs/SPEC.md, or spec/* already covers this scope. Exit: spec exists and covers the requested scope.
-2. PLAN — /plan, dependency-ordered vertically sliced tasks into tasks/plan.md. Exit: every task has acceptance criteria and a verification step.
+1. DEFINE — spec-driven-development skill: run its interview and write SPEC.md. Skipped if a spec at SPEC.md, docs/SPEC.md, or spec/* already covers this scope. (The /spec phase.) Exit: spec exists and covers the requested scope.
+2. PLAN — planning-and-task-breakdown skill: dependency-ordered vertically sliced tasks into tasks/plan.md. (The /plan phase.) Exit: every task has acceptance criteria and a verification step.
 3. GATE — present spec summary + full plan + the escalation policy you will run under. Wait for an unambiguous affirmative ("approve", "go", "yes"). Hedged answers ("looks reasonable", "I guess") are NOT approval. Exit: explicit approval recorded in the state file.
-4. BUILD — /build auto semantics per task: RED → GREEN → full suite → build → commit → mark complete. Exit: every task complete, suite green, build clean.
+4. BUILD — incremental-implementation with test-driven-development, per task: RED → GREEN → full suite → build → commit → mark complete. Stage only that task's files, never `git add -A`. (This is /build auto's loop, restated because the command will not run itself.) Exit: every task complete, suite green, build clean.
 5. VERIFY — full test suite, lint, typecheck, build from a clean state. Browser-facing change → browser-testing-with-devtools skill. Exit: all checks green on the current HEAD.
-6. REVIEW — /review five-axis pass on the accumulated diff. Exit: no Critical findings; Important findings fixed or explicitly deferred with a reason.
-7. SIMPLIFY — /code-simplify, only if review flagged complexity. Behavior-preserving; tests stay green. Exit: tests green, diff smaller or clearer.
-8. SHIP — /ship fan-out → go/no-go + rollback plan. Produce the decision; never execute the deploy. Exit: written GO/NO-GO with a rollback plan.
+6. REVIEW — code-review-and-quality skill: five-axis pass on the accumulated diff. (The /review phase.) Exit: no Critical findings; Important findings fixed or explicitly deferred with a reason.
+7. SIMPLIFY — code-simplification skill, only if review flagged complexity. Behavior-preserving; tests stay green. (The /code-simplify phase.) Exit: tests green, diff smaller or clearer.
+8. SHIP — shipping-and-launch skill plus the fan-out spelled out below → go/no-go + rollback plan. Produce the decision; never execute the deploy. (The /ship phase.) Exit: written GO/NO-GO with a rollback plan.
+
+Phase 8 — the ship fan-out, restated. /ship's orchestration lives in that command's body, not in the skill it loads, so run it here directly:
+
+1. Load the shipping-and-launch skill.
+2. Run three specialist personas against the accumulated diff — code-reviewer, security-auditor, test-engineer. Where the harness can run them concurrently, issue all three in a single turn; otherwise run each persona's prompt in sequence and merge as if they had returned together. A user-defined persona wins over the plugin's.
+3. Merge the three reports yourself: promote Critical/High security findings to launch blockers, resolve duplicate findings between reviewers, and check what no persona covers — accessibility, infrastructure, documentation.
+4. Write the verdict — GO or NO-GO — with acknowledged risks and a rollback plan.
 
 Loop-back edges (this is the loop, not a pipeline):
 

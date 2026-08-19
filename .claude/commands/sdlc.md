@@ -2,9 +2,13 @@
 description: Run the whole SDLC loop autonomously — spec, plan, build, review, ship — stopping only for critical decisions
 ---
 
-Invoke agent-skills:planning-and-task-breakdown, agent-skills:incremental-implementation, agent-skills:test-driven-development, agent-skills:code-review-and-quality, agent-skills:doubt-driven-development, and agent-skills:debugging-and-error-recovery as each phase demands.
+Invoke these skills as each phase demands: agent-skills:spec-driven-development, agent-skills:planning-and-task-breakdown, agent-skills:incremental-implementation, agent-skills:test-driven-development, agent-skills:browser-testing-with-devtools, agent-skills:code-review-and-quality, agent-skills:code-simplification, agent-skills:shipping-and-launch, agent-skills:doubt-driven-development, and agent-skills:debugging-and-error-recovery.
 
-`/sdlc` chains the individual lifecycle commands into one supervised loop. The existing commands stop at every phase boundary by design; this one carries state across them so a run can go spec → ship with a single human gate, escalating only on the triggers listed below.
+`/sdlc` carries state across the lifecycle phases so a run can go spec → ship with a single human gate, escalating only on the triggers listed below.
+
+**How a phase does its work — read this before running the loop.** Every phase below names the skill it runs on. Load that skill (the Skill tool where the harness has one; otherwise read `skills/<name>/SKILL.md`) and follow it.
+
+The `/spec`, `/plan`, `/review`, `/ship` names in the table mark which command a phase corresponds to, for orientation only. **Writing a slash command into your output does not run it** — slash commands expand from what a human types, not from what you emit. So a phase is never satisfied by announcing the command: load the skill, and where a command's body adds orchestration the skill doesn't carry (phase 4's per-task loop, phase 8's fan-out), follow the steps restated here.
 
 ## Modes
 
@@ -39,14 +43,23 @@ Run phases in order. Each phase has an exit condition — do not advance until i
 
 | # | Phase | Action | Exit condition |
 |---|-------|--------|----------------|
-| 1 | DEFINE | `/spec` — skip if a spec at `SPEC.md`, `docs/SPEC.md`, or `spec/*` already covers this scope | Spec exists and covers the requested scope |
-| 2 | PLAN | `/plan` — dependency-ordered, vertically sliced tasks into `tasks/plan.md` | Every task has acceptance criteria and a verification step |
+| 1 | DEFINE | agent-skills:spec-driven-development — run its interview and write `SPEC.md`. Skip if a spec at `SPEC.md`, `docs/SPEC.md`, or `spec/*` already covers this scope *(the `/spec` phase)* | Spec exists and covers the requested scope |
+| 2 | PLAN | agent-skills:planning-and-task-breakdown — dependency-ordered, vertically sliced tasks into `tasks/plan.md` *(the `/plan` phase)* | Every task has acceptance criteria and a verification step |
 | 3 | **GATE** | Present spec summary + full plan + the escalation policy you will run under. Wait for an unambiguous affirmative ("approve", "go", "yes"). Hedged answers ("looks reasonable", "I guess") are **not** approval | Explicit approval recorded in the state file |
-| 4 | BUILD | `/build auto` semantics per task: RED → GREEN → full suite → build → commit → mark complete | Every task complete, suite green, build clean |
+| 4 | BUILD | agent-skills:incremental-implementation with agent-skills:test-driven-development, per task: RED → GREEN → full suite → build → commit → mark complete. Stage only that task's files — never `git add -A` *(`/build auto`'s loop, restated because the command will not run itself)* | Every task complete, suite green, build clean |
 | 5 | VERIFY | Full test suite, lint, typecheck, build from a clean state. Browser-facing change → agent-skills:browser-testing-with-devtools | All checks green on the current HEAD |
-| 6 | REVIEW | `/review` five-axis pass on the accumulated diff | No Critical findings; Important findings fixed or explicitly deferred with a reason |
-| 7 | SIMPLIFY | `/code-simplify` — only if review flagged complexity. Behavior-preserving; tests stay green | Tests green, diff smaller or clearer |
-| 8 | SHIP | `/ship` fan-out → go/no-go + rollback plan. **Produce the decision; never execute the deploy** | Written GO/NO-GO with a rollback plan |
+| 6 | REVIEW | agent-skills:code-review-and-quality — five-axis pass on the accumulated diff *(the `/review` phase)* | No Critical findings; Important findings fixed or explicitly deferred with a reason |
+| 7 | SIMPLIFY | agent-skills:code-simplification — only if review flagged complexity. Behavior-preserving; tests stay green *(the `/code-simplify` phase)* | Tests green, diff smaller or clearer |
+| 8 | SHIP | agent-skills:shipping-and-launch plus the fan-out spelled out below → go/no-go + rollback plan. **Produce the decision; never execute the deploy** *(the `/ship` phase)* | Written GO/NO-GO with a rollback plan |
+
+### Phase 8 — the ship fan-out, restated
+
+`/ship`'s orchestration lives in that command's body, not in the skill it loads, so run it here directly:
+
+1. Load agent-skills:shipping-and-launch.
+2. Spawn `code-reviewer`, `security-auditor`, and `test-engineer` against the accumulated diff. **Issue all three calls in a single turn** so they run in parallel — with the Agent tool where the harness has one (`subagent_type` matching each persona's `name`), otherwise run each persona's prompt in sequence and merge as if they had returned together. A user-defined persona in `.claude/agents/` wins over the plugin's.
+3. Merge the three reports yourself, in the main context: promote Critical/High security findings to launch blockers, resolve duplicate findings between reviewers, and check what no persona covers — accessibility, infrastructure, documentation.
+4. Write the verdict — GO or NO-GO — with acknowledged risks and a rollback plan.
 
 **Loop-back edges** (this is the loop, not a pipeline):
 

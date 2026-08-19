@@ -362,6 +362,8 @@ footer {
       </div>
     </div>
 
+    <p class="note"><strong>Those command names are labels, not calls.</strong> A slash command expands from what a human types — an agent writing <code>/plan</code> into its own output runs nothing. So each phase names the <em>skill</em> it loads and follows: <code>spec-driven-development</code>, <code>planning-and-task-breakdown</code>, <code>incremental-implementation</code> with <code>test-driven-development</code>, <code>code-review-and-quality</code>, <code>code-simplification</code>, <code>shipping-and-launch</code>. Where a command's body adds orchestration its skill doesn't carry — the per-task build loop, the three-persona ship fan-out — <code>/sdlc</code> restates those steps itself rather than pointing at the command.</p>
+
     <figure>
       <div class="figwrap">
         <svg class="flow" viewBox="0 0 760 350" role="img"
@@ -534,7 +536,7 @@ Warning: main has advanced 14 commits since feat/visibility branched</span></pre
 
   <section>
     <h2><span class="num">09</span>What it extends</h2>
-    <p>If you already run <code>/build auto</code>, you have most of this. Its Build phase <em>is</em> <code>/build auto</code> — section 04 names it as the command, and nothing about the task loop was reimplemented. What <code>/sdlc</code> adds sits entirely outside that loop: a phase before it, four after it, a branch around it, and a state file underneath it.</p>
+    <p>If you already run <code>/build auto</code>, you have most of this. Its Build phase <em>is</em> <code>/build auto</code>'s loop — the same two skills, the same red-green-commit cycle, restated inside <code>/sdlc</code> because one command cannot call another. What <code>/sdlc</code> adds sits entirely outside that loop: a phase before it, four after it, a branch around it, and a state file underneath it.</p>
 
     <figure>
       <div class="figwrap">
