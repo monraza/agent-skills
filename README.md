@@ -382,7 +382,7 @@ agent-skills/
 ├── .gemini/commands/                  # 9 slash commands (Gemini CLI)
 ├── commands/                          # 9 slash commands (Antigravity CLI)
 ├── plugin.json                        # Antigravity plugin manifest
-└── docs/                              # Setup guides per tool
+└── docs/                              # Setup guides per tool + sdlc-workflow.html
 ```
 
 ---

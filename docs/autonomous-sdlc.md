@@ -157,6 +157,7 @@ Every task still earns a failing test first, a passing test after, its own commi
 
 ## Related
 
+- [sdlc-workflow.html](sdlc-workflow.html) — the whole workflow on one page, `/spec` through shipped features (open in a browser)
 - [`/sdlc` command](../.claude/commands/sdlc.md) — the loop and its escalation policy
 - [`/build auto`](../.claude/commands/build.md) — the single-phase autonomous pass this loop builds on
 - [doubt-driven-development](../skills/doubt-driven-development/SKILL.md) — when an agent should stop and ask

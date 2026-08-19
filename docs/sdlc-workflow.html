@@ -1,0 +1,541 @@
+<!doctype html>
+<!--
+  Standalone form of the "Spec to Shipped" workflow summary.
+  Published as an Artifact from a copy without this document skeleton — the
+  Artifact publisher supplies its own. Edit this file; the skeleton is stripped
+  when republishing.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="End-to-end map of the /sdlc workflow — from the /spec interview and SPEC.md through the per-feature loop, its escalation policy, and the resume board.">
+<title>Spec to Shipped</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  --ground:    #F3F4F1;
+  --surface:   #FFFFFF;
+  --surface-2: #EAECE7;
+  --ink:       #14191C;
+  --ink-2:     #4C5761;
+  --ink-3:     #6E7A82;
+  --rule:      #D6DAD3;
+  --rule-firm: #B9BFB7;
+  --brass:     #8F5E0C;
+  --brass-bg:  #F6EBD4;
+  --signal:    #145E4C;
+  --signal-bg: #DDEAE4;
+  --halt:      #9C3324;
+  --halt-bg:   #F6E1DC;
+  --shadow:    0 1px 2px rgba(20, 25, 28, .05), 0 8px 24px -16px rgba(20, 25, 28, .25);
+
+  --step:  clamp(.98rem, .95rem + .18vw, 1.06rem);
+  --lede:  clamp(1.12rem, 1.02rem + .5vw, 1.3rem);
+  --h2:    clamp(1.42rem, 1.2rem + 1vw, 1.95rem);
+  --h1:    clamp(2.3rem, 1.7rem + 3vw, 3.9rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:    #0D1214;
+    --surface:   #151C1F;
+    --surface-2: #1D262A;
+    --ink:       #E7ECE8;
+    --ink-2:     #A3AFB4;
+    --ink-3:     #7E8B91;
+    --rule:      #263136;
+    --rule-firm: #38464C;
+    --brass:     #E7B255;
+    --brass-bg:  #2B2213;
+    --signal:    #5CC8A7;
+    --signal-bg: #122B25;
+    --halt:      #F18871;
+    --halt-bg:   #2E1712;
+    --shadow:    0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:    #0D1214;
+  --surface:   #151C1F;
+  --surface-2: #1D262A;
+  --ink:       #E7ECE8;
+  --ink-2:     #A3AFB4;
+  --ink-3:     #7E8B91;
+  --rule:      #263136;
+  --rule-firm: #38464C;
+  --brass:     #E7B255;
+  --brass-bg:  #2B2213;
+  --signal:    #5CC8A7;
+  --signal-bg: #122B25;
+  --halt:      #F18871;
+  --halt-bg:   #2E1712;
+  --shadow:    0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: var(--step);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 1rem + 5vw, 5.5rem) clamp(1.1rem, .6rem + 2.6vw, 2.75rem) 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3rem, 2rem + 3vw, 4.75rem);
+}
+
+h1, h2, h3 { font-family: "Bricolage Grotesque", "IBM Plex Sans", sans-serif; text-wrap: balance; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+a { color: inherit; text-decoration-color: var(--rule-firm); text-underline-offset: .18em; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 3px; }
+code, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { font-size: .89em; background: var(--surface-2); padding: .12em .38em; border-radius: 4px; }
+
+/* ── masthead ─────────────────────────────────────────────── */
+.masthead { display: flex; flex-direction: column; gap: 1.5rem; }
+.kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .74rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+h1 { font-size: var(--h1); font-weight: 700; line-height: .96; letter-spacing: -.025em; }
+.lede { font-size: var(--lede); color: var(--ink-2); line-height: 1.48; max-width: 46ch; }
+
+.legend { display: flex; flex-wrap: wrap; gap: .6rem 1.6rem; padding-top: .4rem; }
+.legend span { display: flex; align-items: center; gap: .55rem; font-size: .85rem; color: var(--ink-2); }
+.chip { width: 1.05rem; height: 1.05rem; border-radius: 50%; flex: none; }
+.chip.agent { background: var(--signal); }
+.chip.gate  { background: var(--brass); border-radius: 2px; transform: rotate(45deg); width: .85rem; height: .85rem; }
+
+/* ── sections ─────────────────────────────────────────────── */
+section { display: flex; flex-direction: column; gap: 1.4rem; }
+h2 { font-size: var(--h2); font-weight: 700; letter-spacing: -.018em; line-height: 1.1; }
+h2 .num {
+  font-family: "IBM Plex Mono", monospace; font-size: .58em; font-weight: 400;
+  color: var(--ink-3); letter-spacing: 0; margin-right: .7rem; vertical-align: .18em;
+}
+h3 { font-size: 1.03rem; font-weight: 700; letter-spacing: -.005em; }
+
+/* ── the spine ────────────────────────────────────────────── */
+.spine { display: flex; flex-direction: column; gap: 0; }
+.stage {
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+  gap: 0 1.15rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--rule);
+  position: relative;
+}
+.stage:first-child { border-top: 0; }
+.stage .rail { position: relative; display: flex; justify-content: center; }
+.stage .rail::before {
+  content: ""; position: absolute; top: -1.15rem; bottom: -1.15rem; width: 2px;
+  background: var(--rule); left: calc(50% - 1px);
+}
+.stage:first-child .rail::before { top: .55rem; }
+.stage:last-child  .rail::before { bottom: calc(100% - .55rem); }
+.marker {
+  width: .82rem; height: .82rem; border-radius: 50%; margin-top: .42rem;
+  background: var(--signal); position: relative; z-index: 1;
+  outline: 4px solid var(--ground);
+}
+.stage.gated .marker { background: var(--brass); border-radius: 2px; transform: rotate(45deg); width: .72rem; height: .72rem; }
+.stage .body { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.stage .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem .8rem; }
+.stage .name { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 1.06rem; letter-spacing: -.01em; }
+.stage .cmd  { font-family: "IBM Plex Mono", monospace; font-size: .82rem; color: var(--ink-3); }
+.stage p { color: var(--ink-2); font-size: .95rem; }
+.tag {
+  font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .08em;
+  text-transform: uppercase; padding: .18em .5em; border-radius: 3px; white-space: nowrap;
+}
+.tag.gate  { background: var(--brass-bg);  color: var(--brass); }
+.tag.out   { background: var(--surface-2); color: var(--ink-2); }
+.tag.loop  { background: var(--signal-bg); color: var(--signal); }
+
+/* ── panels, grids, tables ────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1.3rem 1.4rem;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: .8rem;
+}
+.grid3 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.grid2 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+
+.panel h3 { display: flex; align-items: center; gap: .55rem; }
+.dot { width: .6rem; height: .6rem; border-radius: 50%; flex: none; }
+.dot.halt { background: var(--halt); }
+.dot.go   { background: var(--signal); }
+.dot.no   { background: var(--ink-3); }
+
+.list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+.list li { font-size: .91rem; color: var(--ink-2); padding-left: 1.05rem; position: relative; line-height: 1.5; }
+.list li::before {
+  content: ""; position: absolute; left: 0; top: .58em;
+  width: .32rem; height: .32rem; border-radius: 50%; background: var(--rule-firm);
+}
+.list strong { color: var(--ink); font-weight: 600; }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 34rem; }
+th, td { text-align: left; padding: .7rem .95rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th {
+  font-family: "IBM Plex Mono", monospace; font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+  background: var(--surface-2); border-bottom-color: var(--rule-firm);
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.mono { font-family: "IBM Plex Mono", monospace; font-size: .84rem; white-space: nowrap; }
+td strong { font-weight: 600; }
+
+pre {
+  margin: 0; padding: 1.15rem 1.25rem; overflow-x: auto;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+  font-family: "IBM Plex Mono", monospace; font-size: .8rem; line-height: 1.72;
+  color: var(--ink-2); box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums;
+}
+pre b { color: var(--ink); font-weight: 500; }
+pre .w { color: var(--brass); }
+pre .g { color: var(--signal); }
+pre .c { color: var(--ink-3); }
+
+figure { margin: 0; display: flex; flex-direction: column; gap: .85rem; }
+.figwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1.2rem; box-shadow: var(--shadow); }
+svg.flow { display: block; width: 100%; min-width: 40rem; height: auto; color: var(--ink-2); }
+figcaption { font-size: .87rem; color: var(--ink-3); max-width: 62ch; }
+svg .brass-stroke { stroke: var(--brass); }
+svg .brass-fill   { fill: var(--brass); }
+
+.note {
+  border-left: 3px solid var(--brass);
+  padding: .15rem 0 .15rem 1.1rem;
+  color: var(--ink-2); font-size: .93rem;
+}
+.note strong { color: var(--ink); font-weight: 600; }
+
+footer {
+  border-top: 1px solid var(--rule); padding-top: 1.6rem;
+  color: var(--ink-3); font-size: .87rem;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a { transition: text-decoration-color .15s ease; }
+  a:hover { text-decoration-color: var(--brass); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="kicker">agent-skills · the /sdlc loop</div>
+    <h1>Spec&nbsp;to&nbsp;Shipped</h1>
+    <p class="lede">One spec, one approval, then a loop that plans, builds, verifies, reviews and ships every feature on its own branch — stopping only for the decisions that are actually yours.</p>
+    <div class="legend">
+      <span><i class="chip agent"></i> runs unattended</span>
+      <span><i class="chip gate"></i> waits for you</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="num">01</span>Define once</h2>
+    <p>Everything downstream reads from one file. <code>/spec</code> interviews you — in one batched round, not a trickle — and writes <code>SPEC.md</code>. Nothing else in the loop invents product decisions; if the answer isn't here, the run stops and asks.</p>
+
+    <div class="spine">
+      <div class="stage gated">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">The interview</span><span class="cmd">/spec</span><span class="tag gate">you answer</span></div>
+          <p>Objective and users · which features · what "done" means · stack and constraints · what it must never do. One round of questions, each with a recommendation attached.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">SPEC.md</span><span class="tag out">artifact</span></div>
+          <p>Six areas: <strong>objective</strong>, <strong>commands</strong>, <strong>project structure</strong>, <strong>code style</strong>, <strong>testing strategy</strong>, and <strong>boundaries</strong>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Boundaries are the dial that sets how often you get interrupted.</strong> The three tiers — <em>always do</em>, <em>ask first</em>, <em>never do</em> — are read by every later phase as standing answers. Most mid-run questions are spec gaps in disguise; write the decision here once and the loop stops asking. A standing <code>Always: open a draft PR per shipped feature</code> even authorizes the <code>--pr</code> behavior without the flag.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>Split into features</h2>
+    <p>The run derives a feature list from <code>SPEC.md</code>, orders it by dependency, and writes the registry it will work from and report against.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Feature</th><th>Branch</th><th>Base</th><th>Deps</th><th>Status</th><th>PR</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">1</td><td>Location resolution</td><td class="mono">feat/location</td><td class="mono">main</td><td>—</td><td><strong>shipped</strong></td><td class="mono">#41 merged</td></tr>
+          <tr><td class="mono">2</td><td>Event feed</td><td class="mono">feat/event-feed</td><td class="mono">feat/location</td><td>1</td><td><strong>ready</strong></td><td class="mono">#42 draft</td></tr>
+          <tr><td class="mono">3</td><td>Visibility score</td><td class="mono">feat/visibility</td><td class="mono">feat/event-feed</td><td>2</td><td><strong>in-progress</strong></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><strong>A feature with dependencies branches off its dependency, not off main.</strong> Otherwise it can't see code it is specified to build on. That's why the registry tracks <em>base</em> separately from <em>branch</em> — and why the draft PR targets the parent, keeping each diff scoped to one feature's work.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>The gate</h2>
+    <p>You approve the feature list, the order, and the branch topology — once. In <code>auto features</code> this is the only planned stop; individual feature plans are not separately gated, or you are back to stepping by hand. Hedged answers ("looks reasonable") don't count as approval.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>The loop, once per feature</h2>
+    <p>Each feature gets its own branch, plan, and state file, then runs the full phase loop. Every task is test-driven and individually committed, so any point in the run is a clean rollback.</p>
+
+    <div class="spine">
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Plan</span><span class="cmd">/plan</span><span class="tag out">tasks/[feature]/plan.md</span></div>
+          <p>Vertically sliced tasks — one complete path each, not horizontal layers. Every task carries acceptance criteria and a verification step.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Build</span><span class="cmd">/build auto</span></div>
+          <p>Per task: failing test → minimum code to pass → full suite → build → commit → mark complete. Staging only that task's files, never <code>git add -A</code>.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Verify</span><span class="cmd">/test</span></div>
+          <p>Full suite, lint, typecheck, and build from a clean state on the current HEAD. Browser-facing work adds a DevTools pass.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Review</span><span class="cmd">/review</span><span class="tag loop">loops back ≤ 3</span></div>
+          <p>Five axes — correctness, readability, architecture, security, performance. Critical and Important findings return to Build; Suggestions are the agent's own call.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Simplify</span><span class="cmd">/code-simplify</span><span class="tag out">only if flagged</span></div>
+          <p>Behavior-preserving cleanup, run only when review flagged complexity. Tests stay green throughout or the change is reverted.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Ship decision</span><span class="cmd">/ship</span><span class="tag loop">loops back ≤ 2</span></div>
+          <p>Three specialists in parallel — code reviewer, security auditor, test engineer — merged into one GO / NO-GO with a mandatory rollback plan. The decision is <em>written</em>; the deploy is never executed.</p>
+        </div>
+      </div>
+      <div class="stage gated">
+        <div class="rail"><i class="marker"></i></div>
+        <div class="body">
+          <div class="head"><span class="name">Draft PR</span><span class="cmd">--pr</span><span class="tag gate">your review</span></div>
+          <p>On a GO only: push the branch, open a <strong>draft</strong> PR against the parent branch, body carrying the ship decision, deferred findings, and merge order. Never marked ready, never merged, never auto-merged.</p>
+        </div>
+      </div>
+    </div>
+
+    <figure>
+      <div class="figwrap">
+        <svg class="flow" viewBox="0 0 760 350" role="img"
+             aria-label="The phase loop runs inside a per-feature loop. Review findings and a NO-GO verdict re-enter Build under fixed budgets, while a blocked feature parks so the outer loop can move to the next feature.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+            <marker id="ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path class="brass-fill" d="M 0 0 L 10 5 L 0 10 z"></path>
+            </marker>
+          </defs>
+
+          <text x="24" y="30" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.4" fill="currentColor" opacity=".75">FOR EACH FEATURE, IN DEPENDENCY ORDER</text>
+          <rect x="24" y="46" width="664" height="182" rx="10" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="5 5"></rect>
+
+          <g font-family="IBM Plex Sans, sans-serif" font-size="13" text-anchor="middle">
+            <rect x="56"  y="86" width="96" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="104" y="111" fill="currentColor">PLAN</text>
+            <rect x="182" y="86" width="96" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="230" y="111" fill="currentColor">BUILD</text>
+            <rect x="308" y="86" width="96" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="356" y="111" fill="currentColor">VERIFY</text>
+            <rect x="434" y="86" width="96" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="482" y="111" fill="currentColor">REVIEW</text>
+            <rect x="560" y="86" width="96" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="608" y="111" fill="currentColor">SHIP</text>
+          </g>
+
+          <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+            <line x1="152" y1="106" x2="180" y2="106"></line>
+            <line x1="278" y1="106" x2="306" y2="106"></line>
+            <line x1="404" y1="106" x2="432" y2="106"></line>
+            <line x1="530" y1="106" x2="558" y2="106"></line>
+            <path d="M 482 126 V 158 H 214 V 130"></path>
+            <path d="M 608 126 V 196 H 246 V 130"></path>
+          </g>
+
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".85">
+            <text x="352" y="153" text-anchor="middle">findings · max 3 cycles</text>
+            <text x="432" y="191" text-anchor="middle">NO-GO · max 2 attempts</text>
+          </g>
+
+          <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+            <line x1="495" y1="228" x2="495" y2="258"></line>
+          </g>
+          <g class="brass-stroke" stroke-width="1.5" fill="none" marker-end="url(#ar-b)">
+            <line x1="205" y1="228" x2="205" y2="258"></line>
+          </g>
+
+          <rect x="380" y="260" width="230" height="36" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+          <text x="495" y="283" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">GO → draft PR, return to base</text>
+
+          <rect class="brass-stroke" x="90" y="260" width="230" height="36" rx="6" fill="none"></rect>
+          <text class="brass-fill" x="205" y="283" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5">blocked → park the feature</text>
+
+          <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+            <path d="M 495 296 V 326 H 14 V 106 H 54"></path>
+          </g>
+          <path class="brass-stroke" d="M 205 296 V 326" stroke-width="1.5" fill="none"></path>
+          <text x="24" y="343" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".85">next feature whose dependencies are satisfied</text>
+        </svg>
+      </div>
+      <figcaption>The eight-phase loop runs once per feature. Review findings and a NO-GO verdict re-enter Build under fixed budgets; a blocked feature parks and the outer loop continues to the next one, so a single stuck feature never idles the rest.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>When it stops</h2>
+    <p>This is the part that decides how often the loop interrupts you. It is applied literally, not judged case by case.</p>
+
+    <div class="grid3">
+      <div class="panel">
+        <h3><i class="dot halt"></i>Stops and asks</h3>
+        <ul class="list">
+          <li><strong>Irreversible or outward-facing</strong> — anything you can't undo with <code>git revert</code>: migrations, deletions, deploys, payments, auth, secrets, third-party writes</li>
+          <li><strong>Spec gap</strong> — a requirement missing or contradictory, where the answer changes what gets built</li>
+          <li><strong>Security</strong> — any Critical or High finding</li>
+          <li><strong>Stuck</strong> — the same failure survives two distinct fix attempts</li>
+          <li><strong>Scope expansion</strong> — a new dependency, a broken contract, files well outside the plan</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3><i class="dot go"></i>Decides alone</h3>
+        <ul class="list">
+          <li>Lint, formatting, typecheck fixes</li>
+          <li>Missing test cases</li>
+          <li>Review Suggestions and Importants inside its own diff</li>
+          <li>Internal renames and extractions</li>
+          <li>Docs, comments, changelog entries</li>
+          <li>Reordering independent tasks</li>
+          <li>Implementation choices the spec doesn't constrain — matching existing patterns, and recording the choice</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3><i class="dot no"></i>Never does</h3>
+        <ul class="list">
+          <li>Delete, skip, or weaken a test to reach green</li>
+          <li><code>--no-verify</code>, <code>git add -A</code>, force-push</li>
+          <li>Disable type checking or loosen lint rules</li>
+          <li>Merge anything, or mark a PR ready for review</li>
+          <li>Execute a deploy</li>
+        </ul>
+        <p style="font-size:.88rem;color:var(--ink-3)">If green is only reachable through one of these, that <em>is</em> the escalation.</p>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <p class="note"><strong>Blocking escalations ask immediately.</strong> Irreversible actions, spec gaps, and Critical security findings stop the run then and there, with options and a recommendation.</p>
+      <p class="note"><strong>Everything else batches.</strong> Non-blocking questions are logged with the assumption the run proceeded on, and presented together at the next phase boundary. One question set, not a trickle.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">06</span>How you find out</h2>
+    <p>An unattended run that hits a decision otherwise waits in a terminal nobody is watching. The <code>sdlc-notify</code> hook binds three events, because they fail differently — a run can block without stopping, and stop without blocking.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Event</th><th>Fires when</th><th>Catches</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Notification</td><td>The harness needs permission, or the session idles</td><td>Waiting on you, regardless of what the run thinks</td></tr>
+          <tr><td class="mono">PostToolUse</td><td>A state file is written</td><td>An escalation the moment it's recorded — mid-run, before the agent stops</td></tr>
+          <tr><td class="mono">Stop</td><td>The agent's turn ends</td><td>Why it stopped: blocked, at the gate, finished, or paused</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Alerts route through your own command, a Slack-shaped webhook, the desktop notifier, or a terminal bell — whichever is configured first. Two rules keep it from becoming noise you learn to ignore: <strong>no run in flight means no notification</strong>, and identical state alerts once.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">07</span>Coming back to it</h2>
+    <p>Every phase transition is written to disk, so a run survives a closed laptop, a lost session, or a week of other work. <code>/sdlc status</code> is read-only and reconstructs the truth from four sources — the registry, each feature's state file, git, and PR status.</p>
+<pre><b>SDLC — SPEC.md — 8 features — base: main — last activity 6 days ago</b>
+
+  #  Feature           Status        Phase       Branch            PR
+  1  Location          <span class="g">shipped</span>       —           (merged)          #41 merged
+  2  Event feed        <span class="w">ready</span>         DONE        feat/event-feed   #42 draft  <span class="w">← your review</span>
+  3  Visibility score  in-progress   BUILD 4/8   feat/visibility   —
+  4  Weather overlay   <span class="w">blocked</span>       BUILD 2/6   feat/weather      —          <span class="w">← trigger 1</span>
+  5  Event detail      deferred      —           —                 —          (waits on 3)
+
+<b>Waiting on you (2)</b>
+  • Feature 4 — trigger 1 (secrets): API key. Options: server route / drop / other provider
+  • PR #42 — draft, GO verdict, waiting for review
+
+Resume point: feature 3, BUILD phase, task 4 of 7
+Budgets: review 1/3 · fix attempts 0/2 · consecutive blocked 1
+<span class="c">Drift: registry says feature 1 is `ready`, but feat/location merged into main 5 days ago
+Warning: main has advanced 14 commits since feat/visibility branched</span></pre>
+    <p class="note"><strong>The reconciliation is the feature, not the table.</strong> The registry is what the loop believes; git is what happened. Those diverge the moment you merge a PR yourself. And that last warning matters more than it looks: feature 3's tests passed against a baseline that no longer exists, so its green isn't evidence until base is merged in.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">08</span>Every mode</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th><th>Human stops</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/sdlc</td><td>Stepped — one phase, report, stop</td><td>Every phase</td></tr>
+          <tr><td class="mono">/sdlc auto</td><td>Whole spec on the current branch</td><td>The plan gate</td></tr>
+          <tr><td class="mono">/sdlc auto feature 2</td><td>One feature, on its own branch</td><td>That feature's plan</td></tr>
+          <tr><td class="mono">/sdlc auto features</td><td>Every feature, one branch each, dependency order</td><td>The feature list, once</td></tr>
+          <tr><td class="mono">/sdlc auto features --pr</td><td>Same, plus a draft PR per GO</td><td>The feature list, once</td></tr>
+          <tr><td class="mono">/sdlc status</td><td>Read-only board of where everything stands</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Running headless adds <code>claude -p "/sdlc auto features" --permission-mode acceptEdits</code>. There's nobody to answer an escalation there, so the run stops and records it — which is correct, not a failure.</p>
+  </section>
+
+  <footer>
+    <p><strong>What autonomy does not change.</strong> Every task still earns a failing test first, a passing test after, its own commit, and a review pass. The loop removes the human <em>between</em> phases — never the verification inside them.</p>
+    <p>A loop that runs unattended and skips tests isn't faster. It just moves the discovery of the bug to production.</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -201,6 +201,7 @@ Two lines there are the ones that save you: the **drift** notice — you merged 
 
 ## Related
 
+- [sdlc-workflow.html](../sdlc-workflow.html) — the whole workflow on one page, `/spec` through shipped features
 - [autonomous-sdlc.md](../autonomous-sdlc.md) — running the loop headless, scheduled, or in CI
 - [`/sdlc` command](../../.claude/commands/sdlc.md) — the loop and its full escalation policy
 - [sdlc-notify hook](../../hooks/SDLC-NOTIFY.md) — get told when the loop blocks
