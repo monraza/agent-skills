@@ -36,6 +36,22 @@ run() {
   CAPTURED="$(cat "$WORK/captured" 2>/dev/null)"
 }
 
+# run_feature <payload> <slug> <state> — per-feature run, no top-level state file
+run_feature() {
+  local payload="$1" slug="$2" state="$3"
+  : > "$WORK/captured"
+  rm -f "$WORK/tasks/sdlc-state.md"
+  mkdir -p "$WORK/tasks/$slug"
+  printf '%s\n' "$state" > "$WORK/tasks/$slug/sdlc-state.md"
+  printf '%s' "$payload" | \
+    CLAUDE_PROJECT_DIR="$WORK" \
+    SDLC_NOTIFY_CMD="cat >> $WORK/captured" \
+    SDLC_NOTIFY_LEVEL="${LEVEL_OVERRIDE:-review}" \
+    bash "$HOOK" 2>/dev/null
+  HOOK_EXIT=$?
+  CAPTURED="$(cat "$WORK/captured" 2>/dev/null)"
+}
+
 reset_dedupe() { rm -f "$WORK/.claude/.sdlc-notify-state"; }
 
 check() {
@@ -165,6 +181,64 @@ Approved at gate: yes
 ## Escalations
 - [open] trigger 5 (scope) — new dependency needs a decision'
 check "a different escalation breaks the dedupe and notifies again" "$(contains 'new dependency')"
+
+# ── Per-feature runs (/sdlc auto features) ────────────────────────────────────
+
+reset_dedupe
+run_feature '{"hook_event_name":"Stop"}' 'event-feed' '# SDLC run — feat/event-feed
+Phase: BUILD (4/8)
+Approved at gate: yes
+
+## Escalations
+- [open] trigger 5 (scope) — new dependency needs a decision'
+check "finds tasks/<feature>/sdlc-state.md when there is no top-level state" "$(contains '[BLOCKED]')"
+check "names the feature in the alert" "$(contains 'feature: event-feed')"
+
+reset_dedupe
+rm -rf "${WORK:?}/tasks"
+mkdir -p "$WORK/tasks/feature-a" "$WORK/tasks/feature-b"
+printf '# a\nPhase: DONE\nApproved at gate: yes\n' > "$WORK/tasks/feature-a/sdlc-state.md"
+sleep 1
+printf '# b\nPhase: BUILD (4/8)\nApproved at gate: yes\n\n## Escalations\n- [open] trigger 2 — spec gap in feature b\n' \
+  > "$WORK/tasks/feature-b/sdlc-state.md"
+: > "$WORK/captured"
+printf '%s' '{"hook_event_name":"Stop"}' | CLAUDE_PROJECT_DIR="$WORK" \
+  SDLC_NOTIFY_CMD="cat >> $WORK/captured" bash "$HOOK" 2>/dev/null
+CAPTURED="$(cat "$WORK/captured")"
+check "picks the most recently updated feature when several are in flight" "$(contains 'spec gap in feature b')"
+
+reset_dedupe
+rm -rf "${WORK:?}/tasks"
+mkdir -p "$WORK/tasks/feature-c"
+printf '# c\nPhase: BUILD\nApproved at gate: yes\n\n## Escalations\n- [open] trigger 4 — stuck in feature c\n' \
+  > "$WORK/tasks/feature-c/sdlc-state.md"
+: > "$WORK/captured"
+printf '%s' '{"hook_event_name":"PostToolUse","tool_input":{"file_path":"'"$WORK"'/tasks/feature-c/sdlc-state.md"}}' \
+  | CLAUDE_PROJECT_DIR="$WORK" SDLC_NOTIFY_CMD="cat >> $WORK/captured" bash "$HOOK" 2>/dev/null
+CAPTURED="$(cat "$WORK/captured")"
+check "PostToolUse classifies the exact file that was written" "$(contains 'stuck in feature c')"
+
+# Two features blocked on different things are two alerts, not one.
+reset_dedupe
+rm -rf "${WORK:?}/tasks"
+run_feature '{"hook_event_name":"Stop"}' 'feat-one' '# one
+Phase: BUILD
+Approved at gate: yes
+
+## Escalations
+- [open] trigger 1 — API key needed'
+first="$(contains 'feat-one')"
+run_feature '{"hook_event_name":"Stop"}' 'feat-two' '# two
+Phase: BUILD
+Approved at gate: yes
+
+## Escalations
+- [open] trigger 1 — API key needed'
+second="$(contains 'feat-two')"
+check "dedupe is per feature — identical blockers on two features both alert" \
+  "$([ "$first" = "1" ] && [ "$second" = "1" ] && echo 1 || echo 0)"
+
+rm -rf "${WORK:?}/tasks"
 
 # ── Robustness ────────────────────────────────────────────────────────────────
 

@@ -65,7 +65,7 @@ The hook classifies the run from `tasks/sdlc-state.md` and sends the highest-pri
 | `SDLC_NOTIFY_LEVEL` | `review` | `blocking` (only decisions), `review` (adds questions and completion), `all` (adds every phase stop) |
 | `SDLC_NOTIFY_CMD` | — | Arbitrary command. Body on stdin; `SDLC_KIND`, `SDLC_TITLE`, `SDLC_DETAIL` in the environment. Highest precedence |
 | `SDLC_NOTIFY_WEBHOOK` | — | POSTs `{"text": "..."}` — works with Slack incoming webhooks |
-| `SDLC_STATE_FILE` | `tasks/sdlc-state.md` | Where the run records its state |
+| `SDLC_STATE_FILE` | resolved (see below) | Pin the state file explicitly |
 | `SDLC_NOTIFY_LOG` | `.claude/sdlc-notify.log` | Append-only delivery log, written on every notification |
 | `SDLC_NOTIFY_DEDUPE` | `.claude/.sdlc-notify-state` | Last-sent signature |
 
@@ -80,6 +80,17 @@ export SDLC_NOTIFY_CMD='curl -s -d "$SDLC_TITLE: $SDLC_DETAIL" ntfy.sh/my-sdlc-r
 # Only wake me for real decisions
 export SDLC_NOTIFY_LEVEL=blocking
 ```
+
+## Finding the run's state
+
+A per-feature run (`/sdlc auto features`) keeps state at `tasks/<feature>/sdlc-state.md`, so there is no fixed path. The hook resolves in this order:
+
+1. `SDLC_STATE_FILE`, if set
+2. On `PostToolUse`, the file that was just written — the most precise signal available
+3. `tasks/sdlc-state.md` — whole-spec runs and the per-feature outer loop
+4. The most recently modified `tasks/*/sdlc-state.md` — whichever feature is in flight
+
+Alerts from a per-feature run name the feature in the title, and the dedupe key includes the state file's path — so two features blocked on the same thing produce two alerts rather than one swallowing the other.
 
 ## Silence is the feature
 
@@ -98,7 +109,7 @@ The hook never blocks a tool call and never fails a run. Every path exits 0 — 
 bash hooks/sdlc-notify-test.sh
 ```
 
-20 checks covering classification, precedence, level filtering, dedupe, and robustness against malformed input. Delivery is captured through `SDLC_NOTIFY_CMD`, so the tests never send anything anywhere.
+25 checks covering classification, precedence, level filtering, dedupe, per-feature state resolution, and robustness against malformed input. Delivery is captured through `SDLC_NOTIFY_CMD`, so the tests never send anything anywhere.
 
 ## Requirements
 

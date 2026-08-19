@@ -8,20 +8,27 @@ Invoke agent-skills:planning-and-task-breakdown, agent-skills:incremental-implem
 
 ## Modes
 
-`$ARGUMENTS` selects the mode; everything after the mode word is the scope description.
+Parse `$ARGUMENTS` for the tokens below; whatever is left over is the scope description.
 
-- **`/sdlc`** — stepped. Run one phase, report, stop. Same guarantees, human between every phase.
-- **`/sdlc auto`** — autonomous. One approval at the plan gate, then run every phase to a ship decision, pausing only on an escalation trigger.
-- **`/sdlc auto <description>`** — same, seeding the spec phase with what to build.
+| Arguments | Autonomy | Scope | Branch |
+|-----------|----------|-------|--------|
+| *(empty)* | stepped — one phase, report, stop | whole spec | current |
+| `auto` / `all` | autonomous | whole spec | current |
+| `auto <description>` | autonomous | whole spec, seeding DEFINE | current |
+| `feature <id>` | stepped | one feature from the spec | its own |
+| `auto feature <id>` | autonomous | one feature from the spec | its own |
+| `auto features` | autonomous | **every** feature in the spec, in dependency order | one per feature |
 
-Treat `auto` or `all` as autonomous; anything else (or empty) is stepped. Autonomous is **not** a lower bar — every task is still test-driven, reviewed, and committed individually. It removes the human stepping *between* phases, never the verification.
+`<id>` is a feature's number or name from `tasks/features.md` (or, before that exists, from `SPEC.md`).
 
-## Preflight (both modes, before anything else)
+Autonomous is **not** a lower bar — every task is still test-driven, reviewed, and committed individually. It removes the human stepping *between* phases, never the verification.
 
-1. **Branch.** Refuse to run on `main`/`master`. Create or switch to a feature branch first.
+## Preflight (every mode, before anything else)
+
+1. **Branch.** Never commit on `main`/`master`. In whole-spec mode, refuse to run there — switch to a feature branch first. In per-feature mode, *starting* from `main` is expected: the first act of each feature is to cut its own branch, so the default branch is only ever the base you branch from.
 2. **Clean baseline.** `git status --porcelain` must be empty apart from planning artifacts (`SPEC.md`, `docs/SPEC.md`, `spec/*`, `tasks/*`). Otherwise stop and ask — autonomous per-task commits must not absorb unrelated local work.
 3. **Verification commands.** Identify the test, lint, typecheck, and build commands from CLAUDE.md, `package.json`, or the equivalent manifest. If you cannot verify the code mechanically, stop and ask — an autonomous loop without a green/red signal is not autonomous, it's unsupervised.
-4. **State file.** Read `tasks/sdlc-state.md` if present and resume from the recorded phase; otherwise create it (format below).
+4. **State file.** Read the run's state file if present and resume from the recorded phase; otherwise create it (format below). Whole-spec and outer-loop runs use `tasks/sdlc-state.md`; a feature's own run uses `tasks/[feature]/sdlc-state.md`.
 
 ## The loop
 
@@ -44,6 +51,60 @@ Run phases in order. Each phase has an exit condition — do not advance until i
 - A test fails → agent-skills:debugging-and-error-recovery. **Max 2 distinct fix attempts** per failure, then escalate.
 - Build reveals missing work inside the spec's scope → append a task to `tasks/plan.md` and continue. Outside the spec's scope → escalate (trigger 5).
 - Ship returns NO-GO → back to phase 4 with the blockers as tasks. Second NO-GO → escalate.
+
+## Per-feature mode
+
+`auto features` runs the loop above **once per feature**, each on its own branch, so review and ship stay scoped to one coherent change. The spec is written once; everything downstream of it is per feature.
+
+### Artifact layout
+
+```
+SPEC.md                        one spec, every feature
+tasks/features.md              the registry — features, branches, dependencies, status
+tasks/[feature]/plan.md        that feature's plan
+tasks/[feature]/todo.md        that feature's task list
+tasks/[feature]/sdlc-state.md  that feature's run state
+tasks/sdlc-state.md            the outer loop's own state (which feature is current)
+```
+
+Never let two features share `tasks/plan.md` or `tasks/sdlc-state.md`. The second feature's plan would overwrite the first, and resume would read the wrong run's phase and budgets.
+
+### The registry — `tasks/features.md`
+
+Derived from `SPEC.md` at the start of the run, updated after every feature:
+
+```markdown
+# Features — derived from SPEC.md
+| # | Feature | Slug | Branch | Base | Depends on | Status |
+|---|---------|------|--------|------|-----------|--------|
+| 1 | Location resolution | location | feat/location | main | — | shipped |
+| 2 | Event feed | event-feed | feat/event-feed | feat/location | 1 | in-progress |
+| 3 | Visibility score | visibility | feat/visibility | feat/event-feed | 2 | deferred (deps) |
+```
+
+Status is one of `pending` → `in-progress` → `ready` (a GO decision is written) → `shipped` (a human merged it), plus `blocked` and `deferred (deps)`.
+
+### Branching
+
+- **Base** is the branch the run started from. Independent features branch from it directly.
+- **A feature with declared dependencies branches from its last dependency's branch**, not from base — otherwise it cannot see code it is specified to build on. Record that parent in the registry's Base column.
+- After a feature's ship decision, return to base and leave the branch intact. **Never merge and never deploy** — merging into a shared branch is outward-facing (trigger 1). Open a PR only if asked.
+
+### The outer loop
+
+1. **Derive the features** from `SPEC.md` and write `tasks/features.md` in dependency order.
+2. **Outer gate.** Present the feature list, the order, and the branch topology. Approve once. In `auto features` this is the *only* planned gate — individual feature plans are not separately gated, or you are back to stepping by hand. (In `auto feature <id>`, that one feature's plan is the gate.)
+3. **For each feature** whose dependencies are satisfied: re-run preflight → cut its branch → run phases 2–8 scoped to it → return to base → update the registry.
+4. **A blocked feature parks the feature, not the run.** Mark it `blocked`, record the escalation in *its* state file, and move to the next feature whose dependencies are satisfied. Mark anything downstream of it `deferred (deps)`. Present every parked escalation together at the end — that is the whole point of scoping per feature: one stuck feature should not idle the other five.
+5. **Two exceptions that stop the entire loop**, because continuing would compound the problem:
+   - A Critical or High security finding (trigger 3) — it usually lives in shared code, and shipping more features on top of it widens the blast radius.
+   - Any trigger-1 item the *whole spec* depends on, such as a migration every feature needs.
+6. **Stop after two consecutive blocked features.** Individual blockers are normal; two in a row means something systemic — a thin spec, a red baseline, a bad dependency order — and grinding through the rest wastes the run.
+7. **Re-check the base between features.** If base has gone red, stop: every later feature would inherit a broken baseline and blame the wrong change.
+
+### Budgets
+
+Per-feature budgets are per feature — feature 3 starts with a fresh 3 review cycles. The consecutive-blocked counter in rule 6 is the only budget that spans features.
 
 ## Escalation policy
 
@@ -73,9 +134,9 @@ Never delete, skip, `.only`, quarantine, or weaken a test to reach green. Never 
 - **Non-blocking** (everything else): log it under `## Open questions` in the state file, keep working on independent tasks, and present the batch at the next phase boundary. One question set at a time — do not trickle.
 - **Resume**: re-invoking `/sdlc auto` reads the state file and continues from the recorded phase. An escalation must have a recorded answer before its item resumes.
 
-## State file — `tasks/sdlc-state.md`
+## State file
 
-Write it after every phase transition, every escalation, and every task completion. It is what makes the loop resumable across sessions and context compactions.
+`tasks/sdlc-state.md` for a whole-spec or outer-loop run; `tasks/[feature]/sdlc-state.md` for a feature's own run. Same format either way. Write it after every phase transition, every escalation, and every task completion — it is what makes the loop resumable across sessions and context compactions.
 
 ```markdown
 # SDLC run — <branch> — started <date>
@@ -106,6 +167,8 @@ Three markers matter to anything watching the file from outside: `Approved at ga
 ## Final report
 
 Phases completed · tasks and commits · tests added · review findings fixed vs deferred · every autonomous decision worth knowing about · the ship decision and rollback plan · anything left for the user. State clearly what was **not** done and why.
+
+In per-feature mode, report per feature — branch, commits, ship verdict, and blocker if any — then the parked escalations as one batch, and say plainly which branches are waiting to be merged and in what order.
 
 ## Running it unattended
 

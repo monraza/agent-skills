@@ -7,7 +7,8 @@
 #   PostToolUse Write|Edit  → tasks/sdlc-state.md just gained an [open] escalation
 #   Stop                    → the run stopped; classify why from the state file
 #
-# Reads tasks/sdlc-state.md, classifies the run's state, dedupes against the
+# Reads the run's sdlc-state.md (per-feature runs keep their own), classifies
+# the state, dedupes against the
 # last thing it sent, and delivers through the first channel configured:
 # SDLC_NOTIFY_CMD, SDLC_NOTIFY_WEBHOOK, desktop notifier, terminal bell.
 # Always also appends to .claude/sdlc-notify.log.
@@ -20,7 +21,6 @@
 set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-STATE_FILE="${SDLC_STATE_FILE:-$PROJECT_DIR/tasks/sdlc-state.md}"
 DEDUPE_FILE="${SDLC_NOTIFY_DEDUPE:-$PROJECT_DIR/.claude/.sdlc-notify-state}"
 LOG_FILE="${SDLC_NOTIFY_LOG:-$PROJECT_DIR/.claude/sdlc-notify.log}"
 
@@ -59,9 +59,37 @@ if [ "$EVENT" = "PostToolUse" ]; then
   esac
 fi
 
+# ── Resolve the state file ────────────────────────────────────────────────────
+# A per-feature run (/sdlc auto features) keeps state at
+# tasks/<feature>/sdlc-state.md, so the path is not fixed. In order:
+#   1. SDLC_STATE_FILE, if set
+#   2. the file PostToolUse just wrote — the most precise signal there is
+#   3. tasks/sdlc-state.md — whole-spec and outer-loop runs
+#   4. the most recently modified tasks/*/sdlc-state.md — the feature in flight
+resolve_state_file() {
+  if [ -n "${SDLC_STATE_FILE:-}" ]; then
+    printf '%s' "$SDLC_STATE_FILE"; return
+  fi
+  if [ "$EVENT" = "PostToolUse" ] && [ -f "${FILE_PATH:-}" ]; then
+    printf '%s' "$FILE_PATH"; return
+  fi
+  if [ -f "$PROJECT_DIR/tasks/sdlc-state.md" ]; then
+    printf '%s' "$PROJECT_DIR/tasks/sdlc-state.md"; return
+  fi
+  # Newest per-feature state file, portably (no ls -t parsing, no GNU find).
+  local newest="" f
+  for f in "$PROJECT_DIR"/tasks/*/sdlc-state.md; do
+    [ -f "$f" ] || continue
+    if [ -z "$newest" ] || [ "$f" -nt "$newest" ]; then newest="$f"; fi
+  done
+  printf '%s' "$newest"
+}
+
+STATE_FILE="$(resolve_state_file)"
+
 # No state file means no /sdlc run in flight. Stay silent rather than pinging
 # on every turn of an ordinary session.
-if [ "$EVENT" != "Notification" ] && [ ! -f "$STATE_FILE" ]; then
+if [ "$EVENT" != "Notification" ] && { [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; }; then
   exit 0
 fi
 
@@ -116,7 +144,7 @@ esac
 # ── Dedupe ────────────────────────────────────────────────────────────────────
 # Stop fires on every turn. Without this you get the same alert until the run
 # ends, and alerts you learn to ignore are worse than none.
-SIGNATURE="${KIND}:$(printf '%s' "$DETAIL" | cksum 2>/dev/null | tr -d ' ')"
+SIGNATURE="${KIND}:${STATE_FILE}:$(printf '%s' "$DETAIL" | cksum 2>/dev/null | tr -d ' ')"
 if [ -f "$DEDUPE_FILE" ] && [ "$(cat "$DEDUPE_FILE" 2>/dev/null)" = "$SIGNATURE" ]; then
   exit 0
 fi
@@ -124,6 +152,15 @@ mkdir -p "$(dirname "$DEDUPE_FILE")" 2>/dev/null
 printf '%s' "$SIGNATURE" > "$DEDUPE_FILE" 2>/dev/null
 
 # ── Deliver ───────────────────────────────────────────────────────────────────
+# tasks/<feature>/sdlc-state.md → "<feature>"; anything else → no scope line.
+SCOPE=""
+case "$STATE_FILE" in
+  */tasks/*/sdlc-state.md)
+    SCOPE="$(basename "$(dirname "$STATE_FILE")")"
+    TITLE="$TITLE — feature: $SCOPE"
+    ;;
+esac
+
 BODY="[$KIND] $TITLE
 
 $DETAIL

@@ -37,6 +37,10 @@ const ARTIFACT_ALLOWLIST = new Set([
   'docs/SPEC.md',   // spec, alternate location accepted by /build
   'tasks/plan.md',  // plan (produced by /plan, read by /build)
   'tasks/todo.md',  // task list (produced by /plan)
+  // Per-feature artifacts (/sdlc auto features): one plan and task list per
+  // feature, so parallel features never overwrite each other's planning state.
+  'tasks/[feature]/plan.md',
+  'tasks/[feature]/todo.md',
 ]);
 
 // The files that make up the spec -> plan -> build pipeline. Absent files are

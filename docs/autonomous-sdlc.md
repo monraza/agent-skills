@@ -21,6 +21,8 @@ Skip the second layer and `/sdlc auto` still asks you to approve every file writ
 
 One human gate at the plan, then spec → plan → **approve** → build → verify → review → simplify → ship decision, with loop-back edges from review and ship into build. Progress is written to `tasks/sdlc-state.md` after every phase transition, so a run survives a lost session, a context compaction, or an interruption: re-invoke `/sdlc auto` and it resumes from the recorded phase.
 
+**Per feature instead of per spec.** If you'd rather branch and ship one feature at a time — tighter review scope, smaller diffs, independent branches — `/sdlc auto features` runs the same loop once per feature in `SPEC.md`, each on its own branch, with per-feature plans and state under `tasks/<feature>/`. A blocked feature parks itself and the loop moves to the next one, so a single stuck feature doesn't idle the rest. `/sdlc auto feature <id>` runs exactly one.
+
 The command's escalation policy is the important part — read it before trusting a run. In short:
 
 - **Stops for**: irreversible or outward-facing actions (migrations, deploys, payments, auth, secrets, deletions, third-party writes), spec gaps that change what gets built, Critical/High security findings, being stuck after 2 fix attempts, scope expansion, and any situation where going green would require a prohibited move.
@@ -119,6 +121,7 @@ That is the difference between a loop you supervise and one you hover over.
 | Spins on the same failure | Lower the fix-attempt budget from 2 to 1 |
 | Runs out of context mid-loop | Smaller task slices in `/plan`; the state file is what carries the run across compactions |
 | You want a checkpoint per phase, not per run | Use `/sdlc` (stepped) instead of `/sdlc auto` |
+| Review scope is too broad to judge | `/sdlc auto features` — one branch and one ship decision per feature |
 
 The escalation policy is a project artifact, not a fixed setting. Edit `.claude/commands/sdlc.md` (and mirror the change to `.gemini/commands/sdlc.toml` and `commands/sdlc.toml`) so the loop matches what your team actually wants to be asked about.
 
