@@ -1,11 +1,33 @@
 description = "Run the whole SDLC loop autonomously — spec, plan, build, review, ship — stopping only for critical decisions"
 
 prompt = """
-Invoke these skills as each phase demands: spec-driven-development, planning-and-task-breakdown, incremental-implementation, test-driven-development, browser-testing-with-devtools, code-review-and-quality, code-simplification, shipping-and-launch, doubt-driven-development, debugging-and-error-recovery.
-
 /sdlc carries state across the lifecycle phases so a run can go spec → ship with a single human gate, escalating only on the triggers listed below.
 
-HOW A PHASE DOES ITS WORK — read this before running the loop. Every phase below names the skill it runs on. Load that skill and follow it. The /spec, /plan, /review, /ship names mark which command a phase corresponds to, for orientation only: writing a slash command into your output does not run it, because slash commands expand from what a human types, not from what you emit. A phase is never satisfied by announcing the command — load the skill, and where a command's body adds orchestration the skill doesn't carry (phase 4's per-task loop, phase 8's fan-out), follow the steps restated here.
+Most phases are another command. This file does not restate what those commands say — it reads them. Read PHASE DISPATCH below before running the loop; it is the mechanism the whole file depends on.
+
+## Phase dispatch
+
+Six of the eight phases are an existing command. Run each one FROM ITS FILE, IN FULL — never from memory, never from a summary. A paraphrase drifts from the command it describes, and the instructions that go missing are exactly the ones that make the command trustworthy: /plan's read-only plan mode, /spec's confirm-before-proceeding, /review's security and performance sub-skills, /ship's NO-GO default on a Critical finding.
+
+Writing a slash command into your output does not run it — slash commands expand from what a human types, not from what you emit. So dispatch a phase like this:
+
+1. Locate the command file. First hit wins: commands/<name>.toml in the project or extension directory, then .claude/commands/<name>.md if this repo has one. Note the one filename that differs: the `plan` command is planning.toml.
+2. Read the whole file — every numbered step, every constraint, every "never", every output template. For a .toml file, the instructions are the `prompt` string.
+3. Follow it exactly, as if a human had typed the command, with this phase's scope as its arguments (`auto` for phase 4). Load the skills it names as it names them.
+4. If no file is found, fall back to the phase's skill named in the loop below, and say so in the run report — a fallback run is weaker than a dispatched one, and the reader is entitled to know which they got.
+
+Where a command's body conflicts with this loop, follow the command exactly except for the three things the loop already owns:
+
+- The command presents a plan and waits for approval (/build auto step 4, /plan step 6) → phase 3 is that gate. Do not gate twice: in a stepped run phase 3 is the stop; in auto, the approval is already recorded in the state file.
+- The command stops and tells the user to run another command first (/build auto step 1 pointing at /spec) → run that phase instead, then continue.
+- The command says the user re-invokes it to resume (/build auto step 6) → the loop resumes from the phase recorded in the state file.
+
+Everything else is binding, including the parts that look like they overlap this file. Where a command's instruction contradicts something here that is NOT in that list, follow the command and record the conflict as a decision in the state file.
+
+Two consequences worth naming, because they are easy to lose:
+
+- /ship rule 4 — a Critical finding defaults to NO-GO "unless the user explicitly accepts the risk". In an autonomous run there is nobody to accept it, so that is an escalation (trigger 3), not a judgment call you make on the user's behalf.
+- /ship rule 5 lets the fan-out be skipped only for a change under 50 lines and 2 files that touches no auth, payments, data access, or config. A feature-sized diff never qualifies.
 
 ## Modes
 
@@ -36,21 +58,14 @@ Autonomous is NOT a lower bar — every task is still test-driven, reviewed, and
 
 Run phases in order. Each phase has an exit condition — do not advance until it holds.
 
-1. DEFINE — spec-driven-development skill: run its interview and write SPEC.md. Skipped if a spec at SPEC.md, docs/SPEC.md, or spec/* already covers this scope. (The /spec phase.) Exit: spec exists and covers the requested scope.
-2. PLAN — planning-and-task-breakdown skill: dependency-ordered vertically sliced tasks into tasks/plan.md. (The /plan phase.) Exit: every task has acceptance criteria and a verification step.
+1. DEFINE — dispatch spec.toml (skill: spec-driven-development). Skip only if a spec at SPEC.md, docs/SPEC.md, or spec/* already covers this scope. Exit: spec exists and covers the requested scope.
+2. PLAN — dispatch planning.toml (skill: planning-and-task-breakdown), including its read-only plan mode and both outputs, tasks/plan.md and tasks/todo.md. Exit: every task has acceptance criteria and a verification step.
 3. GATE — present spec summary + full plan + the escalation policy you will run under. Wait for an unambiguous affirmative ("approve", "go", "yes"). Hedged answers ("looks reasonable", "I guess") are NOT approval. Exit: explicit approval recorded in the state file.
-4. BUILD — incremental-implementation with test-driven-development, per task: RED → GREEN → full suite → build → commit → mark complete. Stage only that task's files, never `git add -A`. (This is /build auto's loop, restated because the command will not run itself.) Exit: every task complete, suite green, build clean.
-5. VERIFY — full test suite, lint, typecheck, build from a clean state. Browser-facing change → browser-testing-with-devtools skill. Exit: all checks green on the current HEAD.
-6. REVIEW — code-review-and-quality skill: five-axis pass on the accumulated diff. (The /review phase.) Exit: no Critical findings; Important findings fixed or explicitly deferred with a reason.
-7. SIMPLIFY — code-simplification skill, only if review flagged complexity. Behavior-preserving; tests stay green. (The /code-simplify phase.) Exit: tests green, diff smaller or clearer.
-8. SHIP — shipping-and-launch skill plus the fan-out spelled out below → go/no-go + rollback plan. Produce the decision; never execute the deploy. (The /ship phase.) Exit: written GO/NO-GO with a rollback plan.
-
-Phase 8 — the ship fan-out, restated. /ship's orchestration lives in that command's body, not in the skill it loads, so run it here directly:
-
-1. Load the shipping-and-launch skill.
-2. Run three specialist personas against the accumulated diff — code-reviewer, security-auditor, test-engineer. Where the harness can run them concurrently, issue all three in a single turn; otherwise run each persona's prompt in sequence and merge as if they had returned together. A user-defined persona wins over the plugin's.
-3. Merge the three reports yourself: promote Critical/High security findings to launch blockers, resolve duplicate findings between reviewers, and check what no persona covers — accessibility, infrastructure, documentation.
-4. Write the verdict — GO or NO-GO — with acknowledged risks and a rollback plan.
+4. BUILD — dispatch build.toml with arguments `auto` (skills: incremental-implementation, test-driven-development). Its baseline, staging and per-task commit rules apply as written; its own approval gate does not — phase 3 was it. Exit: every task complete, suite green, build clean.
+5. VERIFY — the loop's own phase, no command file. Full test suite, lint, typecheck, build from a clean state. Browser-facing change → browser-testing-with-devtools skill. A failure here → dispatch test.toml and fix it under its Prove-It pattern. Exit: all checks green on the current HEAD.
+6. REVIEW — dispatch review.toml on the accumulated diff (skill: code-review-and-quality, plus the security-and-hardening and performance-optimization skills its axes call for). Exit: no Critical findings; Important findings fixed or explicitly deferred with a reason.
+7. SIMPLIFY — dispatch code-simplify.toml (skill: code-simplification), only if review flagged complexity. Its revert-on-red rule applies. Exit: tests green, diff smaller or clearer.
+8. SHIP — dispatch ship.toml in full: phases A, B and C, its five rules, and its decision template (skill: shipping-and-launch). Produce the decision; never execute the deploy. Exit: written GO/NO-GO with a rollback plan, in ship.toml's format.
 
 Loop-back edges (this is the loop, not a pipeline):
 

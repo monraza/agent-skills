@@ -362,7 +362,7 @@ footer {
       </div>
     </div>
 
-    <p class="note"><strong>Those command names are labels, not calls.</strong> A slash command expands from what a human types — an agent writing <code>/plan</code> into its own output runs nothing. So each phase names the <em>skill</em> it loads and follows: <code>spec-driven-development</code>, <code>planning-and-task-breakdown</code>, <code>incremental-implementation</code> with <code>test-driven-development</code>, <code>code-review-and-quality</code>, <code>code-simplification</code>, <code>shipping-and-launch</code>. Where a command's body adds orchestration its skill doesn't carry — the per-task build loop, the three-persona ship fan-out — <code>/sdlc</code> restates those steps itself rather than pointing at the command.</p>
+    <p class="note"><strong>Each phase runs its command's file, not a summary of it.</strong> A slash command expands from what a human types — an agent writing <code>/plan</code> into its own output runs nothing. So <code>/sdlc</code> locates the command file (<code>${CLAUDE_PLUGIN_ROOT}/.claude/commands/plan.md</code>, the project's own copy, or the <code>.toml</code> mirror), reads it whole, and follows it verbatim. That matters because the details a paraphrase drops are the ones worth having: <code>/plan</code>'s read-only plan mode and its <code>todo.md</code> output, <code>/spec</code>'s confirm-before-proceeding, <code>/review</code>'s security and performance sub-skills, <code>/ship</code>'s exact decision template. Only three instructions are overridden — a command's own approval gate (phase 3 was it), its "go run <code>/spec</code> first" (that's phase 1), and its "the user re-invokes me" (the state file resumes instead).</p>
 
     <figure>
       <div class="figwrap">
@@ -536,7 +536,7 @@ Warning: main has advanced 14 commits since feat/visibility branched</span></pre
 
   <section>
     <h2><span class="num">09</span>What it extends</h2>
-    <p>If you already run <code>/build auto</code>, you have most of this. Its Build phase <em>is</em> <code>/build auto</code>'s loop — the same two skills, the same red-green-commit cycle, restated inside <code>/sdlc</code> because one command cannot call another. What <code>/sdlc</code> adds sits entirely outside that loop: a phase before it, four after it, a branch around it, and a state file underneath it.</p>
+    <p>If you already run <code>/build auto</code>, you have most of this. Its Build phase <em>is</em> <code>/build auto</code> — phase 4 reads <code>build.md</code> and runs it with <code>auto</code> as its argument, so the task loop isn't reimplemented or summarized, it's the same file. What <code>/sdlc</code> adds sits entirely outside that loop: a phase before it, four after it, a branch around it, and a state file underneath it.</p>
 
     <figure>
       <div class="figwrap">
