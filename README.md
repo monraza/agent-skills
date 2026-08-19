@@ -377,7 +377,7 @@ agent-skills/
 │   └── using-agent-skills/            #   Meta: how to use this pack
 ├── agents/                            # 4 specialist personas
 ├── references/                        # 7 supplementary checklists
-├── hooks/                             # Session lifecycle hooks
+├── hooks/                             # Session lifecycle hooks + sdlc-notify
 ├── .claude/commands/                  # 9 slash commands (Claude Code)
 ├── .gemini/commands/                  # 9 slash commands (Gemini CLI)
 ├── commands/                          # 9 slash commands (Antigravity CLI)

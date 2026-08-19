@@ -99,7 +99,14 @@ esac
 exit 0
 ```
 
-**Notification on stop.** A `Stop` or `Notification` hook that pings you (Slack, `osascript`, `notify-send`) turns "check on it" into "get told" — the difference between a loop you supervise and one you hover over.
+**Notification when it blocks.** An unattended run that hits a decision stops and waits in a terminal nobody is watching. The [sdlc-notify hook](../hooks/SDLC-NOTIFY.md) closes that gap — wire it to `Notification`, `Stop`, and `PostToolUse Write|Edit`, and it pages you on open escalations, a plan waiting at the gate, batched questions, and completion, deduped so `Stop` firing every turn doesn't spam you:
+
+```bash
+export SDLC_NOTIFY_WEBHOOK="https://hooks.slack.com/services/..."
+export SDLC_NOTIFY_LEVEL=blocking   # or: review (default), all
+```
+
+That is the difference between a loop you supervise and one you hover over.
 
 ---
 

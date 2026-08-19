@@ -81,7 +81,7 @@ Write it after every phase transition, every escalation, and every task completi
 # SDLC run — <branch> — started <date>
 Mode: auto | stepped
 Phase: BUILD (4/8)
-Approved at gate: yes — <date>
+Approved at gate: pending | yes — <date>
 
 ## Tasks
 - [x] 1. <task> — commit abc1234
@@ -101,7 +101,7 @@ Review cycles: 1/3 · Fix attempts on current failure: 0/2 · Ship attempts: 0/2
 - [resolved] <trigger> — asked <date> — answer: <answer>
 ```
 
-Two markers matter to anything watching the file from outside: `Phase: DONE` once the ship decision is written, and `[open]` on an escalation that is waiting on a human. A scheduler wrapping this command uses those to decide whether to re-invoke or hand back.
+Three markers matter to anything watching the file from outside: `Approved at gate: pending` while the plan awaits approval, `[open]` on an escalation waiting on a human, and `Phase: DONE` once the ship decision is written. A scheduler uses them to decide whether to re-invoke or hand back; the [sdlc-notify hook](../../hooks/SDLC-NOTIFY.md) uses them to decide whether to page you.
 
 ## Final report
 

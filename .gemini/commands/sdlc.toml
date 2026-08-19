@@ -72,7 +72,7 @@ Never delete, skip, .only, quarantine, or weaken a test to reach green. Never --
 
 ## State file — tasks/sdlc-state.md
 
-Write it after every phase transition, every escalation, and every task completion. It is what makes the loop resumable across sessions and context compactions. Record: run header (branch, date, mode, current phase, whether the gate was approved), the task checklist with commit hashes, budgets used (review cycles, fix attempts, ship attempts), autonomous decisions, batched open questions with the assumption you proceeded on, and escalations marked [open] or [resolved] with their answers. Write `Phase: DONE` once the ship decision is written — a scheduler wrapping this command reads those two markers to decide whether to re-invoke or hand back to a human.
+Write it after every phase transition, every escalation, and every task completion. It is what makes the loop resumable across sessions and context compactions. Record: run header (branch, date, mode, current phase, whether the gate was approved), the task checklist with commit hashes, budgets used (review cycles, fix attempts, ship attempts), autonomous decisions, batched open questions with the assumption you proceeded on, and escalations marked [open] or [resolved] with their answers. Write `Approved at gate: pending` while the plan awaits approval and `Phase: DONE` once the ship decision is written — a scheduler, and the sdlc-notify hook (hooks/SDLC-NOTIFY.md), read those three markers to decide whether to re-invoke, page a human, or hand back.
 
 ## Final report
 
