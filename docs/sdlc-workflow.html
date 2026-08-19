@@ -203,6 +203,7 @@ thead th {
 }
 tbody tr:last-child td { border-bottom: 0; }
 td.mono { font-family: "IBM Plex Mono", monospace; font-size: .84rem; white-space: nowrap; }
+thead th.cmdcol { text-transform: none; letter-spacing: .01em; font-size: .8rem; color: var(--ink-2); }
 td strong { font-weight: 600; }
 
 pre {
@@ -532,7 +533,92 @@ Warning: main has advanced 14 commits since feat/visibility branched</span></pre
   </section>
 
   <section>
-    <h2><span class="num">09</span>Installing it</h2>
+    <h2><span class="num">09</span>What it extends</h2>
+    <p>If you already run <code>/build auto</code>, you have most of this. Its Build phase <em>is</em> <code>/build auto</code> — section 04 names it as the command, and nothing about the task loop was reimplemented. What <code>/sdlc</code> adds sits entirely outside that loop: a phase before it, four after it, a branch around it, and a state file underneath it.</p>
+
+    <figure>
+      <div class="figwrap">
+        <svg class="flow" viewBox="0 0 760 186" role="img"
+             aria-label="The eight phases in a row. A bracket under Plan, Gate and Build marks the span /build auto covers, extending as a dashed line partway under Verify. A second bracket under all eight marks the span /sdlc covers, repeated once per feature.">
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" text-anchor="middle">
+            <rect x="24"  y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="65"  y="54" fill="currentColor">DEFINE</text>
+            <rect x="114" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="155" y="54" fill="currentColor">PLAN</text>
+            <rect class="brass-stroke" x="204" y="30" width="82" height="38" rx="6" fill="none"></rect>
+            <text class="brass-fill" x="245" y="54">GATE</text>
+            <rect x="294" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="335" y="54" fill="currentColor">BUILD</text>
+            <rect x="384" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="425" y="54" fill="currentColor">VERIFY</text>
+            <rect x="474" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="515" y="54" fill="currentColor">REVIEW</text>
+            <rect x="564" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="605" y="54" font-size="11.5" fill="currentColor">SIMPLIFY</text>
+            <rect x="654" y="30" width="82" height="38" rx="6" fill="none" stroke="currentColor" stroke-opacity=".55"></rect>
+            <text x="695" y="54" fill="currentColor">SHIP</text>
+          </g>
+
+          <g stroke="currentColor" stroke-width="1.5" fill="none">
+            <path d="M 114 78 V 88 H 376"></path>
+            <path d="M 376 88 H 452" stroke-dasharray="4 4"></path>
+            <path d="M 452 88 V 80" stroke-dasharray="4 4"></path>
+          </g>
+          <text x="245" y="106" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">/build auto</text>
+          <text x="452" y="106" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity=".7">per-task only</text>
+
+          <g stroke="currentColor" stroke-width="1.5" stroke-opacity=".55" fill="none">
+            <path d="M 24 120 V 132 H 736 V 120"></path>
+          </g>
+          <text x="380" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">/sdlc auto features</text>
+          <text x="380" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".7">× once per feature, each on its own branch</text>
+        </svg>
+      </div>
+      <figcaption><code>/build auto</code> covers Plan, Gate and Build. It does run the full suite and a build after every task — the dashed span — but there is no whole-feature verification pass, no lint or typecheck from a clean state, and no browser check. Both commands share the same brass gate: one approval, hedged answers don't count.</figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th class="cmdcol">/build auto</th><th class="cmdcol">/sdlc auto features</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Starts from</strong></td><td>An existing <code>SPEC.md</code> — stops and tells you to run <code>/spec</code> if there isn't one</td><td>Nothing. It runs the <code>/spec</code> interview and writes <code>SPEC.md</code> first</td></tr>
+          <tr><td><strong>Unit of work</strong></td><td>One flat task list, <code>tasks/plan.md</code></td><td>One feature — its own branch, plan, and state file</td></tr>
+          <tr><td><strong>Where it runs</strong></td><td>The current branch</td><td>A branch per feature, based on its dependency, not on main</td></tr>
+          <tr><td><strong>Ends at</strong></td><td>The last task's commit, plus an end-of-run summary</td><td>A written GO/NO-GO with a rollback plan, and a draft PR per feature</td></tr>
+          <tr><td><strong>When it stops</strong></td><td>Any blocker halts the run</td><td>Blocking asks halt; the rest is batched, and a blocked feature parks so the others keep moving</td></tr>
+          <tr><td><strong>Limits</strong></td><td>None declared — a failure it can't fix escalates</td><td>3 review cycles · 2 fix attempts · 2 ship attempts · 2 consecutive blocked features</td></tr>
+          <tr><td><strong>Resuming</strong></td><td>Re-invoke; it picks up at the next unchecked task</td><td><code>/sdlc status</code> rebuilds the board from the registry, state files, git, and PR status</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3><i class="dot go"></i>Unchanged from <span class="mono">/build auto</span></h3>
+        <ul class="list">
+          <li><strong>One gate per unit of work.</strong> Present the plan, wait for an unambiguous yes, then run. "Looks reasonable" is not approval in either command.</li>
+          <li><strong>Test-driven per task.</strong> Failing test, minimum code, full suite, build, commit — the autonomy removes the human <em>between</em> tasks, never the verification inside one.</li>
+          <li><strong>One commit per task,</strong> staging only that task's files. Never <code>git add -A</code>, so any point in the run is a clean rollback.</li>
+          <li><strong>Stop on anything irreversible</strong> — secrets, migrations, payments, deploys, anything <code>git revert</code> can't undo.</li>
+          <li><strong>The spec is the only source of product decisions.</strong> A gap in it is a question for you, not something to invent.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3><i class="dot halt"></i>Where the extension actually is</h3>
+        <ul class="list">
+          <li><strong>Before:</strong> the interview that produces the spec <code>/build auto</code> requires but won't write.</li>
+          <li><strong>After:</strong> verify, review, simplify, ship — four phases with failure modes <code>/build auto</code> has no way to notice. A Critical review finding and a NO-GO verdict are real stop conditions, and neither exists in a build-only run.</li>
+          <li><strong>Around:</strong> the outer loop. Branch per feature, dependency ordering, draft PR per GO — so eight features are eight reviewable diffs, not one.</li>
+          <li><strong>Underneath:</strong> a state file. <code>/build auto</code> resumes from checkbox state; <code>/sdlc</code> records the phase, the budgets spent, the decisions taken, and every open escalation — which is also what the notification hook reads.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note"><strong>The honest boundary: <code>/build auto</code> is still the right call for one plan on one branch that you'll review yourself.</strong> Feature branches, a registry, and per-feature state files buy nothing there — they're overhead you'd be maintaining for a run that ends in an hour. Reach for <code>/sdlc</code> when the spec has several features that each deserve their own diff, or when the run has to survive you closing the laptop. <code>/sdlc auto</code> without <code>features</code> is the middle setting: <code>/build auto</code>'s scope on the current branch, plus the verify, review and ship tail.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span>Installing it</h2>
     <p><code>/sdlc</code> is a command file plus an optional hook — no runtime, no dependencies. How you install it depends on how the target repo already gets its skills.</p>
 
     <h3>Into a repo that already uses agent-skills</h3>
