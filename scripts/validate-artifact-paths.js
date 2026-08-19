@@ -45,6 +45,7 @@ const GUARDED_FILES = [
   '.claude/commands/spec.md',
   '.claude/commands/plan.md',
   '.claude/commands/build.md',
+  '.claude/commands/sdlc.md',
   'skills/spec-driven-development/SKILL.md',
   'skills/planning-and-task-breakdown/SKILL.md',
   'docs/getting-started.md',

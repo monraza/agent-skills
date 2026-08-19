@@ -21,7 +21,7 @@ Skills encode the workflows, quality gates, and best practices that senior engin
 
 ## Commands
 
-8 slash commands that map to the development lifecycle. Each one activates the right skills automatically.
+9 slash commands that map to the development lifecycle. Each one activates the right skills automatically.
 
 | What you're doing | Command | Key principle |
 |-------------------|---------|---------------|
@@ -33,8 +33,11 @@ Skills encode the workflows, quality gates, and best practices that senior engin
 | Audit web performance | `/webperf` | Measure before you optimize |
 | Simplify the code | `/code-simplify` | Clarity over cleverness |
 | Ship to production | `/ship` | Faster is safer |
+| Run the whole loop | `/sdlc auto` | Autonomous, not unsupervised |
 
 Want fewer manual steps once the spec exists? **`/build auto`** generates the plan and implements every task in a single approved pass — you approve the plan once, then it runs autonomously. It removes the human stepping *between* tasks, not the verification: every task is still test-driven and committed individually, and it pauses on failures or risky steps.
+
+Want the *whole* lifecycle to run that way? **`/sdlc auto`** chains spec → plan → build → verify → review → ship into one supervised loop with a single approval gate, budgets that stop a runaway run (3 review cycles, 2 fix attempts per failure), and an explicit escalation policy so it only interrupts you for the things that are actually yours to decide — irreversible actions, spec gaps, and Critical security findings. Progress lands in `tasks/sdlc-state.md`, so an interrupted run resumes where it stopped. See [docs/autonomous-sdlc.md](docs/autonomous-sdlc.md) for running it headless, on a schedule, or in CI.
 
 Skills also activate automatically based on what you're doing — designing an API triggers `api-and-interface-design`, building UI triggers `frontend-ui-engineering`, and so on.
 
@@ -375,9 +378,9 @@ agent-skills/
 ├── agents/                            # 4 specialist personas
 ├── references/                        # 7 supplementary checklists
 ├── hooks/                             # Session lifecycle hooks
-├── .claude/commands/                  # 8 slash commands (Claude Code)
-├── .gemini/commands/                  # 8 slash commands (Gemini CLI)
-├── commands/                          # 8 slash commands (Antigravity CLI)
+├── .claude/commands/                  # 9 slash commands (Claude Code)
+├── .gemini/commands/                  # 9 slash commands (Gemini CLI)
+├── commands/                          # 9 slash commands (Antigravity CLI)
 ├── plugin.json                        # Antigravity plugin manifest
 └── docs/                              # Setup guides per tool
 ```
