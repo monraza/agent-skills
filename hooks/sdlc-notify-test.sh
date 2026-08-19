@@ -240,6 +240,29 @@ check "dedupe is per feature — identical blockers on two features both alert" 
 
 rm -rf "${WORK:?}/tasks"
 
+# ── Draft PR waiting on review ────────────────────────────────────────────────
+
+reset_dedupe
+run_feature '{"hook_event_name":"Stop"}' 'event-feed' '# SDLC run — feat/event-feed
+Phase: DONE
+Approved at gate: yes
+PR: https://github.com/acme/app/pull/42'
+check "a finished feature with a draft PR carries the URL" \
+  "$(contains 'https://github.com/acme/app/pull/42')"
+
+reset_dedupe
+run '{"hook_event_name":"Stop"}' '# SDLC run
+Phase: BUILD (4/8)
+Approved at gate: yes
+PR: https://github.com/acme/app/pull/43
+
+## Escalations
+- [open] trigger 4 (stuck) — review comment needs a decision'
+check "a blocked run with an open PR carries both the blocker and the URL" \
+  "$([ "$(contains 'review comment needs a decision')" = "1" ] && [ "$(contains 'pull/43')" = "1" ] && echo 1 || echo 0)"
+
+rm -rf "${WORK:?}/tasks"
+
 # ── Robustness ────────────────────────────────────────────────────────────────
 
 reset_dedupe

@@ -150,6 +150,25 @@ For an app that touches keys and a deploy target, add the wall as well as the po
 
 That turns ② and ③ from *policy the agent follows* into *a boundary it cannot cross* — the difference between a loop you trust overnight and one you hover over.
 
+## The same spec, feature by feature
+
+The run above builds all eight tasks on one branch. Your alternative is one branch and one review per feature:
+
+```
+/sdlc auto features --pr
+```
+
+Same spec, same escalation policy, different granularity. It derives the feature list from `SPEC.md`, approves it once, then loops: cut `feat/<slug>` → plan → build → verify → review → ship decision → draft PR → back to base → next feature.
+
+What changes in practice:
+
+- **Escalation ② parks instead of blocking.** ISS passes need an API key you haven't supplied, so feature 7 is marked `blocked` and the loop moves on to feature 8 rather than idling. You get every blocker in one batch at the end.
+- **Dependent features stack.** Visibility score depends on the event feed, so it branches from `feat/event-feed` and its PR targets that branch — the diff shows the scoring work, not the feed it builds on.
+- **Review scope collapses.** Instead of one review of eight tasks, `code-reviewer` sees one feature at a time. The DST bug from ① is far harder to miss in a 200-line diff than a 2,000-line one.
+- **You get a merge queue.** Seven draft PRs in dependency order, each with its own GO verdict and rollback plan, waiting on you. Nothing is merged and nothing is marked ready for review.
+
+The trade is integration risk: features that pass in isolation can still conflict when merged. Ship decisions are per feature; the integration test is still yours.
+
 ## Related
 
 - [autonomous-sdlc.md](../autonomous-sdlc.md) — running the loop headless, scheduled, or in CI

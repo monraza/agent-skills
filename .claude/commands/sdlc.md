@@ -21,6 +21,8 @@ Parse `$ARGUMENTS` for the tokens below; whatever is left over is the scope desc
 
 `<id>` is a feature's number or name from `tasks/features.md` (or, before that exists, from `SPEC.md`).
 
+Add **`--pr`** to either feature mode to open a draft pull request for each feature that earns a GO. Off by default — pushing publishes code, so it stays something you ask for. A standing `Always: open a draft PR per shipped feature` in the spec's boundaries authorizes it without the flag.
+
 Autonomous is **not** a lower bar — every task is still test-driven, reviewed, and committed individually. It removes the human stepping *between* phases, never the verification.
 
 ## Preflight (every mode, before anything else)
@@ -75,20 +77,20 @@ Derived from `SPEC.md` at the start of the run, updated after every feature:
 
 ```markdown
 # Features — derived from SPEC.md
-| # | Feature | Slug | Branch | Base | Depends on | Status |
-|---|---------|------|--------|------|-----------|--------|
-| 1 | Location resolution | location | feat/location | main | — | shipped |
-| 2 | Event feed | event-feed | feat/event-feed | feat/location | 1 | in-progress |
-| 3 | Visibility score | visibility | feat/visibility | feat/event-feed | 2 | deferred (deps) |
+| # | Feature | Slug | Branch | Base | Depends on | Status | PR |
+|---|---------|------|--------|------|-----------|--------|-----|
+| 1 | Location resolution | location | feat/location | main | — | shipped | #41 |
+| 2 | Event feed | event-feed | feat/event-feed | feat/location | 1 | ready | #42 (draft) |
+| 3 | Visibility score | visibility | feat/visibility | feat/event-feed | 2 | deferred (deps) | — |
 ```
 
-Status is one of `pending` → `in-progress` → `ready` (a GO decision is written) → `shipped` (a human merged it), plus `blocked` and `deferred (deps)`.
+Status is one of `pending` → `in-progress` → `ready` (a GO decision is written, and with `--pr` a draft PR is open and waiting on a human) → `shipped` (a human merged it), plus `blocked` and `deferred (deps)`.
 
 ### Branching
 
 - **Base** is the branch the run started from. Independent features branch from it directly.
 - **A feature with declared dependencies branches from its last dependency's branch**, not from base — otherwise it cannot see code it is specified to build on. Record that parent in the registry's Base column.
-- After a feature's ship decision, return to base and leave the branch intact. **Never merge and never deploy** — merging into a shared branch is outward-facing (trigger 1). Open a PR only if asked.
+- After a feature's ship decision, return to base and leave the branch intact. **Never merge and never deploy** — merging into a shared branch is outward-facing (trigger 1). With `--pr`, open a draft PR per the rules below; without it, leave the branch for a human.
 
 ### The outer loop
 
@@ -102,6 +104,39 @@ Status is one of `pending` → `in-progress` → `ready` (a GO decision is writt
 6. **Stop after two consecutive blocked features.** Individual blockers are normal; two in a row means something systemic — a thin spec, a red baseline, a bad dependency order — and grinding through the rest wastes the run.
 7. **Re-check the base between features.** If base has gone red, stop: every later feature would inherit a broken baseline and blame the wrong change.
 
+### Draft pull requests (`--pr`)
+
+A draft PR per shipped feature turns the registry into something reviewable — each feature arrives as its own diff, carrying its own ship decision, in the order it should merge.
+
+**Open one only when all of these hold:**
+
+1. The feature's ship decision is **GO**. A NO-GO or blocked feature gets no PR — an open PR is a request for someone's attention, and a feature you already know is broken hasn't earned it.
+2. The branch has commits ahead of its base, and the working tree is clean.
+3. No open PR already exists for that head branch. Re-running the loop must not open a second one.
+4. The security pass found nothing Critical or High. Pushing publishes; publishing a known secret or vulnerability is worse than a delayed PR.
+
+**How to open it:**
+
+- Push the feature branch to the remote: `git push -u origin <branch>`. Never `--force`, never push anything but that branch.
+- Use the repo's PR tooling — the `gh` CLI, a GitHub MCP server, or whatever the project already uses. If none is available, record the intent in the registry and move on. A missing PR tool must never fail a run that has already produced working code.
+- **Base the PR on the feature's base branch from the registry**, not on `main`. A stacked feature PRs into its parent so the diff shows only that feature's work. GitHub retargets a child PR when its parent's branch is deleted on merge — but say the intended merge order in the body rather than relying on that.
+- **Draft, always.** Never mark it ready for review, never enable auto-merge, never merge it.
+
+**What goes in the body:**
+
+Check for a PR template (`.github/pull_request_template.md`, `.github/PULL_REQUEST_TEMPLATE/`, or the repo root) and fill its sections in. Failing that, write:
+
+- What the feature does, and the spec section it implements
+- The ship decision: verdict, acknowledged risks, rollback plan
+- Review findings deferred rather than fixed, with the reason
+- Tasks completed and their commits
+- Merge order — which PRs must land first
+- A line saying the branch was produced by an autonomous `/sdlc` run and what was verified (tests, build, review, security). A reviewer is entitled to know how the code got there.
+
+**When something goes wrong:** a rejected push (the remote has diverged) is an escalation, not a thing to force through — stop and ask. A PR that fails to open is recorded in the registry as `pr: failed — <reason>` and the loop continues to the next feature.
+
+Record the PR URL in the feature's state file as a `PR:` line, so the notification hook can tell you a review is waiting.
+
 ### Budgets
 
 Per-feature budgets are per feature — feature 3 starts with a fresh 3 review cycles. The consecutive-blocked counter in rule 6 is the only budget that spans features.
@@ -112,7 +147,7 @@ This is the part that decides how often you interrupt the user. Apply it literal
 
 ### Stop and ask — critical
 
-1. **Irreversible or outward-facing.** Anything you cannot undo with `git revert`: schema migrations that drop or transform data, deletions, deploys and releases, payments or billing, auth/authz/permission changes, secrets and credentials, infra/DNS, sending mail or notifications, writes to third-party systems.
+1. **Irreversible or outward-facing.** Anything you cannot undo with `git revert`: schema migrations that drop or transform data, deletions, deploys and releases, payments or billing, auth/authz/permission changes, secrets and credentials, infra/DNS, sending mail or notifications, writes to third-party systems. The single carve-out is `--pr`, which authorizes pushing a feature branch and opening a **draft** PR under the rules above — marking one ready for review, enabling auto-merge, or merging anything stays here.
 2. **Spec gap.** A requirement is missing, ambiguous, or self-contradictory, and the answer changes what gets built. Do not invent product decisions.
 3. **Security.** Any Critical or High finding from `security-auditor` or the review's security axis.
 4. **Stuck.** The same failure survives 2 distinct fix attempts, a fix reintroduces a previously fixed failure, or review cycles hit the cap without converging.
@@ -143,6 +178,7 @@ Never delete, skip, `.only`, quarantine, or weaken a test to reach green. Never 
 Mode: auto | stepped
 Phase: BUILD (4/8)
 Approved at gate: pending | yes — <date>
+PR: <url>            (per-feature runs with --pr, once the draft PR is open)
 
 ## Tasks
 - [x] 1. <task> — commit abc1234
@@ -162,13 +198,13 @@ Review cycles: 1/3 · Fix attempts on current failure: 0/2 · Ship attempts: 0/2
 - [resolved] <trigger> — asked <date> — answer: <answer>
 ```
 
-Three markers matter to anything watching the file from outside: `Approved at gate: pending` while the plan awaits approval, `[open]` on an escalation waiting on a human, and `Phase: DONE` once the ship decision is written. A scheduler uses them to decide whether to re-invoke or hand back; the [sdlc-notify hook](../../hooks/SDLC-NOTIFY.md) uses them to decide whether to page you.
+Four markers matter to anything watching the file from outside: `Approved at gate: pending` while the plan awaits approval, `[open]` on an escalation waiting on a human, `Phase: DONE` once the ship decision is written, and `PR:` carrying the draft PR's URL. A scheduler uses them to decide whether to re-invoke or hand back; the [sdlc-notify hook](../../hooks/SDLC-NOTIFY.md) uses them to decide whether to page you.
 
 ## Final report
 
 Phases completed · tasks and commits · tests added · review findings fixed vs deferred · every autonomous decision worth knowing about · the ship decision and rollback plan · anything left for the user. State clearly what was **not** done and why.
 
-In per-feature mode, report per feature — branch, commits, ship verdict, and blocker if any — then the parked escalations as one batch, and say plainly which branches are waiting to be merged and in what order.
+In per-feature mode, report per feature — branch, commits, ship verdict, and blocker if any — then the parked escalations as one batch, and say plainly which branches (or draft PRs) are waiting on a human and in what order they should merge.
 
 ## Running it unattended
 

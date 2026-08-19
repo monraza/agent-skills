@@ -23,6 +23,8 @@ One human gate at the plan, then spec → plan → **approve** → build → ver
 
 **Per feature instead of per spec.** If you'd rather branch and ship one feature at a time — tighter review scope, smaller diffs, independent branches — `/sdlc auto features` runs the same loop once per feature in `SPEC.md`, each on its own branch, with per-feature plans and state under `tasks/<feature>/`. A blocked feature parks itself and the loop moves to the next one, so a single stuck feature doesn't idle the rest. `/sdlc auto feature <id>` runs exactly one.
 
+Add `--pr` and each feature that earns a GO arrives as its own **draft** PR, based on its parent feature's branch so the diff stays scoped, carrying the ship decision and merge order in the body. Draft only, never marked ready, never merged — the loop hands you a review queue, not a merge. It's off by default because pushing publishes code.
+
 The command's escalation policy is the important part — read it before trusting a run. In short:
 
 - **Stops for**: irreversible or outward-facing actions (migrations, deploys, payments, auth, secrets, deletions, third-party writes), spec gaps that change what gets built, Critical/High security findings, being stuck after 2 fix attempts, scope expansion, and any situation where going green would require a prohibited move.
@@ -82,7 +84,7 @@ Run it under `cron`, a CI job, or your harness's own scheduler. Claude Code on t
 {
   "permissions": {
     "allow": ["Bash(npm test:*)", "Bash(npm run build:*)", "Bash(git commit:*)", "Bash(git diff:*)"],
-    "deny": ["Bash(git push --force:*)", "Bash(npm publish:*)", "Bash(*deploy*)", "Read(./.env)"]
+    "deny": ["Bash(git push --force:*)", "Bash(npm publish:*)", "Bash(*deploy*)", "Bash(gh pr merge:*)", "Read(./.env)"]
   }
 }
 ```

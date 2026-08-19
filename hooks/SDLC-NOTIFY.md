@@ -92,6 +92,8 @@ A per-feature run (`/sdlc auto features`) keeps state at `tasks/<feature>/sdlc-s
 
 Alerts from a per-feature run name the feature in the title, and the dedupe key includes the state file's path — so two features blocked on the same thing produce two alerts rather than one swallowing the other.
 
+If the state file carries a `PR: <url>` line (a run started with `--pr`), the URL rides along in the alert. A draft PR waiting on a human *is* the review request, so it goes out with whatever alert fires rather than needing a notification kind of its own.
+
 ## Silence is the feature
 
 Two behaviors keep it from becoming noise you learn to ignore:
@@ -109,7 +111,7 @@ The hook never blocks a tool call and never fails a run. Every path exits 0 — 
 bash hooks/sdlc-notify-test.sh
 ```
 
-25 checks covering classification, precedence, level filtering, dedupe, per-feature state resolution, and robustness against malformed input. Delivery is captured through `SDLC_NOTIFY_CMD`, so the tests never send anything anywhere.
+27 checks covering classification, precedence, level filtering, dedupe, per-feature state resolution, PR-URL propagation, and robustness against malformed input. Delivery is captured through `SDLC_NOTIFY_CMD`, so the tests never send anything anywhere.
 
 ## Requirements
 

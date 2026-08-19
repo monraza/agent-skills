@@ -133,6 +133,15 @@ else
   exit 0
 fi
 
+# A draft PR waiting on a human is the review request itself — carry its URL
+# into whatever alert goes out rather than inventing another notification kind.
+PR_URL=$(state_get '^PR:' | sed 's/^PR:[[:space:]]*//')
+if [ -n "$PR_URL" ]; then
+  DETAIL="$DETAIL
+
+PR: $PR_URL"
+fi
+
 # ── Level filter ──────────────────────────────────────────────────────────────
 case "$LEVEL" in
   blocking) case "$KIND" in BLOCKED|APPROVAL|INPUT) ;; *) exit 0 ;; esac ;;
