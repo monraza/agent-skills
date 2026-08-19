@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="End-to-end map of the /sdlc workflow — from the /spec interview and SPEC.md through the per-feature loop, its escalation policy, and the resume board.">
+<meta name="description" content="End-to-end map of the /sdlc workflow — from the /spec interview and SPEC.md through the per-feature loop, its escalation policy, the resume board, and how to install it.">
 <title>Spec to Shipped</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -529,6 +529,69 @@ Warning: main has advanced 14 commits since feat/visibility branched</span></pre
       </table>
     </div>
     <p>Running headless adds <code>claude -p "/sdlc auto features" --permission-mode acceptEdits</code>. There's nobody to answer an escalation there, so the run stops and records it — which is correct, not a failure.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">09</span>Installing it</h2>
+    <p><code>/sdlc</code> is a command file plus an optional hook — no runtime, no dependencies. How you install it depends on how the target repo already gets its skills.</p>
+
+    <h3>Into a repo that already uses agent-skills</h3>
+    <p>The fastest path is to copy the command in. The skills it invokes are already there, so nothing else has to change.</p>
+<pre>cp .claude/commands/sdlc.md    &lt;target&gt;/.claude/commands/
+
+<span class="c"># other harnesses, if the repo drives them too</span>
+cp .gemini/commands/sdlc.toml  &lt;target&gt;/.gemini/commands/
+cp commands/sdlc.toml          &lt;target&gt;/commands/</pre>
+    <p class="note"><strong>Take the right copy of the command.</strong> The body invokes skills by name, and whether those names need the plugin prefix depends on how the skills were installed.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>How the skills got there</th><th>Copy</th><th>Because</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Plugin install</td>
+            <td class="mono">.claude/commands/sdlc.md</td>
+            <td>It calls <code>agent-skills:planning-and-task-breakdown</code> — the prefix resolves against the installed plugin</td>
+          </tr>
+          <tr>
+            <td class="mono">npx skills add</td>
+            <td class="mono">commands/sdlc.toml</td>
+            <td>Skills land loose, not under a plugin namespace. Save that mirror's <code>prompt</code> body as <code>.claude/commands/sdlc.md</code> — it uses bare skill names</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The whole plugin</h3>
+    <p>If the repo has no agent-skills yet, install the plugin and <code>/sdlc</code> arrives with everything else — the 24 skills, the other eight commands, the hooks.</p>
+<pre>/plugin marketplace add addyosmani/agent-skills
+/plugin install agent-skills@addy-agent-skills</pre>
+    <p class="note"><strong>Installing from a fork takes one extra edit.</strong> <code>.claude-plugin/marketplace.json</code> declares each plugin's <code>source.repo</code>, and that field names the upstream repository. Add a fork as a marketplace without changing it and the install resolves back to upstream — you get agent-skills, silently without whatever the fork added.</p>
+
+    <h3>Trying it first</h3>
+    <p>A local plugin directory skips the marketplace entirely — no manifest edit, nothing installed globally, and the command disappears when you close the session.</p>
+<pre>git clone https://github.com/addyosmani/agent-skills
+claude --plugin-dir /path/to/agent-skills</pre>
+    <p>Verify any of the three with <code>/sdlc status</code>. It is read-only and safe in a repo with no run in progress — it should report that there's nothing to resume rather than erroring.</p>
+
+    <h3>Notifications are a separate step</h3>
+    <p>The hook that pages you at an escalation is opt-in, so installing the plugin doesn't start notifying every project. Copy <code>hooks/sdlc-notify.sh</code> into the repo and wire it to three events in <code>.claude/settings.json</code>:</p>
+<pre>{
+  "hooks": {
+    "Notification": [
+      { "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR}/hooks/sdlc-notify.sh\"" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR}/hooks/sdlc-notify.sh\"" }] }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR}/hooks/sdlc-notify.sh\"" }]
+      }
+    ]
+  }
+}</pre>
+    <p>With no channel configured it falls back to a terminal bell. <code>SDLC_NOTIFY_WEBHOOK</code> sends Slack-shaped JSON; <code>SDLC_NOTIFY_CMD</code> pipes the message to anything you like. Either way every notification is appended to <code>.claude/sdlc-notify.log</code>, which is what you read after an overnight run.</p>
   </section>
 
   <footer>
