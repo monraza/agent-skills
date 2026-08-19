@@ -76,6 +76,27 @@ done
 
 Run it under `cron`, a CI job, or your harness's own scheduler. Claude Code on the web can also drive this with a scheduled trigger. Two rules regardless of scheduler: **run on a feature branch**, and **never give the loop deploy credentials** — the ship phase produces a decision, a human executes it.
 
+### Coming back to a run days later
+
+```
+/sdlc status
+```
+
+Read-only. It reconstructs each feature's state from four sources — the registry, each feature's state file, git, and PR status — and prints one board: status and phase per feature, what's waiting on you, the resume point, budgets spent, and any drift between what the registry claims and what git actually shows. A resuming run prints the same board before it does anything, so the common case needs no command at all.
+
+The reconciliation is the point. A registry that says `ready` for a feature whose branch merged last week is worse than no registry — it sends you looking for work that's already done.
+
+Without a session, the same facts are three commands:
+
+```bash
+cat tasks/features.md                                   # the registry
+grep -H '^Phase:\|^PR:\|\[open\]' tasks/*/sdlc-state.md   # phase, PR, blockers per feature
+git branch --list 'feat/*' --format='%(refname:short)  %(committerdate:relative)'
+git branch --merged main --list 'feat/*'                # what already landed
+```
+
+Faster than a session, and enough to decide whether to resume. It won't reconcile drift for you — that's the part `/sdlc status` adds.
+
 ### Guardrails worth adding
 
 **Deny list over trust.** Put the irreversible commands behind a hard block in `.claude/settings.json` so an escalation trigger is not the only thing standing between the loop and production:
@@ -123,6 +144,7 @@ That is the difference between a loop you supervise and one you hover over.
 | Spins on the same failure | Lower the fix-attempt budget from 2 to 1 |
 | Runs out of context mid-loop | Smaller task slices in `/plan`; the state file is what carries the run across compactions |
 | You want a checkpoint per phase, not per run | Use `/sdlc` (stepped) instead of `/sdlc auto` |
+| You've lost track of where a run got to | `/sdlc status` — read-only, reconciles the registry against git |
 | Review scope is too broad to judge | `/sdlc auto features` — one branch and one ship decision per feature |
 
 The escalation policy is a project artifact, not a fixed setting. Edit `.claude/commands/sdlc.md` (and mirror the change to `.gemini/commands/sdlc.toml` and `commands/sdlc.toml`) so the loop matches what your team actually wants to be asked about.

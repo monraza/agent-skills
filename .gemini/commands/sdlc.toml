@@ -15,6 +15,7 @@ Parse the arguments for the tokens below; whatever is left over is the scope des
 - `feature <id>` — stepped, scoped to one feature from the spec, on its own branch.
 - `auto feature <id>` — autonomous, one feature, on its own branch.
 - `auto features` — autonomous, EVERY feature in the spec in dependency order, one branch per feature.
+- `status` — read-only. Reports where every feature stands. Changes nothing.
 
 `<id>` is a feature's number or name from tasks/features.md (or, before that exists, from SPEC.md).
 
@@ -98,6 +99,36 @@ When something goes wrong: a rejected push (the remote has diverged) is an escal
 Record the PR URL in the feature's state file as a `PR:` line, so the notification hook can tell you a review is waiting.
 
 Per-feature budgets are per feature — feature 3 starts with a fresh 3 review cycles. The consecutive-blocked counter in rule 6 is the only budget that spans features.
+
+## Status and resume
+
+`/sdlc status` answers "where did I leave this?" — and a run that resumes prints the same board before doing anything, so you never have to ask.
+
+`status` is strictly read-only. It reads files and queries git; it never writes, commits, pushes, or changes a branch. Reporting on a run must never disturb it.
+
+Reconstruct from four sources, not one. The registry is what the loop BELIEVES; confirm it against reality before showing it:
+
+- tasks/features.md — recorded status, branch, base, dependencies, PR
+- tasks/[feature]/sdlc-state.md — phase, budgets spent, open escalations and questions, PR URL
+- git — whether the branch exists, commits ahead of base, whether it's merged, last commit date
+- PR tooling (--pr runs) — whether the PR is open, draft, merged, or closed
+
+A stale registry is worse than no registry — it tells you a feature is waiting when it actually shipped. Reconcile:
+
+- Recorded ready or in-progress, but the branch is merged into base → it shipped; the registry is stale.
+- Recorded in-progress, but the branch doesn't exist → the branch was deleted. Report it; do not guess whether the work merged or was thrown away.
+- Recorded in-progress, but the branch has no commits ahead of base → nothing was built; it's effectively pending.
+- PR merged → shipped. PR closed unmerged → blocked, and it needs a decision.
+- In `status`, REPORT drift and stop there. Only a resuming run may correct the registry, and it says so when it does.
+
+The board: a header line (spec, feature count, base branch, last activity), then one row per feature — number, feature, status, phase, branch, PR — with a marker on anything waiting on a human. Then a "Waiting on you" list naming each blocker and each draft PR awaiting review, the resume point (feature, phase, task), budgets spent, and any drift found. Order features by the registry, not by status — the merge order is the thing a reader is reconstructing. Whole-spec runs get the same board with one row.
+
+Resuming after a break:
+
+1. Print the board first. In stepped mode, confirm the resume point before continuing. In auto mode, print and continue — but say what you're picking up, because a run resumed into the wrong phase is expensive to unwind.
+2. Check whether base has moved. If base has advanced since a feature branched, say so: that feature was built against an older tree, and its tests passed against a baseline that no longer exists. Merge base into the branch before trusting its green.
+3. Re-run preflight. A week-old working tree may be dirty, dependencies stale, or the toolchain moved.
+4. Escalate drift you cannot resolve — a deleted branch, a PR closed unmerged, a base that no longer contains a dependency's commits. These are trigger 2: the state doesn't tell you what was decided, and guessing produces confident nonsense.
 
 ## Escalation policy
 

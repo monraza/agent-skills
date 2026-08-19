@@ -169,6 +169,36 @@ What changes in practice:
 
 The trade is integration risk: features that pass in isolation can still conflict when merged. Ship decisions are per feature; the integration test is still yours.
 
+## Coming back a week later
+
+You ran `/sdlc auto features --pr` on Monday, got pulled onto something else, and it's now the following Tuesday. Nothing in your head survives that gap:
+
+```
+/sdlc status
+```
+
+```
+SDLC — SPEC.md — 8 features — base: main — last activity 6 days ago
+
+  #  Feature           Status        Phase       Branch            PR
+  1  Location          shipped       —           (merged)          #41 merged
+  2  Event feed        ready         DONE        feat/event-feed   #42 draft  ← your review
+  3  Visibility score  in-progress   BUILD 4/8   feat/visibility   —
+  4  Weather overlay   blocked       BUILD 2/6   feat/weather      —          ← trigger 1
+  5  Event detail      deferred      —           —                 —          (waits on 3)
+
+Waiting on you (2)
+  • Feature 4 — trigger 1 (secrets): N2YO API key. Options: server route / drop ISS / other provider
+  • PR #42 — draft, GO verdict, waiting for review
+
+Resume point: feature 3, BUILD phase, task 4 of 7
+Budgets: review 1/3 · fix attempts 0/2 · consecutive blocked 1
+Drift: registry says feature 1 is `ready`, but feat/location merged into main 5 days ago
+Warning: main has advanced 14 commits since feat/visibility branched
+```
+
+Two lines there are the ones that save you: the **drift** notice — you merged feature 1 yourself and the registry never heard about it — and the **base has advanced** warning. Feature 3's tests passed against a baseline that no longer exists, so its green is not evidence any more until base is merged in.
+
 ## Related
 
 - [autonomous-sdlc.md](../autonomous-sdlc.md) — running the loop headless, scheduled, or in CI

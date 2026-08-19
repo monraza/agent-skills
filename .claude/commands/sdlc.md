@@ -18,6 +18,7 @@ Parse `$ARGUMENTS` for the tokens below; whatever is left over is the scope desc
 | `feature <id>` | stepped | one feature from the spec | its own |
 | `auto feature <id>` | autonomous | one feature from the spec | its own |
 | `auto features` | autonomous | **every** feature in the spec, in dependency order | one per feature |
+| `status` | none — read-only | reports where every feature stands | none |
 
 `<id>` is a feature's number or name from `tasks/features.md` (or, before that exists, from `SPEC.md`).
 
@@ -140,6 +141,61 @@ Record the PR URL in the feature's state file as a `PR:` line, so the notificati
 ### Budgets
 
 Per-feature budgets are per feature — feature 3 starts with a fresh 3 review cycles. The consecutive-blocked counter in rule 6 is the only budget that spans features.
+
+## Status and resume
+
+`/sdlc status` answers "where did I leave this?" — and a run that resumes prints the same board before doing anything, so you never have to ask.
+
+**`status` is strictly read-only.** It reads files and queries git; it never writes, commits, pushes, or changes a branch. Reporting on a run must never disturb it.
+
+### Reconstruct from four sources, not one
+
+The registry is what the loop *believes*. Confirm it against reality before showing it:
+
+| Source | What it gives |
+|--------|---------------|
+| `tasks/features.md` | Recorded status, branch, base, dependencies, PR |
+| `tasks/[feature]/sdlc-state.md` | Phase, budgets spent, open escalations and questions, PR URL |
+| Git | Whether the branch exists, commits ahead of base, whether it's merged, last commit date |
+| PR tooling (`--pr` runs) | Whether the PR is open, draft, merged, or closed |
+
+A stale registry is worse than no registry — it tells you a feature is waiting when it actually shipped. Reconcile:
+
+- Recorded `ready` or `in-progress`, but the branch is merged into base → it **shipped**; the registry is stale.
+- Recorded `in-progress`, but the branch doesn't exist → the branch was deleted. Report it; do not guess whether the work merged or was thrown away.
+- Recorded `in-progress`, but the branch has no commits ahead of base → nothing was built; it's effectively `pending`.
+- PR merged → `shipped`. PR closed unmerged → `blocked`, and it needs a decision.
+- In `status`, **report** drift and stop there. Only a resuming run may correct the registry, and it says so when it does.
+
+### The board
+
+```
+SDLC — SPEC.md — 8 features — base: main — last activity 6 days ago
+
+  #  Feature           Status        Phase       Branch            PR
+  1  Location          shipped       —           (merged)          #41 merged
+  2  Event feed        ready         DONE        feat/event-feed   #42 draft  ← your review
+  3  Visibility score  in-progress   BUILD 4/8   feat/visibility   —
+  4  Weather overlay   blocked       BUILD 2/6   feat/weather      —          ← trigger 1
+  5  Event detail      deferred      —           —                 —          (waits on 3)
+
+Waiting on you (2)
+  • Feature 4 — trigger 1 (secrets): needs an API key. Options: <a> <b> <c>
+  • PR #42 — draft, GO verdict, waiting for review
+
+Resume point: feature 3, BUILD phase, task 4 of 7
+Budgets: review 1/3 · fix attempts 0/2 · consecutive blocked 1
+Drift: registry says feature 1 is `ready`, but feat/location merged into main 5 days ago
+```
+
+Order features by the registry, not by status — the merge order is the thing a reader is reconstructing. Whole-spec runs get the same board with one row.
+
+### Resuming after a break
+
+1. **Print the board first.** In stepped mode, confirm the resume point before continuing. In auto mode, print and continue — but say what you're picking up, because a run resumed into the wrong phase is expensive to unwind.
+2. **Check whether base has moved.** If base has advanced since a feature branched, say so: that feature was built against an older tree, and its tests passed against a baseline that no longer exists. Merge base into the branch before trusting its green.
+3. **Re-run preflight.** A week-old working tree may be dirty, dependencies stale, or the toolchain moved.
+4. **Escalate drift you cannot resolve** — a deleted branch, a PR closed unmerged, a base that no longer contains a dependency's commits. These are trigger 2: the state doesn't tell you what was decided, and guessing produces confident nonsense.
 
 ## Escalation policy
 
