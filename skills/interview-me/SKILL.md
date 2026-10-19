@@ -43,10 +43,12 @@ Before asking anything, write down your current best read of what the user wants
 
 ```
 HYPOTHESIS: You want a way to answer "how are we doing?" in standup, and "dashboard" was the convention that came to mind.
-CONFIDENCE: ~30%
+CONFIDENCE: ~30% — missing: who it's for, what "metrics" means in context, and what success looks like
 ```
 
 The number forces honesty. If you wrote down a high number but can't actually predict the user's reactions to the next three questions you'd ask, the number is wrong. Start at the confidence level you can defend.
+
+When confidence is below ~70%, append a brief reason on the same line — what's still unresolved or missing. This tells the user exactly what the interview needs to surface, and prevents the number from being a vague signal.
 
 ### Step 2: Ask one question at a time, each with a guess attached
 
@@ -119,6 +121,14 @@ The gate is an explicit "yes." The following are **not** yes:
 
 If they correct you, fold the correction in and restate. Loop until you get an explicit yes.
 
+### Step 6: Terminal Turn & Stop Rule (CRITICAL)
+
+When the user confirms the statement of intent with an explicit "yes":
+
+1. **Deliver the confirmed Statement of Intent.**
+2. **Offer downstream paths** (offer to save it to `docs/intent/[topic].md`, draft a spec with `spec-driven-development`, or move to task planning after the spec).
+3. **STOP YOUR TURN IMMEDIATELY.** Do NOT invoke tools or start downstream work in this turn. Hand control back to the user to choose the next step.
+
 ### The 95% Confidence Stop
 
 You're done when you can answer yes to this:
@@ -155,7 +165,7 @@ User: build me a dashboard for our metrics
 
 Agent:
 HYPOTHESIS: You want a way to answer "how are we doing?" in standup, and "dashboard" came to mind because that's the conventional answer.
-CONFIDENCE: ~30%
+CONFIDENCE: ~30% — missing: who it's for, what "metrics" are, and what success looks like
 
 Q:     When you say "how are we doing?", who's asking — you alone, the engineering team in standup, or up the chain (e.g., your manager, an exec, a board)?
 GUESS: engineering team in standup, because "we" usually scopes that way and standups are where this question gets asked. If it's for execs the metrics and the framing change a lot.
@@ -163,7 +173,7 @@ GUESS: engineering team in standup, because "we" usually scopes that way and sta
 User: It's actually for me. I keep losing track of which experiments are running and what their early signal looks like.
 
 Agent:
-Updated read: not a team dashboard at all. It's a personal experiment tracker. Confidence: ~60%.
+Updated read: not a team dashboard at all. It's a personal experiment tracker. Confidence: ~60% — still missing: what "early signal" means and what done looks like.
 
 Q:     Is the gap that you don't know which experiments exist, or that you can't see their results in one place?
 GUESS: the second one. You have a list of experiments somewhere, but their results live in five different tools, and reconciling them by hand is what you're tired of.
@@ -202,9 +212,11 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 - A question without your hypothesis attached: that's surveying, not committing
 - Accepting "whatever you think is best" as a terminal answer
 - Producing a spec, plan, or task list before the user has explicitly confirmed your restate
+- Invoking tools or starting downstream work immediately upon intent confirmation instead of stopping the turn
 - Questions framed as "what would be best practice?" instead of "what do you actually want?"
 - The user gives a sophistication-signaling answer ("scalable", "clean", "modern") and you accept it without probing whether it's what they actually want
 - Three or more rounds without your confidence visibly rising: you're asking the wrong questions, step back and reframe
+- A confidence number below ~70% with no reason attached: the user can't help close the gap if they don't know what's missing
 - Saving the intent doc before the user has confirmed (the doc itself implies a yes the user didn't give)
 - Skipping the "Out of scope" line in the restate (silent disagreement about non-goals is half of misalignment)
 
@@ -213,9 +225,11 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 After applying interview-me:
 
 - [ ] An explicit hypothesis with a confidence number was stated in the first turn
+- [ ] Every confidence number below ~70% was accompanied by a one-line reason (what's still unresolved or missing)
 - [ ] Questions were asked one at a time, each with the agent's guess attached
 - [ ] At least one "what would you actually want if you didn't have to justify it?" probe ran when the user gave a sophistication-signaling or convention-signaling answer
 - [ ] A concrete restate (Outcome / User / Why now / Success / Constraint / Out of scope) was written back to the user
 - [ ] The user confirmed the restate with an explicit yes (not "whatever you think," not "sounds good," not silence)
 - [ ] At the stop point, the agent could predict reactions to the next three questions it would ask
+- [ ] Upon receiving explicit confirmation, stopped the turn immediately without invoking tools or starting downstream work
 - [ ] Any handoff to a downstream skill (`idea-refine`, `spec-driven-development`) was framed in terms of the confirmed intent, not the original underspecified ask
