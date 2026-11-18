@@ -18,7 +18,9 @@ export type Turn = {
 export type TodoCount = { done: number; total: number }
 
 // One task line of tasks/todo.md: its title and whether it's checked.
-export type TodoTask = { title: string; done: boolean }
+// `number`: the N of `Task N:`, or else the task's place in the list.
+// `started`: some of a task heading's boxes are checked.
+export type TodoTask = { number: string; title: string; done: boolean; started: boolean }
 
 // What the working directory's files say: flags, counts, and the todo's task
 // lines (the only file text kept, for Build's task list).

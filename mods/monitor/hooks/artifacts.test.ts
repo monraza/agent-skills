@@ -32,27 +32,66 @@ describe('todo counting', () => {
 })
 
 describe('todo task lines', () => {
-  test("keep each 'Task' line's title, without ** and cut at ' · ', and whether it's done", () => {
+  test("keep each 'Task' line's number and title, without ** and cut at ' · ', and whether it's done", () => {
     const text = [
       '# Tasks',
       '- [x] **Task 1: Live event check** · S · Dependencies: none',
       '  - **What:** a probe',
-      '- [ ] Task 2: Mod skeleton',
+      '- [ ] Task 2a: Mod skeleton',
       '### Checkpoint A',
       '- [x] validate, tsc and test pass',
     ].join('\n')
 
     expect(todoTasksOf(text)).toEqual([
-      { title: 'Task 1: Live event check', done: true },
-      { title: 'Task 2: Mod skeleton', done: false },
+      { number: '1', title: 'Live event check', done: true, started: false },
+      { number: '2a', title: 'Mod skeleton', done: false, started: false },
+    ])
+    expect(todoTasksOf('- [ ] Task 3')).toEqual([{ number: '3', title: 'Task 3', done: false, started: false }])
+  })
+
+  test("without any 'Task' lines or headings, every checkbox item is a task, numbered by its place", () => {
+    expect(todoTasksOf('- [x] write the parser\n- [ ] wire it up')).toEqual([
+      { number: '1', title: 'write the parser', done: true, started: false },
+      { number: '2', title: 'wire it up', done: false, started: false },
     ])
   })
 
-  test("without any 'Task' lines, every checkbox item is a task", () => {
-    expect(todoTasksOf('- [x] write the parser\n- [ ] wire it up')).toEqual([
-      { title: 'write the parser', done: true },
-      { title: 'wire it up', done: false },
+  test("the planning skill's '## Task N:' headings: one task each, done when every box under it is checked", () => {
+    const text = [
+      '# Todo',
+      '## Task 1: Set up the schema',
+      '**Acceptance criteria:**',
+      '- [x] tables exist',
+      '- [x] migrations run',
+      '**Verification:**',
+      '- [x] Tests pass',
+      '## Task 2: API endpoints',
+      '- [x] list endpoint',
+      '- [ ] create endpoint',
+      '### Notes',
+      '- [ ] a box under a deeper heading is still Task 2\'s',
+      '## Checkpoint: After Tasks 1-2',
+      '- [ ] All tests pass',
+      '## **Task 3** — UI',
+      '- [ ] form',
+      '### Task 4. Docs',
+      '',
+    ].join('\n')
+
+    expect(todoTasksOf(text)).toEqual([
+      { number: '1', title: 'Set up the schema', done: true, started: true },
+      { number: '2', title: 'API endpoints', done: false, started: true },
+      { number: '3', title: 'UI', done: false, started: false },
+      { number: '4', title: 'Docs', done: false, started: false },
     ])
+    // Was 3/7 with every box counted (Build 0/85 on a real plan).
+    expect(countTodo(text)).toEqual({ done: 1, total: 4 })
+  })
+
+  test("'Task' checkbox lines win over headings when a todo has both", () => {
+    const text = ['## Task 1: One', '- [x] criterion', '## Task list', '- [x] Task 1: One', '- [ ] Task 2: Two'].join('\n')
+
+    expect(countTodo(text)).toEqual({ done: 1, total: 2 })
   })
 })
 

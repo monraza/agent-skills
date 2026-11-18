@@ -234,7 +234,7 @@ Every task, before it's checked off:
 
 ## Phase 6: One view per step, a pinned stepper (spec Decision 12)
 
-- [ ] **Task 17: Task headings and numbers** · S · Dependencies: 16
+- [x] **Task 17: Task headings and numbers** · S · Dependencies: 16
   - **What:**
     - `tasks/todo.md` written with the planning skill's `## Task N: title` headings counts one task per heading. A heading's task is done when all the boxes under it are checked, and started when some are.
     - Each task keeps its number: the `N` of `Task N:`, or else its place. Artifacts shape 3.

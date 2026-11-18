@@ -9,21 +9,70 @@ export const PLAN_PATH = 'tasks/plan.md'
 export const TODO_PATH = 'tasks/todo.md'
 
 const TODO_ITEM = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/
+const HEADING = /^(#{1,6})\s+(.*)$/
+const TASK_NUMBER = /^task\s+(\d+[a-z]?)\b\s*[:.)\-–—]?\s*/i
+const IS_TASK = /^task\b/i
 
-// The todo's tasks: its checkbox items whose text starts with `Task`, or
-// every checkbox item when none does. A title loses its ** and is cut at
-// ' · ', where this repo's task lines start their size and dependencies.
-export const todoTasksOf = (text: string): TodoTask[] => {
-  const items = text.split('\n').flatMap(line => {
+type Item = { text: string; done: boolean }
+
+const itemsOf = (lines: readonly string[]): Item[] =>
+  lines.flatMap(line => {
     const match = line.match(TODO_ITEM)
-    if (match === null) return []
-    const title = (match[2] ?? '').replaceAll('**', '').split(' · ')[0]?.trim() ?? ''
 
-    return [{ title, done: match[1] !== ' ' }]
+    return match === null ? [] : [{ text: match[2] ?? '', done: match[1] !== ' ' }]
   })
-  const tasks = items.filter(item => /^task\b/i.test(item.title))
 
-  return tasks.length > 0 ? tasks : items
+// A title loses its ** and is cut at ' · ', where this repo's task lines
+// start their size and dependencies; `Task N:` becomes its number.
+const taskOf = (text: string, place: number, done: boolean, started: boolean): TodoTask => {
+  const plain = text.replaceAll('**', '').split(' · ')[0]?.trim() ?? ''
+  const match = plain.match(TASK_NUMBER)
+  if (match === null) return { number: String(place), title: plain, done, started }
+
+  // `Task 3` with nothing after its number keeps its whole text as the title.
+  const title = plain.slice(match[0].length).trim()
+
+  return { number: match[1] ?? String(place), title: title === '' ? plain : title, done, started }
+}
+
+// The planning skill's `## Task N: title` sections: the boxes under a task
+// heading, down to the next heading as high as it, are that task's. A
+// heading needs its number (`## Task List` is not a task).
+const headingTasksOf = (lines: readonly string[]): TodoTask[] => {
+  const sections: { text: string; boxes: Item[] }[] = []
+  let level = 0
+  for (const line of lines) {
+    const heading = line.match(HEADING)
+    const depth = heading?.[1]?.length ?? 0
+    const text = heading?.[2]?.trim() ?? ''
+    if (heading !== null && TASK_NUMBER.test(text.replaceAll('**', ''))) {
+      sections.push({ text, boxes: [] })
+      level = depth
+    } else if (heading !== null && depth <= level) {
+      level = 0
+    } else if (level > 0) {
+      sections.at(-1)?.boxes.push(...itemsOf([line]))
+    }
+  }
+
+  return sections.map(({ text, boxes }, index) => {
+    const checked = boxes.filter(box => box.done).length
+
+    return taskOf(text, index + 1, boxes.length > 0 && checked === boxes.length, checked > 0)
+  })
+}
+
+// The todo's tasks, in this order of preference: its checkbox items whose
+// text starts with `Task`; its `## Task N:` headings; every checkbox item.
+export const todoTasksOf = (text: string): TodoTask[] => {
+  const lines = text.split('\n')
+  const items = itemsOf(lines)
+  const taskItems = items.filter(item => IS_TASK.test(item.text.replaceAll('**', '')))
+  if (taskItems.length > 0) return taskItems.map((item, index) => taskOf(item.text, index + 1, item.done, false))
+  const headed = headingTasksOf(lines)
+  if (headed.length > 0) return headed
+
+  return items.map((item, index) => taskOf(item.text, index + 1, item.done, false))
 }
 
 export const countTodo = (text: string): TodoCount => {

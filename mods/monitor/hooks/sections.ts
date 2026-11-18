@@ -94,15 +94,15 @@ const tasksSection = ({ activity, artifacts, tasks }: SessionData): Section | nu
   const list =
     artifacts.todo !== null
       ? artifacts.todoTasks
-      : tasks.map(task => ({ title: task.subject, done: task.status === 'completed' }))
+      : tasks.map(task => ({ number: task.id, title: task.subject, done: task.status === 'completed' }))
   if (list.length === 0) return null
   const next = list.findIndex(task => !task.done)
-  const lines = list.map(({ title, done }, index): Line =>
+  const lines = list.map(({ number, title, done }, index): Line =>
     done
-      ? { text: `✓ ${title}`, tone: 'done' }
+      ? { text: `✓ ${number}. ${title}`, tone: 'done' }
       : index === next
-        ? { text: `▸ ${title}`, tone: 'current' }
-        : { text: `○ ${title}`, tone: 'muted' },
+        ? { text: `▸ ${number}. ${title}`, tone: 'current' }
+        : { text: `○ ${number}. ${title}`, tone: 'muted' },
   )
   const doneCount = list.filter(task => task.done).length
 

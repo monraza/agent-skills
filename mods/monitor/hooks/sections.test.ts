@@ -65,9 +65,9 @@ describe('the blocks', () => {
         hasSpec: true,
         todo: { done: 1, total: 3 },
         todoTasks: [
-          { title: 'Task 1: Parser', done: true },
-          { title: 'Task 2: Wiring', done: false },
-          { title: 'Task 3: Docs', done: false },
+          { number: '1', title: 'Parser', done: true, started: false },
+          { number: '2', title: 'Wiring', done: false, started: false },
+          { number: '3', title: 'Docs', done: false, started: false },
         ],
       },
       now: 5 * MINUTE,
@@ -85,9 +85,9 @@ describe('the blocks', () => {
       key: 'tasks',
       title: 'Tasks · 1 of 3 done',
       lines: [
-        { text: '✓ Task 1: Parser', tone: 'done' },
-        { text: '▸ Task 2: Wiring', tone: 'current' },
-        { text: '○ Task 3: Docs', tone: 'muted' },
+        { text: '✓ 1. Parser', tone: 'done' },
+        { text: '▸ 2. Wiring', tone: 'current' },
+        { text: '○ 3. Docs', tone: 'muted' },
       ],
     })
   })
@@ -102,11 +102,11 @@ describe('the blocks', () => {
       ],
     }
 
-    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['✓ Write the test', '▸ Make it pass'])
+    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['✓ 1. Write the test', '▸ 2. Make it pass'])
   })
 
   test('the task list is only shown while Build is current', () => {
-    const artifacts = { ...NO_ARTIFACTS, todo: { done: 0, total: 1 }, todoTasks: [{ title: 'Task 1', done: false }] }
+    const artifacts = { ...NO_ARTIFACTS, todo: { done: 0, total: 1 }, todoTasks: [{ number: '1', title: 'Parser', done: false, started: false }] }
 
     expect(block({ ...EMPTY, artifacts, activity: [commandEntry('plan', 0)] }, 'tasks')).toBeUndefined()
     expect(block({ ...EMPTY, artifacts }, 'tasks')).toBeUndefined()
