@@ -70,7 +70,7 @@ Every task, before it's checked off:
     - Integration: fixture events → the pane shows `Build · since /build, just now`. Advancing the mock clock 4 minutes shows `4 min ago` with no new event.
   - **Files:** `hooks/phases.ts`, `hooks/phases.test.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`
 
-- [ ] **Task 4: Done marks and Build progress from files** · M · Dependencies: 2
+- [x] **Task 4: Done marks and Build progress from files** · M · Dependencies: 2
   - **Acceptance:**
     - Spec success criteria 4 and 5 pass.
     - A spec at any accepted path (`SPEC.md`, `SPEC-*.md`, `docs/SPEC.md`, `spec/*`) marks Define done.

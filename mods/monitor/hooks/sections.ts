@@ -1,5 +1,6 @@
-import type { ActivityEntry } from '../types'
+import type { ActivityEntry, Artifacts, PhaseId } from '../types'
 
+import { doneFrom } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
@@ -11,11 +12,11 @@ export type Line = { text: string; isDim: boolean }
 // labelled list.
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
-export type SessionData = { activity: readonly ActivityEntry[]; now: number }
+export type SessionData = { activity: readonly ActivityEntry[]; artifacts: Artifacts; now: number }
 
 const MINUTE = 60_000
 
-const SYMBOL = { todo: '○', active: '◉', visited: '·' } as const
+const SYMBOL = { todo: '○', active: '◉', visited: '·', done: '✓' } as const
 
 const empty = (text: string): readonly Line[] => [{ text, isDim: true }]
 
@@ -30,11 +31,16 @@ export const ago = (at: number, now: number): string => {
 const labelOf = ({ kind, name }: ActivityEntry): string =>
   kind === 'command' ? `/${bareName(name)}` : `skill ${bareName(name)}`
 
-const phaseSection = ({ activity, now }: SessionData): Section => {
+const phaseSection = ({ activity, artifacts, now }: SessionData): Section => {
   const { active, states } = phaseViewOf(activity)
+  const done = doneFrom(artifacts)
+  // The active phase wins over a done mark: it is what the session is doing.
+  const shown = (phase: PhaseId) => (states[phase] === 'active' ? 'active' : done[phase] ? 'done' : states[phase])
+  const progress = (phase: PhaseId) =>
+    phase === 'build' && artifacts.todo !== null ? ` ${artifacts.todo.done}/${artifacts.todo.total}` : ''
   const phases = PHASES.map(phase => ({
-    text: `${SYMBOL[states[phase]]} ${PHASE_LABEL[phase]}`,
-    isDim: states[phase] !== 'active',
+    text: `${SYMBOL[shown(phase)]} ${PHASE_LABEL[phase]}${progress(phase)}`,
+    isDim: shown(phase) === 'todo' || shown(phase) === 'visited',
   }))
   const evidence =
     active === null

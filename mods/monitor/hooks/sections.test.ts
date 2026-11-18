@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
+import { NO_ARTIFACTS } from './artifacts'
 import { commandEntry } from './phases'
 import { ago, sectionsOf } from './sections'
 import { summaryOf } from './summary'
@@ -8,7 +9,7 @@ const MINUTE = 60_000
 
 describe('sections', () => {
   test('an empty session lists the six phases, no phase yet, and no activity', () => {
-    expect(sectionsOf({ activity: [], now: 0 })).toEqual([
+    expect(sectionsOf({ activity: [], artifacts: NO_ARTIFACTS, now: 0 })).toEqual([
       {
         key: 'phase',
         title: null,
@@ -28,7 +29,7 @@ describe('sections', () => {
 
   test('activity is newest first, with phase and age', () => {
     const activity = [commandEntry('spec', 0), commandEntry('compact', 2 * MINUTE)]
-    const [, section] = sectionsOf({ activity, now: 5 * MINUTE })
+    const [, section] = sectionsOf({ activity, artifacts: NO_ARTIFACTS, now: 5 * MINUTE })
 
     expect(section).toEqual({
       key: 'activity',

@@ -63,7 +63,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 
 ### Phase 2: Core sections
 - [x] Task 3: Active phase with evidence, and the Activity list
-- [ ] Task 4: Done marks and Build progress from SPEC / plan / todo
+- [x] Task 4: Done marks and Build progress from SPEC / plan / todo
 - [ ] Task 5: Files changed and commits
 - [ ] Task 6: Checks with pass/fail
 - [ ] Task 7: Session tasks

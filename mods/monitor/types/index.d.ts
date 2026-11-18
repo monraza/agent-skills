@@ -15,10 +15,20 @@ export type Turn = {
   startedWithCommand: boolean
 }
 
+export type TodoCount = { done: number; total: number }
+
+// What the working directory's files say: counts and flags, never contents.
+export type Artifacts = {
+  hasSpec: boolean
+  hasPlan: boolean
+  todo: TodoCount | null
+}
+
 declare module 'claude-code' {
   interface PluginState {
     monitor: {
       activity: Shaped<ActivityEntry[]>
+      artifacts: Shaped<Artifacts>
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number
