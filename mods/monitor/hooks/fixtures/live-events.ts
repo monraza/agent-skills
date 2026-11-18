@@ -22,6 +22,11 @@
 // - Edit and Write inputs carry an absolute `file_path`.
 // - session.start in this cloud session: `surface: null`,
 //   `isInteractive: false`.
+// - A typed `/spec probe` fires, in this order: command.run (`command: 'spec'`,
+//   `args: 'probe'`, `origin: { kind: 'composer' }`), then skill.prompt for
+//   the command's own expansion (`skill: 'spec'`, `source: 'projectSettings'`),
+//   then command.run's result, then turn.start. The command comes *before*
+//   its turn starts, and its skill.prompt duplicates it.
 
 export const sessionStart = {
   cwd: '/home/user/project',
@@ -198,4 +203,33 @@ export const skillPrompt = {
   source: 'syncedSkills',
   frontmatter: { name: 'brand-guidelines' },
   text: '# Anthropic Brand Styling\n…',
+} as const
+
+// A turn that didn't start with a slash command (here, a background notice).
+export const turnStart = {
+  text: '<task-notification>\nThe permission mode turned on mod hot-reloading for this session…',
+  turnId: '2016dae1-03af-4904-bbfa-ed93fdbdb4d8',
+  agentId: null,
+} as const
+
+// The typed `/spec probe`, in the order the engine sent it.
+export const typedCommand = {
+  commandRun: {
+    command: 'spec',
+    args: 'probe',
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: false, columns: 80 },
+  },
+  skillPrompt: {
+    skill: 'spec',
+    source: 'projectSettings',
+    frontmatter: {},
+    text: 'Invoke the agent-skills:spec-driven-development skill.\n…',
+  },
+  commandResult: { ref: 1 },
+  turnStart: {
+    text: '<command-message>spec</command-message>\n<command-name>/spec</command-name>\n<command-args>probe</command-args>',
+    turnId: 'e12f9579-17b6-4917-af77-0f90d77047bb',
+    agentId: null,
+  },
 } as const

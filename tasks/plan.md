@@ -49,7 +49,7 @@ Tasks 3 to 7 only depend on Task 2. They're ordered by risk: phase (the headline
 Full tasks, with acceptance criteria, verification steps and files, are in `tasks/todo.md`.
 
 ### Phase 1: Foundation
-- [ ] Task 1: Live event check: record real events, settle Decisions 1–3
+- [x] Task 1: Live event check: record real events, settle Decisions 1–3
 - [ ] Task 2: Mod skeleton: loads, validates, `/monitor` opens an empty pane
 
 ### Checkpoint A: Foundation

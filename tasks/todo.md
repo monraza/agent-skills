@@ -9,7 +9,7 @@ Every task, before it's checked off:
 
 ## Phase 1: Foundation
 
-- [ ] **Task 1: Live event check** · S · Dependencies: none
+- [x] **Task 1: Live event check** · S · Dependencies: none
   - **What:** a throwaway probe mod in the session's mods folder, never committed. It records the inputs and results of `turn.start`, `command.run`, `skill.prompt` and `tool.call` as JSON lines in the scratchpad.
   - **Acceptance:**
     - Records exist for each of these:
