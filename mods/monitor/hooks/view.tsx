@@ -1,14 +1,18 @@
 import type { Elements, RenderSurface } from 'claude-code'
 
-import type { ActivityEntry } from '../types'
+import type { Section } from './sections'
 
 type Table = Elements[RenderSurface]
 
-export type PaneData = { activity: readonly ActivityEntry[] }
-
-export const drawPane = ({ Box, Text }: Table, { activity }: PaneData) => (
+export const drawPane = ({ Box, Text }: Table, sections: readonly Section[]) => (
   <Box flexDirection="column">
-    {activity.length === 0 && <Text dimColor>No phase yet</Text>}
-    {activity.length === 0 && <Text dimColor>No activity yet.</Text>}
+    {sections.map(({ title, lines }) => (
+      <Box flexDirection="column">
+        {title !== null && <Text bold>{title}</Text>}
+        {lines.map(line => (
+          <Text dimColor={line.isDim}>{line.text}</Text>
+        ))}
+      </Box>
+    ))}
   </Box>
 )

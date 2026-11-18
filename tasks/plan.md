@@ -54,7 +54,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 ### Phase 1: Foundation
 - [x] Task 1: Live event check: record real events, settle Decisions 1–3
 - [x] Task 2: Mod skeleton: loads, validates, `/monitor` opens an empty pane
-- [ ] Task 2a: Shared sections and the `/monitor` text summary (added at Checkpoint A)
+- [x] Task 2a: Shared sections and the `/monitor` text summary (added at Checkpoint A)
 
 ### Checkpoint A: Foundation
 - [ ] The fixtures file exists, and Decisions 1–3 in SPEC.md record their outcomes

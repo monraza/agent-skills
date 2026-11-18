@@ -40,7 +40,7 @@ Every task, before it's checked off:
     - Live: type `/monitor`.
   - **Files:** `mods/monitor/.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, `tsconfig.json`, `hooks/pane.test.tsx`. That's 7 files, but two are one-line config files.
 
-- [ ] **Task 2a: Shared sections and the `/monitor` text summary** · M · Dependencies: 2
+- [x] **Task 2a: Shared sections and the `/monitor` text summary** · M · Dependencies: 2
   - **What:** what the pane shows moves into `sections.ts` (pure: session data → ordered sections). `view.tsx` draws those sections, and `summary.ts` turns them into plain text. `/monitor` replies with the text when the pane isn't placed.
   - **Acceptance:**
     - Spec success criterion 17 holds for the sections that exist now (the empty state: `No phase yet`, `No activity yet.`).
