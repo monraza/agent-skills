@@ -94,7 +94,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 | The mod API changes when Claude Code updates itself | Med | Validate, tsc and test on every task. The README states the version it was tested with (2.1.326) |
 | `/monitor` clashes with an existing command | Med | Task 1 checks. On a clash, stop and ask for a name (Decision 3) |
 | The mobile app attaches no surface, so no pane (or any mod drawing) shows there; only a command's text reply reaches the phone | High (you use mobile) | Decided at Checkpoint A: `/monitor` replies with a text summary when the pane isn't placed (Task 2a, spec Decision 8) |
-| A mod reload may drop the session's data: the files from Task 6 were gone after the reload, though recording works between reloads | High | Task 7's reload is a deliberate test: the scratch file and commit `27caa2a` recorded before it must still show after it. If they don't, Task 10 addresses it |
+| A reload of the mod's code starts it fresh: the session's data is lost (seen live after Tasks 6 and 7) | Low in real use | Accepted for V1 at Checkpoint B (spec Decision 9): only developing the mod, a plugin update or a worker restart triggers it |
 | The model can't type slash commands, so live checks need the user | Low | Task 1 and Checkpoint B list exactly which commands to type |
 | The repo folder isn't hot-reloaded in this session | Low | Symlink or copy into the session's mods folder (Architecture Decisions) |
 | `validate-versions.js` reads only `plugins[0]` of the marketplace file | Low | The `monitor` entry goes after `agent-skills` |

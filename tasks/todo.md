@@ -109,9 +109,9 @@ Every task, before it's checked off:
   - **Files:** `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, `hooks/tasks.test.tsx`
 
 ### Checkpoint B
-- [ ] validate, tsc and test pass
-- [ ] Live run in a scratch repo: `/spec` → `/plan` → edit `tasks/todo.md` → run a check → commit. The pane, or `/monitor`'s text on the phone, matches each step.
-- [ ] Human review
+- [x] validate, tsc and test pass (71 tests)
+- [x] Live run, in this session, through `/monitor` on the phone. Between reloads it showed the done marks and Build count, a changed file, a commit and a passing check. A quiet commit (`-q`) isn't listed. A reload of the mod's code wiped the session's data.
+- [x] Human review: reloads accepted for V1 (spec Decision 9)
 
 ## Phase 3: Behaviour and polish
 
