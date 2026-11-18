@@ -5,7 +5,16 @@ import type { Artifacts } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo } from './artifacts'
 import { addFile, checkOf, commitOf } from './classify'
-import { NEW_TURN, afterCommand, afterTurnStart, commandEntry, isOwnExpansion, skillEntry } from './phases'
+import {
+  NEW_TURN,
+  afterCommand,
+  afterTurnStart,
+  commandEntry,
+  isOwnExpansion,
+  phaseOfCommand,
+  phaseOfSkill,
+  skillEntry,
+} from './phases'
 import { sectionsOf } from './sections'
 import type { SessionData } from './sections'
 import { summaryOf } from './summary'
@@ -25,6 +34,7 @@ const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 
 const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-1' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
+const hasOpened = atom({ plugin: 'monitor', key: 'hasOpened' } as const, false)
 
 const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   activity: await read($, activity),
@@ -70,6 +80,23 @@ const refreshArtifacts = async ($: EngineInterface) => {
   }
 }
 
+const hasTasksFolder = async ($: EngineInterface): Promise<boolean> => {
+  try {
+    return await $.fs.exists(`${(await $.session.cwd()).replace(/\/$/, '')}/tasks`)
+  } catch {
+    return false
+  }
+}
+
+// The pane opens on its own at most once per session (SPEC.md, Opening
+// rules); after that only /monitor opens it. Not awaited, and a failure is
+// ignored: opening must never hold up or break what triggered it.
+const openOnce = async ($: EngineInterface) => {
+  if (await read($, hasOpened)) return
+  await update($, hasOpened, () => true)
+  void $.ui.open(PANE).catch(() => undefined)
+}
+
 // Every observing hook records, then passes the event on unchanged.
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -80,6 +107,7 @@ export const register: Register = on => {
     $.clock.every(MINUTE, () => void update($, tick, count => count + 1))
     const ran = await next(e)
     await refreshArtifacts($)
+    if ((await read($, artifacts)).hasSpec || (await hasTasksFolder($))) await openOnce($)
 
     return ran
   })
@@ -88,6 +116,7 @@ export const register: Register = on => {
     const at = await $.clock.now()
     await update($, activity, list => [...list, commandEntry(e.command, at)])
     await update($, turn, current => afterCommand(current, e.command))
+    if (phaseOfCommand(e.command) !== undefined) await openOnce($)
 
     return next(e)
   })
@@ -95,6 +124,7 @@ export const register: Register = on => {
   // Where no screen shows panes (the Android app attaches none to a cloud
   // session), the reply carries the panel as text instead.
   on('command.run', { command: 'monitor' }, async $ => {
+    await update($, hasOpened, () => true)
     const opened = await $.ui.open(PANE)
     if (opened.isPlaced) return { text: 'Workflow panel opened.' }
 
@@ -114,6 +144,7 @@ export const register: Register = on => {
     if (!isOwnExpansion(current, e.skill)) {
       const at = await $.clock.now()
       await update($, activity, list => [...list, skillEntry(e.skill, at, current)])
+      if (phaseOfSkill(e.skill) !== undefined) await openOnce($)
     }
 
     return next(e)

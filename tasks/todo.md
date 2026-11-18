@@ -115,7 +115,7 @@ Every task, before it's checked off:
 
 ## Phase 3: Behaviour and polish
 
-- [ ] **Task 8: Opening rules** · S · Dependencies: 3, 4
+- [x] **Task 8: Opening rules** · S · Dependencies: 3, 4
   - **Acceptance:**
     - Spec success criterion 11 passes.
     - The pane auto-opens at session start in a directory with a spec or `tasks/`.

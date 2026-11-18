@@ -74,7 +74,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [ ] Human review
 
 ### Phase 3: Behaviour and polish
-- [ ] Task 8: Opening rules
+- [x] Task 8: Opening rules
 - [ ] Task 9: Layout across surfaces and widths
 - [ ] Task 10: Reload, old state shapes and caps
 - [ ] Task 11: Packaging: marketplace entry, README, repo checks

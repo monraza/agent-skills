@@ -42,6 +42,9 @@ declare module 'claude-code' {
       commits: Shaped<Commit[]>
       checks: Shaped<Check[]>
       tasks: Shaped<SessionTask[]>
+      // Set once the pane has been opened, by the mod or by /monitor: the mod
+      // opens it on its own at most once per session.
+      hasOpened: boolean
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number
