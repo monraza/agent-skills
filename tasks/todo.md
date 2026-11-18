@@ -56,7 +56,7 @@ Every task, before it's checked off:
 - [x] The fixtures exist, and the Decisions are updated
 - [x] validate, tsc and test pass
 - [x] `/monitor` works live: it's registered, runs, and opens the pane. On the Android app the pane is open but undrawn, because the app attaches no surface (`$.session.surfaces()` is empty). `/monitor` now says so instead of claiming success.
-- [ ] Human review
+- [x] Human review: text summary from `/monitor` chosen for screens without panes (spec Decision 8, Task 2a)
 
 ## Phase 2: Core sections
 
