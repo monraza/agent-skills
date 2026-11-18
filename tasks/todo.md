@@ -199,3 +199,35 @@ Every task, before it's checked off:
 - [x] Tests, type-check and validate pass (95 tests, every surface)
 - [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
 - [ ] Human review
+
+## Phase 5: Build's tasks and looking back (spec Decision 11)
+
+- [ ] **Task 14: Build's task list** · M · Dependencies: 13
+  - **What:**
+    - Reading `tasks/todo.md` also keeps its task lines, title and done (artifacts shape 2).
+    - While Build is current, the panel lists them with ✓, ▸ (the first open task) and ○, under `Tasks · N of M done`. It falls back to the session's tasks when there's no todo.
+    - The header drops `step N of 6`.
+  - **Acceptance:** spec success criteria 15 and 19.
+  - **Files:** `hooks/artifacts.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 15: File changes as events** · S · Dependencies: 14
+  - **What:**
+    - Each Edit, Write or NotebookEdit is recorded as `{ path, at, created }` (files shape 3), where `created` comes from Write's `type: 'create'`.
+    - Recent shows each path once, as `created` or `edited`.
+    - The totals count distinct paths.
+    - A pure function gives the step current at any time.
+  - **Acceptance:** spec success criterion 6, unchanged in what it shows.
+  - **Files:** `hooks/classify.ts`, `hooks/phases.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 16: Look back** · M · Dependencies: 15
+  - **What:**
+    - Each step in the stepper is a button that sets the step being viewed (a `viewing` atom).
+    - The look-back view shows that step's files and activity, with `Back`.
+    - `/monitor <step>` replies with the same view as text, and an unknown step name gets the valid names.
+  - **Acceptance:** spec success criterion 20, on every surface.
+  - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+### Checkpoint E
+- [ ] Tests, type-check and validate pass
+- [ ] Seen on a real screen and the phone
+- [ ] Human review

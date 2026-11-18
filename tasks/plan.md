@@ -106,6 +106,16 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
 - [ ] Human review
 
+### Phase 5: Build's tasks and looking back (spec Decision 11)
+- [ ] Task 14: Build lists tasks/todo.md's tasks; the header drops the step number
+- [ ] Task 15: File changes as events (created or edited), each belonging to the step current at the time
+- [ ] Task 16: Look back: each step is a button showing its files and activity; `/monitor <step>` on the phone
+
+### Checkpoint E
+- [ ] Tests, type-check and validate pass
+- [ ] Seen on a real screen and the phone
+- [ ] Human review
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
