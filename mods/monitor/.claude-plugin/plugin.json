@@ -1,0 +1,6 @@
+{
+  "name": "monitor",
+  "version": "0.1.0",
+  "description": "A read-only pane showing where the session is in the agent-skills workflow, and what it has done",
+  "types": "./types/index.d.ts"
+}
