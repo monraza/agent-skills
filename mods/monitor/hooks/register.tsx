@@ -22,9 +22,13 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'monitor' }, async $ => {
-    await $.ui.open(PANE)
+    const opened = await $.ui.open(PANE)
 
-    return { text: 'Workflow panel opened.' }
+    return {
+      text: opened.isPlaced
+        ? 'Workflow panel opened.'
+        : `The Workflow panel is open, but nothing here is showing it (${opened.reason}).`,
+    }
   })
 
   on('ui.render', { component: 'Pane', requestId: 'monitor' }, async ($, e) =>

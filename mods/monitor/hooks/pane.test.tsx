@@ -34,6 +34,19 @@ test('/monitor opens the Workflow pane', async ($, on) => {
   expect(opened).toEqual([expect.objectContaining({ id: 'monitor', title: 'Workflow' })])
 })
 
+test('/monitor says why when no surface shows the pane', async ($, on) => {
+  on('command.register', () => ({ value: { command: 'monitor' } }))
+  on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no page is attached' } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  await $.session.start(sessionStart)
+  const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
+
+  expect(out.text).toBe(
+    'The Workflow panel is open, but nothing here is showing it (no-surface: no page is attached).',
+  )
+})
+
 test('session.start and other commands pass through unchanged', async ($, on) => {
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', () => ({ cwd: '/from/the/engine' }))
