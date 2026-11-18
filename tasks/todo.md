@@ -54,7 +54,7 @@ Every task, before it's checked off:
     - A typed command that fires both events shows as one row, if Task 1 found that.
   - **Verify:**
     - Unit: every phase-table row, with and without the `agent-skills:` prefix. Command beats skill within a turn. Evidence text.
-    - Integration: fixture events → the pane shows `Build · since /build HH:MM`.
+    - Integration: fixture events → the pane shows `Build · since /build, just now`. Advancing the mock clock 4 minutes shows `4 min ago` with no new event.
   - **Files:** `hooks/phases.ts`, `hooks/phases.test.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`
 
 - [ ] **Task 4: Done marks and Build progress from files** · M · Dependencies: 2

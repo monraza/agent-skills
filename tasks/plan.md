@@ -96,4 +96,4 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 
 ## Open Questions
 
-- **Times in a cloud session.** Timestamps such as `since /build 12:03` would use the container's clock (UTC), not your local time. Is that OK for V1, or should times be relative ("4 min ago")?
+None. Times are relative (spec Decision 7).

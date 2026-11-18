@@ -46,7 +46,7 @@ Unmapped commands and skills appear in the activity list but never change the ph
 **Active phase:**
 - Set by the most recent mapped slash command (`command.run`).
 - A mapped skill (`skill.prompt`) sets it only when the skill fires in a turn that didn't start with a mapped command. For example, `/test` followed by test-driven-development firing in the same turn stays in Verify.
-- **Evidence is always shown.** The active phase is a guess from the last command or skill, so the pane says what set it and when, e.g. `Build · since /build 12:03` or `Build · since skill test-driven-development 12:07`. When nothing has set a phase yet, it says `No phase yet`, with no guess.
+- **Evidence is always shown.** The active phase is a guess from the last command or skill, so the pane says what set it and when, e.g. `Build · since /build, 4 min ago` or `Build · since skill test-driven-development, just now`. When nothing has set a phase yet, it says `No phase yet`, with no guess.
 
 **Phase states:** `todo`, `active`, `visited` (was active earlier this session) or `done`. `done` comes from files in the session's working directory:
 - **Define is done** when a spec exists at one of the paths `/build` accepts: `SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md`, or a file under `spec/`.
@@ -84,19 +84,20 @@ Each list keeps its newest 200 entries.
 ```
 Workflow
 ✓ Define  ✓ Plan  ◉ Build 3/7  · Verify  ○ Review  ○ Ship
-Build · since /build 12:03
+Build · since /build, 4 min ago
 
 Tasks      todo.md 3/7 done · session 2/4 done
-Activity   12:05 skill spec-driven-development
-           12:03 /spec
+Activity   skill spec-driven-development · 2 min ago
+           /spec · 4 min ago
 Files (5)  skills/…/SKILL.md, SPEC.md, …
 Commits    a1b2c3d docs(spec): add workflow panel spec
-Checks     ✓ run-evals 12:10   ✗ npm test 12:08
+Checks     ✓ run-evals · just now   ✗ npm test · 3 min ago
 ```
 
 - When the pane is 40 columns or narrower (and on `mobile`), the phase row stacks to one phase per line.
 - Lists show newest first and are cut to fit the pane's rows, with "+N more".
 - When there's nothing to show, the pane says so ("No activity yet.").
+- Times are relative to now: `just now` under a minute, then `N min ago`, then `N h ago`. While the pane is open it redraws at least once a minute, so they stay current.
 
 ## Tech Stack
 
@@ -245,7 +246,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 12. After a mod reload, the session's data is still shown. A stored value of an older shape is dropped without error.
 13. For every hooked event, the returned result equals the engine's (pass-through test).
 14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
-15. The active phase always shows the command or skill that set it and its time. With nothing set yet, the pane shows `No phase yet`.
+15. The active phase always shows the command or skill that set it, and how long ago. Relative times move on without any new event (`just now` → `1 min ago`). With nothing set yet, the pane shows `No phase yet`.
 16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
 
 ## Out of Scope (Deferred)
@@ -267,7 +268,8 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 3. **Name: `monitor`, no clash (live check).** The slash command is `/monitor`, and the mod and its folder are named `monitor` too. The live command list has no `monitor`.
 4. **Sync conflicts: accepted for now.** The entry stays in the shared `.claude-plugin/marketplace.json`, and any conflict is resolved at sync time.
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
-6. **Commit hash from the engine (live check).** A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
+6. **Commit hash from the engine (live check). A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
+7. **Relative times.** Times show as `just now`, `N min ago` or `N h ago`, never as clock times, because a cloud session's clock is UTC rather than your local time.
 
 ## Open Questions
 
