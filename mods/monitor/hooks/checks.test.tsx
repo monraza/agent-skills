@@ -47,9 +47,10 @@ test('a passing and a failing check show ✓ and ✗, newest first', async ($, o
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('Checks')
-  expect(shown.indexOf('✗ npm test · just now')).toBeLessThan(shown.indexOf('✓ run-evals · 3 min ago'))
-  expect(shown.indexOf('✗ npm test · just now')).toBeGreaterThan(-1)
+  expect(shown).toContain('no files changed · no commits · 2 checks, 1 failed')
+  expect(shown.indexOf('✗ npm test')).toBeGreaterThan(-1)
+  expect(shown.indexOf('✗ npm test')).toBeLessThan(shown.indexOf('✓ run-evals'))
+  expect(shown).toContain('3 min ago')
   await ui.unmount()
 })
 
@@ -60,7 +61,7 @@ test('a Bash command that is not a check is not listed', async ($, on) => {
   await $.tool.call(bashPass.input)
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('No checks run yet.')
+  expect(await texts(ui)).toContain('no files changed · no commits · no checks')
   await ui.unmount()
 })
 
@@ -72,7 +73,8 @@ test("/monitor's text summary lists the same checks", async ($, on) => {
   await $.tool.call(testsFail)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\nChecks: ✗ npm test · just now; ✓ run-evals · just now')
+  expect(out.text).toContain('\n  ✗ npm test · just now\n  ✓ run-evals · just now\n')
+  expect(out.text).toContain('\nno files changed · no commits · 2 checks, 1 failed')
 })
 
 test('a check command passes through unchanged', async ($, on) => {

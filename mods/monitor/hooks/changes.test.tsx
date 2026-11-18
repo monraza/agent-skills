@@ -47,7 +47,7 @@ const engine = (on: On) => {
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
-test('a file written then edited is listed once, relative to the working directory', async ($, on) => {
+test('a file written then edited counts once and shows once, relative to the working directory', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -56,8 +56,8 @@ test('a file written then edited is listed once, relative to the working directo
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('Files (1)')
-  expect(shown.filter(text => text === 'notes.md')).toEqual(['notes.md'])
+  expect(shown).toContain('1 file changed · no commits · no checks')
+  expect(shown.filter(text => text === 'edited notes.md')).toEqual(['edited notes.md'])
   await ui.unmount()
 })
 
@@ -70,13 +70,13 @@ test('a file outside the working directory keeps its full path; a failed edit is
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('Files (1)')
-  expect(shown).toContain('/tmp/elsewhere.md')
-  expect(shown).not.toContain('broken.md')
+  expect(shown).toContain('1 file changed · no commits · no checks')
+  expect(shown).toContain('edited /tmp/elsewhere.md')
+  expect(shown).not.toContain('edited broken.md')
   await ui.unmount()
 })
 
-test('a successful commit is listed with its short hash and subject; a failed command adds none', async ($, on) => {
+test('a successful commit shows with its short hash and subject; a failed command adds none', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -86,21 +86,20 @@ test('a successful commit is listed with its short hash and subject; a failed co
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('Commits')
-  expect(shown).toContain('298bd7b probe: first commit')
+  expect(shown).toContain('no files changed · 1 commit · no checks')
+  expect(shown).toContain('committed 298bd7b probe: first commit')
   expect(shown.filter(text => text?.includes('298bd7b'))).toHaveLength(1)
   await ui.unmount()
 })
 
-test('with no changes the panel says so', async ($, on) => {
+test('with no changes the totals say so', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('No files changed yet.')
-  expect(shown).toContain('No commits yet.')
+  expect(shown).toContain('no files changed · no commits · no checks')
   await ui.unmount()
 })
 
@@ -112,8 +111,9 @@ test("/monitor's text summary lists the same files and commits", async ($, on) =
   await $.tool.call(gitCommit.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\nFiles (1): notes.md\n')
-  expect(out.text).toContain('\nCommits: 298bd7b probe: first commit')
+  expect(out.text).toContain('\n  edited notes.md · just now')
+  expect(out.text).toContain('\n  committed 298bd7b probe: first commit · just now')
+  expect(out.text).toContain('\n1 file changed · 1 commit · no checks')
 })
 
 test('Bash, Write and Edit calls pass through unchanged', async ($, on) => {

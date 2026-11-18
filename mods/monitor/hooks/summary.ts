@@ -1,21 +1,14 @@
-import { cut } from './sections'
 import type { Section } from './sections'
 
 // Pure: the panel as plain text, for /monitor where no screen shows panes.
+// The same blocks as the pane, separated by blank lines.
 
-const INTRO = 'No screen here shows panes, so here is the Workflow panel as text.'
+const blockOf = ({ key, title, lines }: Section): string[] => {
+  if (key === 'stepper') return [lines.map(line => line.text).join(' ─ ')]
+  const body = lines.map(line => (line.time === undefined ? line.text : `  ${line.text} · ${line.time}`))
 
-// Each list shows its newest 5 entries, then "+N more".
-const SUMMARY_ITEMS = 5
-
-const linesOf = ({ title, lines }: Section): string[] =>
-  title === null
-    ? lines.map(line => line.text)
-    : [`${title}: ${cut(lines, SUMMARY_ITEMS).map(line => line.text).join('; ')}`]
-
-// A blank line sets the phase block apart from the lists below it.
-const blockOf = (section: Section): string[] =>
-  section.key === 'evidence' ? [...linesOf(section), ''] : linesOf(section)
+  return title === null ? body : [title, ...body]
+}
 
 export const summaryOf = (sections: readonly Section[]): string =>
-  [INTRO, '', 'Workflow', ...sections.flatMap(blockOf)].join('\n')
+  ['Workflow', ...sections.flatMap((section, index) => [...(index === 0 ? [] : ['']), ...blockOf(section)])].join('\n')

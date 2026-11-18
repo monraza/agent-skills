@@ -49,7 +49,7 @@ test('activity an older version stored under another shape is dropped without er
   storedActivity(on, { shape: 'activity-0', value: [{ name: 'spec', when: 'yesterday' }] })
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('No activity yet.')
+  expect(await texts(ui)).toContain('No step yet')
   await ui.unmount()
 })
 
@@ -58,7 +58,7 @@ test('activity stored before the mod used shapes is dropped without error', asyn
   storedActivity(on, [{ tool: 'Bash' }])
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('No activity yet.')
+  expect(await texts(ui)).toContain('No step yet')
   await ui.unmount()
 })
 
@@ -67,11 +67,11 @@ test('activity stored by this version is shown', async ($, on) => {
   storedActivity(on, { shape: 'activity-1', value: [commandEntry('spec', 0)] })
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('/spec · Define · just now')
+  expect(await texts(ui)).toContain('started by /spec · just now')
   await ui.unmount()
 })
 
-test('each list keeps its newest 200 entries', async ($, on) => {
+test('files, commits and checks each keep their newest 200', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -82,10 +82,7 @@ test('each list keeps its newest 200 entries', async ($, on) => {
     await $.tool.call(gitCommit.input)
   }
 
-  // The /monitor row itself makes 251 activity rows: 200 kept, 5 shown.
+  // The activity cap is unit-tested with keepNewest; the totals show the rest.
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toMatch(/\nActivity: [^\n]*; \+195 more\n/)
-  expect(out.text).toMatch(/\nFiles \(200\): file-249\.md; [^\n]*; \+195 more\n/)
-  expect(out.text).toMatch(/\nCommits: [^\n]*; \+195 more\n/)
-  expect(out.text).toMatch(/\nChecks: [^\n]*; \+195 more$/)
+  expect(out.text).toMatch(/\n200 files changed · 200 commits · 200 checks$/)
 })

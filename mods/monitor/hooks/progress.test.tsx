@@ -79,7 +79,7 @@ test('a repo with a spec, a plan and 3 of 7 todos shows Define ✓, Plan ✓ and
   expect(shown).toContain('✓ Define')
   expect(shown).toContain('✓ Plan')
   expect(shown).toContain('○ Build 3/7')
-  expect(shown).toContain('No phase yet')
+  expect(shown).toContain('No step yet')
   await ui.unmount()
 })
 
@@ -146,7 +146,7 @@ test('the active phase shows as active even when its file says done', async ($, 
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('◉ Define')
+  expect(shown).toContain('● Define')
   expect(shown).toContain('✓ Plan')
   await ui.unmount()
 })
@@ -158,7 +158,7 @@ test("/monitor's text summary shows the same marks", async ($, on) => {
   await $.session.start(sessionStart)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('✓ Define\n✓ Plan\n○ Build 3/7\n')
+  expect(out.text).toContain('✓ Define ─ ✓ Plan ─ ○ Build 3/7 ─')
 })
 
 test('tool.call passes through unchanged', async ($, on) => {

@@ -24,7 +24,10 @@ export type Artifacts = {
   todo: TodoCount | null
 }
 
-export type Commit = { sha: string; subject: string }
+export type Commit = { sha: string; subject: string; at: number }
+
+// A changed file, relative to the working directory, and when it last changed.
+export type FileChange = { path: string; at: number }
 
 export type Check = { at: number; label: string; ok: boolean }
 
@@ -37,8 +40,8 @@ declare module 'claude-code' {
     monitor: {
       activity: Shaped<ActivityEntry[]>
       artifacts: Shaped<Artifacts>
-      // Paths relative to the working directory, each once, most recent last.
-      files: Shaped<string[]>
+      // Each file once, most recently changed last.
+      files: Shaped<FileChange[]>
       commits: Shaped<Commit[]>
       checks: Shaped<Check[]>
       tasks: Shaped<SessionTask[]>

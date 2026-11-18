@@ -1,4 +1,4 @@
-import type { Check, Commit } from '../types'
+import type { Check, Commit, FileChange } from '../types'
 
 // Pure: no `$`, no I/O. What a tool call's result means for the panel.
 
@@ -8,7 +8,7 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
 // A successful `git commit` result carries `result.gitOperation.commit.sha`
 // (the live recording); the subject is on the `[branch sha] subject` line of
 // its output. Only the hash and subject are kept.
-export const commitOf = (ran: unknown): Commit | null => {
+export const commitOf = (ran: unknown, at: number): Commit | null => {
   if (!isRecord(ran) || ran.isError === true || !isRecord(ran.result)) return null
   const { gitOperation, stdout } = ran.result
   if (!isRecord(gitOperation) || !isRecord(gitOperation.commit)) return null
@@ -17,7 +17,7 @@ export const commitOf = (ran: unknown): Commit | null => {
   const marker = ` ${sha}] `
   const line = typeof stdout === 'string' ? stdout.split('\n').find(one => one.startsWith('[') && one.includes(marker)) : undefined
 
-  return { sha, subject: line === undefined ? '' : line.slice(line.indexOf(marker) + marker.length) }
+  return { sha, subject: line === undefined ? '' : line.slice(line.indexOf(marker) + marker.length), at }
 }
 
 // The built-in check list (SPEC.md, What's tracked), matched at the start of
@@ -64,8 +64,13 @@ export const checkOf = (command: string, ran: unknown, at: number): Check | null
   return { at, label, ok: ran.isError !== true && result.interrupted !== true }
 }
 
-// Each file once, the most recently changed last.
-export const addFile = (files: readonly string[], path: string): string[] => [
-  ...files.filter(file => file !== path),
-  path,
+// Each file once, with the time of its latest change, most recent last.
+export const addFile = (files: readonly FileChange[], path: string, at: number): FileChange[] => [
+  ...files.filter(file => file.path !== path),
+  { path, at },
 ]
+
+// Each list keeps its newest 200 entries.
+const LIST_LIMIT = 200
+
+export const keepNewest = <T>(list: readonly T[]): T[] => list.slice(-LIST_LIMIT)

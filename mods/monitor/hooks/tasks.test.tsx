@@ -88,23 +88,17 @@ describe('session tasks', () => {
     expect(taskCounts(todosWritten(todos))).toEqual({ done: 1, total: 3 })
   })
 
-  test('the Tasks line combines todo.md and the session', () => {
-    const base = { activity: [], files: [], commits: [], checks: [], now: 0 }
+  test("the totals count the session's tasks, and leave them out when there are none", () => {
+    const base = { activity: [], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], now: 0 }
     const tasks = taskUpdated(taskCreated(taskCreated([], taskCreate.result), createSecond.result), complete.input, complete.result)
-    const line = (artifacts: typeof NO_ARTIFACTS, list: typeof tasks) =>
-      sectionsOf({ ...base, artifacts, tasks: list }).find(section => section.key === 'tasks')
+    const totals = (list: typeof tasks) => sectionsOf({ ...base, tasks: list }).find(section => section.key === 'totals')?.lines[0]?.text
 
-    expect(line({ ...NO_ARTIFACTS, todo: { done: 3, total: 7 } }, tasks)).toEqual({
-      key: 'tasks',
-      title: 'Tasks',
-      lines: [{ text: 'todo.md 3/7 done · session 1/2 done', isDim: false }],
-    })
-    expect(line({ ...NO_ARTIFACTS, todo: { done: 3, total: 7 } }, [])?.lines[0]?.text).toBe('todo.md 3/7 done')
-    expect(line(NO_ARTIFACTS, [])).toEqual({ key: 'tasks', title: null, lines: [{ text: 'No tasks yet.', isDim: true }] })
+    expect(totals(tasks)).toBe('no files changed · no commits · no checks · 1/2 tasks')
+    expect(totals([])).toBe('no files changed · no commits · no checks')
   })
 })
 
-test('task tool calls update the session count in the pane', async ($, on) => {
+test('task tool calls update the session task count in the totals', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -115,9 +109,9 @@ test('task tool calls update the session count in the pane', async ($, on) => {
   await $.tool.call(createFailed.input)
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('session 1/2 done')
+  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/2 tasks')
   await $.tool.call(deleteSecond.input)
-  expect(await texts(ui)).toContain('session 1/1 done')
+  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/1 tasks')
   await ui.unmount()
 })
 
@@ -135,18 +129,18 @@ test('a TodoWrite call sets the session count', async ($, on) => {
   })
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('session 1/2 done')
+  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/2 tasks')
   await ui.unmount()
 })
 
-test("/monitor's text summary shows the same Tasks line", async ($, on) => {
+test("/monitor's text summary shows the same task count", async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
   await $.tool.call(taskCreate.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\n\nTasks: session 0/1 done\n')
+  expect(out.text).toContain('\nno files changed · no commits · no checks · 0/1 tasks')
 })
 
 test('task tool calls pass through unchanged', async ($, on) => {

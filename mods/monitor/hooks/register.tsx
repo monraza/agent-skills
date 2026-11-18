@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Artifacts } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo } from './artifacts'
-import { addFile, checkOf, commitOf } from './classify'
+import { addFile, checkOf, commitOf, keepNewest } from './classify'
 import {
   NEW_TURN,
   afterCommand,
@@ -24,16 +24,13 @@ import { drawPane } from './view'
 const PANE = { id: 'monitor', title: 'Workflow' } as const
 const MINUTE = 60_000
 
-// Each list keeps its newest 200 entries.
-const LIST_LIMIT = 200
-const keepNewest = <T,>(list: readonly T[]): T[] => list.slice(-LIST_LIMIT)
 
 // Change a shape tag when its value's fields change: it declines what an
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
 const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-1' })
-const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-1' })
-const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-1' })
+const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-2' })
+const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-2' })
 const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
 const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-1' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
@@ -162,14 +159,15 @@ export const register: Register = on => {
     if (edited !== null && ran.isError !== true) {
       try {
         const path = relativeTo(await $.session.cwd(), edited)
-        await update($, files, list => keepNewest(addFile(list, path)))
+        const at = await $.clock.now()
+        await update($, files, list => keepNewest(addFile(list, path, at)))
         if (isTrackedPath(path)) await refreshArtifacts($)
       } catch {
         // no working directory to compare with: nothing recorded
       }
     }
     if (e.tool === 'Bash') {
-      const commit = commitOf(ran)
+      const commit = commitOf(ran, await $.clock.now())
       if (commit !== null) await update($, commits, list => keepNewest([...list, commit]))
       const check = checkOf(e.command, ran, await $.clock.now())
       if (check !== null) await update($, checks, list => keepNewest([...list, check]))
@@ -183,11 +181,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: 'monitor' }, async ($, e) => {
     await read($, tick) // subscribes the drawing, so relative times move on
-    const layout = {
-      columns: e.props.bodyColumns,
-      rows: e.props.scroll.bodyRows,
-      surface: e.surface,
-    }
+    const layout = { columns: e.props.bodyColumns, surface: e.surface }
 
     return drawPane($.ui.resolve(e), sectionsOf(await sessionData($)), layout)
   })

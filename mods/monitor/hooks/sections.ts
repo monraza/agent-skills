@@ -1,22 +1,26 @@
-import type { ActivityEntry, Artifacts, Check, Commit, PhaseId, SessionTask } from '../types'
+import type { ActivityEntry, Artifacts, Check, Commit, FileChange, PhaseId, SessionTask } from '../types'
 
 import { doneFrom } from './artifacts'
-import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
+import { PHASES, PHASE_LABEL, bareName, phaseOfCommand, phaseOfSkill, phaseViewOf } from './phases'
 import { taskCounts } from './tasks'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
 // the pane (view.tsx) and /monitor's text (summary.ts) never disagree.
+// Four blocks (SPEC.md, Pane layout): where you are on the stepper, the
+// current step, what happened recently, and the session's totals.
 
-export type Line = { text: string; isDim: boolean }
+// How a line reads: the current step, done (✓), failed (✗), plain or dim.
+export type Tone = 'current' | 'done' | 'failed' | 'normal' | 'muted'
 
-// A section without a title is shown line by line; one with a title is a
-// labelled list.
+// `time` is a Recent row's relative time, drawn apart from its text.
+export type Line = { text: string; tone: Tone; time?: string }
+
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
 export type SessionData = {
   activity: readonly ActivityEntry[]
   artifacts: Artifacts
-  files: readonly string[]
+  files: readonly FileChange[]
   commits: readonly Commit[]
   checks: readonly Check[]
   tasks: readonly SessionTask[]
@@ -24,10 +28,9 @@ export type SessionData = {
 }
 
 const MINUTE = 60_000
+const RECENT_EVENTS = 4
 
-const SYMBOL = { todo: '○', active: '◉', visited: '·', done: '✓' } as const
-
-const empty = (text: string): readonly Line[] => [{ text, isDim: true }]
+const SYMBOL = { current: '●', done: '✓', todo: '○' } as const
 
 export const ago = (at: number, now: number): string => {
   const minutes = Math.floor((now - at) / MINUTE)
@@ -40,90 +43,90 @@ export const ago = (at: number, now: number): string => {
 const labelOf = ({ kind, name }: ActivityEntry): string =>
   kind === 'command' ? `/${bareName(name)}` : `skill ${bareName(name)}`
 
-// The first `maxItems` lines, then one "+N more" line for the rest.
-export const cut = (lines: readonly Line[], maxItems: number): readonly Line[] =>
-  lines.length <= maxItems
-    ? lines
-    : [...lines.slice(0, maxItems), { text: `+${lines.length - maxItems} more`, isDim: true }]
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
-// The six phases (a row when there's room: view.tsx), then the evidence line.
-const phaseSections = ({ activity, artifacts, now }: SessionData): Section[] => {
-  const { active, states } = phaseViewOf(activity)
+// ● the current step, ✓ a step that's done or the session has been through,
+// ○ a step not reached yet.
+const stepperSection = ({ activity, artifacts }: SessionData): Section => {
+  const { states } = phaseViewOf(activity)
   const done = doneFrom(artifacts)
-  // The active phase wins over a done mark: it is what the session is doing.
-  const shown = (phase: PhaseId) => (states[phase] === 'active' ? 'active' : done[phase] ? 'done' : states[phase])
+  const stateOf = (phase: PhaseId) =>
+    states[phase] === 'active' ? 'current' : done[phase] || states[phase] === 'visited' ? 'done' : 'todo'
   const progress = (phase: PhaseId) =>
     phase === 'build' && artifacts.todo !== null ? ` ${artifacts.todo.done}/${artifacts.todo.total}` : ''
-  const phases = PHASES.map(phase => ({
-    text: `${SYMBOL[shown(phase)]} ${PHASE_LABEL[phase]}${progress(phase)}`,
-    isDim: shown(phase) === 'todo' || shown(phase) === 'visited',
-  }))
-  const evidence =
-    active === null
-      ? { text: 'No phase yet', isDim: true }
-      : { text: `${PHASE_LABEL[active.phase]} · since ${labelOf(active)}, ${ago(active.at, now)}`, isDim: false }
+  const lines = PHASES.map((phase): Line => {
+    const state = stateOf(phase)
 
-  return [
-    { key: 'phases', title: null, lines: phases },
-    { key: 'evidence', title: null, lines: [evidence] },
+    return { text: `${SYMBOL[state]} ${PHASE_LABEL[phase]}${progress(phase)}`, tone: state === 'todo' ? 'muted' : state }
+  })
+
+  return { key: 'stepper', title: null, lines }
+}
+
+const currentSection = ({ activity, artifacts, now }: SessionData): Section => {
+  const { active } = phaseViewOf(activity)
+  if (active === null) {
+    return {
+      key: 'current',
+      title: null,
+      lines: [
+        { text: 'No step yet', tone: 'current' },
+        { text: 'waiting for an agent-skills command or skill', tone: 'muted' },
+      ],
+    }
+  }
+  const step = PHASES.indexOf(active.phase) + 1
+  const lines: Line[] = [
+    { text: `${PHASE_LABEL[active.phase].toUpperCase()} · step ${step} of ${PHASES.length}`, tone: 'current' },
+    { text: `started by ${labelOf(active)} · ${ago(active.at, now)}`, tone: 'muted' },
   ]
+  if (active.phase === 'build' && artifacts.todo !== null) {
+    lines.push({ text: `${artifacts.todo.done} of ${artifacts.todo.total} tasks checked in tasks/todo.md`, tone: 'normal' })
+  }
+
+  return { key: 'current', title: null, lines }
 }
 
-const activitySection = ({ activity, now }: SessionData): Section => {
-  if (activity.length === 0) return { key: 'activity', title: null, lines: empty('No activity yet.') }
-  const lines = [...activity].reverse().map(entry => ({
-    text: [labelOf(entry), entry.phase === null ? null : PHASE_LABEL[entry.phase], ago(entry.at, now)]
-      .filter(part => part !== null)
-      .join(' · '),
-    isDim: false,
-  }))
+// Commands and skills outside the phase table (/model, /monitor, other
+// plugins' skills) are recorded but never shown.
+const isWorkflow = ({ kind, name }: ActivityEntry) =>
+  (kind === 'command' ? phaseOfCommand(name) : phaseOfSkill(name)) !== undefined
 
-  return { key: 'activity', title: 'Activity', lines }
+type Event = { at: number; text: string; tone: Tone }
+
+// The newest workflow events across every list, newest first. Each list is
+// taken newest first, so events at the same moment keep their own order.
+const recentSection = ({ activity, files, commits, checks, now }: SessionData): Section | null => {
+  const newestFirst = <T>(list: readonly T[]) => [...list].reverse()
+  const events: Event[] = [
+    ...newestFirst(activity.filter(isWorkflow)).map(entry => ({ at: entry.at, text: labelOf(entry), tone: 'normal' as const })),
+    ...newestFirst(files).map(({ path, at }) => ({ at, text: `edited ${path}`, tone: 'normal' as const })),
+    ...newestFirst(commits).map(({ sha, subject, at }) => ({ at, text: `committed ${sha} ${subject}`.trim(), tone: 'normal' as const })),
+    ...newestFirst(checks).map(({ label, ok, at }) => ({ at, text: `${ok ? '✓' : '✗'} ${label}`, tone: ok ? ('done' as const) : ('failed' as const) })),
+  ]
+  if (events.length === 0) return null
+  const lines = events
+    .sort((a, b) => b.at - a.at)
+    .slice(0, RECENT_EVENTS)
+    .map(({ at, text, tone }) => ({ text, tone, time: ago(at, now) }))
+
+  return { key: 'recent', title: 'Recent', lines }
 }
 
-const filesSection = ({ files }: SessionData): Section =>
-  files.length === 0
-    ? { key: 'files', title: null, lines: empty('No files changed yet.') }
-    : { key: 'files', title: `Files (${files.length})`, lines: [...files].reverse().map(text => ({ text, isDim: false })) }
-
-const commitsSection = ({ commits }: SessionData): Section =>
-  commits.length === 0
-    ? { key: 'commits', title: null, lines: empty('No commits yet.') }
-    : {
-        key: 'commits',
-        title: 'Commits',
-        lines: [...commits].reverse().map(({ sha, subject }) => ({ text: `${sha} ${subject}`.trim(), isDim: false })),
-      }
-
-const checksSection = ({ checks, now }: SessionData): Section =>
-  checks.length === 0
-    ? { key: 'checks', title: null, lines: empty('No checks run yet.') }
-    : {
-        key: 'checks',
-        title: 'Checks',
-        lines: [...checks].reverse().map(({ at, label, ok }) => ({
-          text: `${ok ? '✓' : '✗'} ${label} · ${ago(at, now)}`,
-          isDim: false,
-        })),
-      }
-
-const tasksSection = ({ artifacts, tasks }: SessionData): Section => {
+const totalsSection = ({ files, commits, checks, tasks }: SessionData): Section => {
+  const failed = checks.filter(check => !check.ok).length
   const session = taskCounts(tasks)
   const parts = [
-    artifacts.todo === null ? null : `todo.md ${artifacts.todo.done}/${artifacts.todo.total} done`,
-    tasks.length === 0 ? null : `session ${session.done}/${session.total} done`,
-  ].filter(part => part !== null)
+    files.length === 0 ? 'no files changed' : `${count(files.length, 'file', 'files')} changed`,
+    commits.length === 0 ? 'no commits' : count(commits.length, 'commit', 'commits'),
+    checks.length === 0 ? 'no checks' : `${count(checks.length, 'check', 'checks')}${failed > 0 ? `, ${failed} failed` : ''}`,
+    ...(tasks.length === 0 ? [] : [`${session.done}/${session.total} tasks`]),
+  ]
 
-  return parts.length === 0
-    ? { key: 'tasks', title: null, lines: empty('No tasks yet.') }
-    : { key: 'tasks', title: 'Tasks', lines: [{ text: parts.join(' · '), isDim: false }] }
+  return { key: 'totals', title: null, lines: [{ text: parts.join(' · '), tone: 'muted' }] }
 }
 
-export const sectionsOf = (data: SessionData): Section[] => [
-  ...phaseSections(data),
-  tasksSection(data),
-  activitySection(data),
-  filesSection(data),
-  commitsSection(data),
-  checksSection(data),
-]
+export const sectionsOf = (data: SessionData): Section[] =>
+  [stepperSection(data), currentSection(data), recentSection(data), totalsSection(data)].filter(
+    (section): section is Section => section !== null,
+  )

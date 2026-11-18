@@ -126,7 +126,7 @@ test('opening late shows everything since session start', async ($, on) => {
   const clock = mock.clock(on)
   setup(on, [])
   await $.session.start(sessionStart)
-  await $.command.run(run('compact'))
+  await $.command.run(run('spec'))
   await clock.settle()
 
   const out = await $.command.run(run('monitor'))
@@ -138,7 +138,7 @@ test('opening late shows everything since session start', async ($, on) => {
     surface: 'desktop',
     props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
   })
-  expect((await ui.findAll({ type: 'Text' })).map(one => one.text)).toContain('/compact · just now')
+  expect((await ui.findAll({ type: 'Text' })).map(one => one.text)).toContain('started by /spec · just now')
   await ui.unmount()
 })
 

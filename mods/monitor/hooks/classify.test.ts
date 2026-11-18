@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { addFile, checkLabelOf, checkOf, commitOf } from './classify'
+import { addFile, checkLabelOf, checkOf, commitOf, keepNewest } from './classify'
 import { bashFail, bashPass, gitCommit } from './fixtures/live-events'
 
 describe('check commands', () => {
@@ -59,7 +59,7 @@ describe('check commands', () => {
 
 describe('commits', () => {
   test('a successful commit gives its short hash and subject', () => {
-    expect(commitOf(gitCommit.result)).toEqual({ sha: '298bd7b', subject: 'probe: first commit' })
+    expect(commitOf(gitCommit.result, 7)).toEqual({ sha: '298bd7b', subject: 'probe: first commit', at: 7 })
   })
 
   test('a commit on a branch with history reads the same way', () => {
@@ -72,25 +72,36 @@ describe('commits', () => {
       },
     }
 
-    expect(commitOf(result)).toEqual({ sha: 'a1b2c3d', subject: 'fix(api): handle empty pages' })
+    expect(commitOf(result, 7)).toEqual({ sha: 'a1b2c3d', subject: 'fix(api): handle empty pages', at: 7 })
   })
 
   test('a commit whose output has no subject line keeps the hash', () => {
     const result = { ...gitCommit.result, result: { ...gitCommit.result.result, stdout: '' } }
 
-    expect(commitOf(result)).toEqual({ sha: '298bd7b', subject: '' })
+    expect(commitOf(result, 7)).toEqual({ sha: '298bd7b', subject: '', at: 7 })
   })
 
   test('a failed command or one that made no commit gives nothing', () => {
-    expect(commitOf(bashFail.result)).toBeNull()
-    expect(commitOf(bashPass.result)).toBeNull()
-    expect(commitOf({ deny: 'refused' })).toBeNull()
+    expect(commitOf(bashFail.result, 7)).toBeNull()
+    expect(commitOf(bashPass.result, 7)).toBeNull()
+    expect(commitOf({ deny: 'refused' }, 7)).toBeNull()
   })
 })
 
 describe('changed files', () => {
-  test('each file is listed once, the most recently changed last', () => {
-    expect(addFile(['a.ts', 'b.ts'], 'c.ts')).toEqual(['a.ts', 'b.ts', 'c.ts'])
-    expect(addFile(['a.ts', 'b.ts'], 'a.ts')).toEqual(['b.ts', 'a.ts'])
+  test('each file is listed once, with the time of its latest change, most recent last', () => {
+    const files = [{ path: 'a.ts', at: 1 }, { path: 'b.ts', at: 2 }]
+
+    expect(addFile(files, 'c.ts', 3)).toEqual([...files, { path: 'c.ts', at: 3 }])
+    expect(addFile(files, 'a.ts', 3)).toEqual([{ path: 'b.ts', at: 2 }, { path: 'a.ts', at: 3 }])
+  })
+})
+
+describe('list caps', () => {
+  test('a list keeps its newest 200 entries', () => {
+    const list = Array.from({ length: 250 }, (_, index) => index)
+
+    expect(keepNewest(list)).toEqual(list.slice(50))
+    expect(keepNewest([1, 2])).toEqual([1, 2])
   })
 })

@@ -174,7 +174,7 @@ Every task, before it's checked off:
 
 ## Phase 4: Simpler layout (spec Decision 10)
 
-- [ ] **Task 12: The new blocks and the text summary** · M · Dependencies: 11
+- [x] **Task 12: The new blocks and the text summary** · M · Dependencies: 11
   - **What:**
     - `sections.ts` produces four blocks: the stepper, the current step, Recent (the newest 4 workflow events) and one totals line.
     - Files and commits gain the time of their change.

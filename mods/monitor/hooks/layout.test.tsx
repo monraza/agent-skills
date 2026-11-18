@@ -74,7 +74,15 @@ test('a full session draws on every surface at both widths', async ($, on) => {
     for (const width of [WIDE, NARROW]) {
       const ui = await $.ui.mount(paneAt(surface, width))
       const shown = await texts(ui)
-      for (const text of ['◉ Define', 'Define · since /spec, just now', 'Tasks', 'notes.md', '298bd7b probe: first commit', '✓ npm test · just now']) {
+      for (const text of [
+        '● Define',
+        'DEFINE · step 1 of 6',
+        'started by /spec · just now',
+        'edited notes.md',
+        'committed 298bd7b probe: first commit',
+        '✓ npm test',
+        '1 file changed · 1 commit · 1 check · 0/1 tasks',
+      ]) {
         expect(shown).toContain(text)
       }
       await ui.unmount()
@@ -91,7 +99,7 @@ test('an empty session draws on every surface at both widths', async ($, on) => 
     for (const width of [WIDE, NARROW]) {
       const ui = await $.ui.mount(paneAt(surface, width))
       const shown = await texts(ui)
-      for (const text of ['○ Define', 'No phase yet', 'No tasks yet.', 'No activity yet.', 'No files changed yet.', 'No commits yet.', 'No checks run yet.']) {
+      for (const text of ['○ Define', 'No step yet', 'waiting for an agent-skills command or skill', 'no files changed · no commits · no checks']) {
         expect(shown).toContain(text)
       }
       await ui.unmount()
@@ -99,31 +107,26 @@ test('an empty session draws on every surface at both widths', async ($, on) => 
   }
 })
 
-test('a long list is cut to the rows the pane has, with "+N more"', async ($, on) => {
-  mock.clock(on)
+test('Recent shows the newest 4 events; the totals count them all', async ($, on) => {
+  const clock = mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
-  for (let index = 0; index < 30; index++) await $.command.run(run('compact'))
+  for (let index = 0; index < 10; index++) {
+    await $.tool.call({ ...write.input, tool_use_id: `toolu_write_${index}`, file_path: `${sessionStart.cwd}/file-${index}.md` })
+    await clock.advance(60_000)
+  }
 
-  // 20 rows, wide: 7 fixed lines (phase row, evidence, tasks, the Activity
-  // title, and the three empty lists), so Activity has 13 rows: 12 entries
-  // and the "+18 more" line.
-  const ui = await $.ui.mount(paneAt('desktop', WIDE, 20))
+  const ui = await $.ui.mount(paneAt('desktop', WIDE))
   const shown = await texts(ui)
-  expect(shown.filter(text => text === '/compact · just now')).toHaveLength(12)
-  expect(shown).toContain('+18 more')
+  expect(shown.filter(text => text?.startsWith('edited '))).toEqual([
+    'edited file-9.md',
+    'edited file-8.md',
+    'edited file-7.md',
+    'edited file-6.md',
+  ])
+  expect(shown).toContain('10 files changed · no commits · no checks')
   await ui.unmount()
-})
 
-test("/monitor's text summary shows the newest 5 of a list, then \"+N more\"", async ($, on) => {
-  mock.clock(on)
-  engine(on)
-  await $.session.start(sessionStart)
-  for (let index = 0; index < 8; index++) await $.command.run(run('compact'))
-
-  // Eight /compact rows and the /monitor row itself.
   const out = await $.command.run(run('monitor'))
-  expect(out.text).toContain(
-    '\nActivity: /monitor · just now; /compact · just now; /compact · just now; /compact · just now; /compact · just now; +4 more\n',
-  )
+  expect((out.text ?? '').split('\n').filter(line => line.startsWith('  edited '))).toHaveLength(4)
 })

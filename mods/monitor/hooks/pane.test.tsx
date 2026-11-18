@@ -19,22 +19,13 @@ const PANE = {
 } as const
 
 const EMPTY_SUMMARY = [
-  'No screen here shows panes, so here is the Workflow panel as text.',
-  '',
   'Workflow',
-  '○ Define',
-  '○ Plan',
-  '○ Build',
-  '○ Verify',
-  '○ Review',
-  '○ Ship',
-  'No phase yet',
+  '○ Define ─ ○ Plan ─ ○ Build ─ ○ Verify ─ ○ Review ─ ○ Ship',
   '',
-  'No tasks yet.',
-  'No activity yet.',
-  'No files changed yet.',
-  'No commits yet.',
-  'No checks run yet.',
+  'No step yet',
+  'waiting for an agent-skills command or skill',
+  '',
+  'no files changed · no commits · no checks',
 ].join('\n')
 
 test('/monitor opens the Workflow pane', async ($, on) => {
@@ -63,8 +54,8 @@ test('/monitor replies with the text summary when no surface shows the pane', as
   await $.session.start(sessionStart)
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
 
-  // /monitor itself is an unmapped command, so it is the one activity row.
-  expect(out.text).toBe(EMPTY_SUMMARY.replace('No activity yet.', 'Activity: /monitor · just now'))
+  // /monitor itself is outside the workflow, so it isn't shown.
+  expect(out.text).toBe(EMPTY_SUMMARY)
 })
 
 test('/monitor still says the panel opened when a surface shows it', async ($, on) => {
@@ -89,13 +80,13 @@ test('session.start and other commands pass through unchanged', async ($, on) =>
   expect(await $.command.run(typedCommand.commandRun)).toEqual({ text: 'engine ran spec' })
 })
 
-test('an empty session shows no phase and no activity, on every surface', async ($, on) => {
+test('an empty session shows no step yet and empty totals, on every surface', async ($, on) => {
   mock.clock(on)
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
 
-    expect((await ui.find({ type: 'Text', text: 'No phase yet' }))?.text).toBe('No phase yet')
-    expect((await ui.find({ type: 'Text', text: 'No activity yet.' }))?.text).toBe('No activity yet.')
+    expect((await ui.find({ type: 'Text', text: 'No step yet' }))?.text).toBe('No step yet')
+    expect((await ui.find({ type: 'Text', text: 'no files changed' }))?.text).toBe('no files changed · no commits · no checks')
     expect((await ui.find({ type: 'Text', text: '○ Define' }))?.text).toBe('○ Define')
     await ui.unmount()
   }
