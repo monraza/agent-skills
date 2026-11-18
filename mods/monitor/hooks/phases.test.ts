@@ -6,6 +6,7 @@ import {
   afterTurnStart,
   commandEntry,
   isOwnExpansion,
+  phaseAt,
   phaseOfCommand,
   phaseOfSkill,
   phaseViewOf,
@@ -124,6 +125,18 @@ describe('the active phase', () => {
   test('no entry that sets a phase means no active phase', () => {
     expect(phaseViewOf([]).active).toBeNull()
     expect(phaseViewOf([commandEntry('compact', 1)]).active).toBeNull()
+  })
+})
+
+describe('the step current at a moment', () => {
+  test('is the latest phase-setting entry at or before it; none before any', () => {
+    const activity = [commandEntry('spec', 10), commandEntry('compact', 20), commandEntry('plan', 30)]
+
+    expect(phaseAt(activity, 5)).toBeNull()
+    expect(phaseAt(activity, 10)).toBe('define')
+    expect(phaseAt(activity, 25)).toBe('define')
+    expect(phaseAt(activity, 30)).toBe('plan')
+    expect(phaseAt(activity, 99)).toBe('plan')
   })
 })
 

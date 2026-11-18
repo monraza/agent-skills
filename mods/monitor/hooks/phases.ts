@@ -107,6 +107,11 @@ export type PhaseView = {
 const setsAPhase = (entry: ActivityEntry): entry is ActivityEntry & { phase: PhaseId } =>
   entry.setsPhase && entry.phase !== null
 
+// The step current at a moment: the latest phase-setting entry at or before
+// it; none before any.
+export const phaseAt = (activity: readonly ActivityEntry[], at: number): PhaseId | null =>
+  activity.filter(entry => setsAPhase(entry) && entry.at <= at).at(-1)?.phase ?? null
+
 export const phaseViewOf = (activity: readonly ActivityEntry[]): PhaseView => {
   const setters = activity.filter(setsAPhase)
   const active = setters.at(-1) ?? null

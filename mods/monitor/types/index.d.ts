@@ -31,8 +31,9 @@ export type Artifacts = {
 
 export type Commit = { sha: string; subject: string; at: number }
 
-// A changed file, relative to the working directory, and when it last changed.
-export type FileChange = { path: string; at: number }
+// One change to a file: its path relative to the working directory, when,
+// and whether it created the file (a Write reporting `create`).
+export type FileChange = { path: string; at: number; created: boolean }
 
 export type Check = { at: number; label: string; ok: boolean }
 
@@ -45,7 +46,7 @@ declare module 'claude-code' {
     monitor: {
       activity: Shaped<ActivityEntry[]>
       artifacts: Shaped<Artifacts>
-      // Each file once, most recently changed last.
+      // Every change, oldest first.
       files: Shaped<FileChange[]>
       commits: Shaped<Commit[]>
       checks: Shaped<Check[]>

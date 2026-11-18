@@ -35,7 +35,9 @@ const engine = (on: On) => {
   on('session.cwd', () => ({ value: sessionStart.cwd }))
   on('command.run', () => typedCommand.commandResult)
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
-  on('tool.call', (_, e) => (results[e.tool_use_id ?? ''] ?? bashPass.result) as typeof bashPass.result)
+  on('tool.call', (_, e) =>
+    (results[e.tool_use_id ?? ''] ?? (e.tool === 'Write' ? write.result : bashPass.result)) as typeof bashPass.result,
+  )
   on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
 }
 
@@ -79,7 +81,7 @@ test('a full session draws on every surface at both widths', async ($, on) => {
         '● Define',
         'DEFINE',
         'started by /spec · just now',
-        'edited notes.md',
+        'created notes.md',
         'committed 298bd7b probe: first commit',
         '✓ npm test',
         '1 file changed · 1 commit · 1 check · 0/1 tasks',
@@ -119,17 +121,17 @@ test('Recent shows the newest 4 events; the totals count them all', async ($, on
 
   const ui = await $.ui.mount(paneAt('desktop', WIDE))
   const shown = await texts(ui)
-  expect(shown.filter(text => text?.startsWith('edited '))).toEqual([
-    'edited file-9.md',
-    'edited file-8.md',
-    'edited file-7.md',
-    'edited file-6.md',
+  expect(shown.filter(text => text?.startsWith('created '))).toEqual([
+    'created file-9.md',
+    'created file-8.md',
+    'created file-7.md',
+    'created file-6.md',
   ])
   expect(shown).toContain('10 files changed · no commits · no checks')
   await ui.unmount()
 
   const out = await $.command.run(run('monitor'))
-  expect((out.text ?? '').split('\n').filter(line => line.startsWith('  edited '))).toHaveLength(4)
+  expect((out.text ?? '').split('\n').filter(line => line.startsWith('  created '))).toHaveLength(4)
 })
 
 test('the pane is drawn with hierarchy and the theme colors, on every surface', async ($, on) => {

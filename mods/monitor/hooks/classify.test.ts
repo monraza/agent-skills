@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { addFile, checkLabelOf, checkOf, commitOf, keepNewest } from './classify'
-import { bashFail, bashPass, gitCommit } from './fixtures/live-events'
+import { checkLabelOf, checkOf, commitOf, isCreated, keepNewest } from './classify'
+import { bashFail, bashPass, edit, gitCommit, write } from './fixtures/live-events'
 
 describe('check commands', () => {
   test('match the built-in list, wrapped or chained', () => {
@@ -89,11 +89,11 @@ describe('commits', () => {
 })
 
 describe('changed files', () => {
-  test('each file is listed once, with the time of its latest change, most recent last', () => {
-    const files = [{ path: 'a.ts', at: 1 }, { path: 'b.ts', at: 2 }]
-
-    expect(addFile(files, 'c.ts', 3)).toEqual([...files, { path: 'c.ts', at: 3 }])
-    expect(addFile(files, 'a.ts', 3)).toEqual([{ path: 'b.ts', at: 2 }, { path: 'a.ts', at: 3 }])
+  test("a Write that reports 'create' created its file; an edit didn't", () => {
+    expect(isCreated(write.result)).toBe(true)
+    expect(isCreated({ ...write.result, result: { ...write.result.result, type: 'update' } })).toBe(false)
+    expect(isCreated(edit.result)).toBe(false)
+    expect(isCreated(bashFail.result)).toBe(false)
   })
 })
 

@@ -128,7 +128,7 @@ describe('the blocks', () => {
         commandEntry('monitor', 3 * MINUTE),
         skillEntry('agent-skills:spec-driven-development', 4 * MINUTE, NEW_TURN),
       ],
-      files: [{ path: 'SPEC.md', at: 5 * MINUTE }],
+      files: [{ path: 'SPEC.md', at: 5 * MINUTE, created: true }],
       commits: [{ sha: 'a1b2c3d', subject: 'docs: add the spec', at: 6 * MINUTE }],
       checks: [
         { label: 'npm test', ok: false, at: 7 * MINUTE },
@@ -144,9 +144,23 @@ describe('the blocks', () => {
         { text: '✓ tsc', tone: 'done', time: 'just now' },
         { text: '✗ npm test', tone: 'failed', time: '1 min ago' },
         { text: 'committed a1b2c3d docs: add the spec', tone: 'normal', time: '2 min ago' },
-        { text: 'edited SPEC.md', tone: 'normal', time: '3 min ago' },
+        { text: 'created SPEC.md', tone: 'normal', time: '3 min ago' },
       ],
     })
+  })
+
+  test('Recent shows each file once, as of its latest change', () => {
+    const data: SessionData = {
+      ...EMPTY,
+      files: [
+        { path: 'notes.md', at: 0, created: true },
+        { path: 'notes.md', at: MINUTE, created: false },
+      ],
+      now: MINUTE,
+    }
+
+    expect(block(data, 'recent')?.lines).toEqual([{ text: 'edited notes.md', tone: 'normal', time: 'just now' }])
+    expect(block(data, 'totals')?.lines[0]?.text).toBe('1 file changed · no commits · no checks')
   })
 
   test('commands and skills outside the workflow never reach Recent', () => {
@@ -158,7 +172,11 @@ describe('the blocks', () => {
   test('the totals count everything, with failed checks and session tasks', () => {
     const data: SessionData = {
       ...EMPTY,
-      files: [{ path: 'a.ts', at: 0 }, { path: 'b.ts', at: 1 }],
+      files: [
+        { path: 'a.ts', at: 0, created: false },
+        { path: 'b.ts', at: 1, created: false },
+        { path: 'a.ts', at: 2, created: false },
+      ],
       commits: [{ sha: 'a1b2c3d', subject: 's', at: 2 }],
       checks: [{ label: 'tsc', ok: true, at: 3 }, { label: 'jest', ok: false, at: 4 }],
       tasks: [
@@ -190,7 +208,7 @@ describe('the text summary', () => {
     const data: SessionData = {
       ...EMPTY,
       activity: [commandEntry('build', 0)],
-      files: [{ path: 'src/a.ts', at: 2 * MINUTE }],
+      files: [{ path: 'src/a.ts', at: 2 * MINUTE, created: false }],
       now: 4 * MINUTE,
     }
 

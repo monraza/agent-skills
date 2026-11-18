@@ -1,4 +1,4 @@
-import type { Check, Commit, FileChange } from '../types'
+import type { Check, Commit } from '../types'
 
 // Pure: no `$`, no I/O. What a tool call's result means for the panel.
 
@@ -64,11 +64,10 @@ export const checkOf = (command: string, ran: unknown, at: number): Check | null
   return { at, label, ok: ran.isError !== true && result.interrupted !== true }
 }
 
-// Each file once, with the time of its latest change, most recent last.
-export const addFile = (files: readonly FileChange[], path: string, at: number): FileChange[] => [
-  ...files.filter(file => file.path !== path),
-  { path, at },
-]
+// A Write's result says `type: 'create'` when the file didn't exist before
+// (the live recording); every other change edited it.
+export const isCreated = (ran: unknown): boolean =>
+  isRecord(ran) && ran.isError !== true && isRecord(ran.result) && ran.result.type === 'create'
 
 // Each list keeps its newest 200 entries.
 const LIST_LIMIT = 200

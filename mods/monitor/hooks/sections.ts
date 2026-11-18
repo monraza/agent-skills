@@ -115,13 +115,20 @@ const isWorkflow = ({ kind, name }: ActivityEntry) =>
 
 type Event = { at: number; text: string; tone: Tone }
 
+// Each path once, as of its latest change, newest first.
+const latestPerPath = (files: readonly FileChange[]): FileChange[] => {
+  const seen = new Set<string>()
+
+  return [...files].reverse().filter(({ path }) => !seen.has(path) && seen.add(path) !== undefined)
+}
+
 // The newest workflow events across every list, newest first. Each list is
 // taken newest first, so events at the same moment keep their own order.
 const recentSection = ({ activity, files, commits, checks, now }: SessionData): Section | null => {
   const newestFirst = <T>(list: readonly T[]) => [...list].reverse()
   const events: Event[] = [
     ...newestFirst(activity.filter(isWorkflow)).map(entry => ({ at: entry.at, text: labelOf(entry), tone: 'normal' as const })),
-    ...newestFirst(files).map(({ path, at }) => ({ at, text: `edited ${path}`, tone: 'normal' as const })),
+    ...latestPerPath(files).map(({ path, at, created }) => ({ at, text: `${created ? 'created' : 'edited'} ${path}`, tone: 'normal' as const })),
     ...newestFirst(commits).map(({ sha, subject, at }) => ({ at, text: `committed ${sha} ${subject}`.trim(), tone: 'normal' as const })),
     ...newestFirst(checks).map(({ label, ok, at }) => ({ at, text: `${ok ? '✓' : '✗'} ${label}`, tone: ok ? ('done' as const) : ('failed' as const) })),
   ]
@@ -136,9 +143,10 @@ const recentSection = ({ activity, files, commits, checks, now }: SessionData): 
 
 const totalsSection = ({ files, commits, checks, tasks }: SessionData): Section => {
   const failed = checks.filter(check => !check.ok).length
+  const paths = new Set(files.map(file => file.path)).size
   const session = taskCounts(tasks)
   const parts = [
-    files.length === 0 ? 'no files changed' : `${count(files.length, 'file', 'files')} changed`,
+    paths === 0 ? 'no files changed' : `${count(paths, 'file', 'files')} changed`,
     commits.length === 0 ? 'no commits' : count(commits.length, 'commit', 'commits'),
     checks.length === 0 ? 'no checks' : `${count(checks.length, 'check', 'checks')}${failed > 0 ? `, ${failed} failed` : ''}`,
     ...(tasks.length === 0 ? [] : [`${session.done}/${session.total} tasks`]),

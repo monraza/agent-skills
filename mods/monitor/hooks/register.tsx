@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Artifacts } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
-import { addFile, checkOf, commitOf, keepNewest } from './classify'
+import { checkOf, commitOf, isCreated, keepNewest } from './classify'
 import {
   NEW_TURN,
   afterCommand,
@@ -29,7 +29,7 @@ const MINUTE = 60_000
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
 const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-2' })
-const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-2' })
+const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-3' })
 const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-2' })
 const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
 const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-1' })
@@ -163,7 +163,8 @@ export const register: Register = on => {
       try {
         const path = relativeTo(await $.session.cwd(), edited)
         const at = await $.clock.now()
-        await update($, files, list => keepNewest(addFile(list, path, at)))
+        const created = e.tool === 'Write' && isCreated(ran)
+        await update($, files, list => keepNewest([...list, { path, at, created }]))
         if (isTrackedPath(path)) await refreshArtifacts($)
       } catch {
         // no working directory to compare with: nothing recorded

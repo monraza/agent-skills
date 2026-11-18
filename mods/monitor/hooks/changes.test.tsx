@@ -71,8 +71,9 @@ test('a file outside the working directory keeps its full path; a failed edit is
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
   expect(shown).toContain('1 file changed · no commits · no checks')
-  expect(shown).toContain('edited /tmp/elsewhere.md')
+  expect(shown).toContain('created /tmp/elsewhere.md')
   expect(shown).not.toContain('edited broken.md')
+  expect(shown).not.toContain('created broken.md')
   await ui.unmount()
 })
 
@@ -111,7 +112,7 @@ test("/monitor's text summary lists the same files and commits", async ($, on) =
   await $.tool.call(gitCommit.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\n  edited notes.md · just now')
+  expect(out.text).toContain('\n  created notes.md · just now')
   expect(out.text).toContain('\n  committed 298bd7b probe: first commit · just now')
   expect(out.text).toContain('\n1 file changed · 1 commit · no checks')
 })

@@ -210,7 +210,7 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criteria 15 and 19.
   - **Files:** `hooks/artifacts.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 15: File changes as events** · S · Dependencies: 14
+- [x] **Task 15: File changes as events** · S · Dependencies: 14
   - **What:**
     - Each Edit, Write or NotebookEdit is recorded as `{ path, at, created }` (files shape 3), where `created` comes from Write's `type: 'create'`.
     - Recent shows each path once, as `created` or `edited`.
