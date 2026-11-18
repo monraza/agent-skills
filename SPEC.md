@@ -79,6 +79,8 @@ Tracking starts at session start whether or not the pane is open, so opening it 
 
 **Check commands (V1, built in):** `npm test` / `npm run test` / `npm run lint`, `node scripts/run-evals.js`, `node scripts/validate-*.js`, `bash hooks/*-test.sh`, `claude plugin validate|test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`.
 
+A `git commit -q` prints nothing, so Claude Code attaches no commit report to the result and the panel doesn't list it (live check, 2026-11-18).
+
 A check's ✓/✗ is its Bash call's result. So a check piped into another command (`npm test | tail`) shows the last command's exit status, as the shell reports it, and a check still running in the background isn't recorded.
 
 Each list keeps its newest 200 entries.
@@ -304,7 +306,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
 6. **Commit hash from the engine (live check). A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
 7. **Relative times.** Times show as `just now`, `N min ago` or `N h ago`, never as clock times, because a cloud session's clock is UTC rather than your local time.
-8. **Text summary for screens without panes (Checkpoint A).** The Android app attaches no surface to a cloud session (`$.session.surfaces()` is empty), so the pane never draws there and only a command's text reply reaches the phone. `/monitor` replies with the panel as text whenever the pane isn't placed.
+8. **Text summary for screens without panes (Checkpoint A).** The Android app attaches no surface to a cloud session (`$.session.surfaces()` is empty), so the pane never draws there and only a command's text reply reaches the phone. The Windows desktop app viewing the same cloud session doesn't attach one either. The pane draws where Claude Code runs on your own machine: the terminal, or a local session in the desktop app's Code tab. `/monitor` replies with the panel as text whenever the pane isn't placed.
 
 ## Open Questions
 
