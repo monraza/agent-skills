@@ -60,7 +60,7 @@ Every task, before it's checked off:
 
 ## Phase 2: Core sections
 
-- [ ] **Task 3: Active phase with evidence, and the Activity list** · M · Dependencies: 2
+- [x] **Task 3: Active phase with evidence, and the Activity list** · M · Dependencies: 2
   - **Acceptance:**
     - Spec success criteria 1, 2, 3 and 15 pass.
     - Activity lists commands and skills newest first, with time and phase.

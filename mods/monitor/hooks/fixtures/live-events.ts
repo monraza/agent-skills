@@ -209,7 +209,6 @@ export const skillPrompt = {
 export const turnStart = {
   text: '<task-notification>\nThe permission mode turned on mod hot-reloading for this session…',
   turnId: '2016dae1-03af-4904-bbfa-ed93fdbdb4d8',
-  agentId: null,
 } as const
 
 // The typed `/spec probe`, in the order the engine sent it.
@@ -230,6 +229,5 @@ export const typedCommand = {
   turnStart: {
     text: '<command-message>spec</command-message>\n<command-name>/spec</command-name>\n<command-args>probe</command-args>',
     turnId: 'e12f9579-17b6-4917-af77-0f90d77047bb',
-    agentId: null,
   },
 } as const

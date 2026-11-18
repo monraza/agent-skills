@@ -1,5 +1,7 @@
 import type { ActivityEntry } from '../types'
 
+import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
+
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
 // the pane (view.tsx) and /monitor's text (summary.ts) never disagree.
 
@@ -9,11 +11,49 @@ export type Line = { text: string; isDim: boolean }
 // labelled list.
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
-export type SessionData = { activity: readonly ActivityEntry[] }
+export type SessionData = { activity: readonly ActivityEntry[]; now: number }
+
+const MINUTE = 60_000
+
+const SYMBOL = { todo: '○', active: '◉', visited: '·' } as const
 
 const empty = (text: string): readonly Line[] => [{ text, isDim: true }]
 
-export const sectionsOf = ({ activity }: SessionData): Section[] => [
-  { key: 'phase', title: null, lines: empty('No phase yet') },
-  { key: 'activity', title: null, lines: activity.length === 0 ? empty('No activity yet.') : [] },
-]
+export const ago = (at: number, now: number): string => {
+  const minutes = Math.floor((now - at) / MINUTE)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+
+  return `${Math.floor(minutes / 60)} h ago`
+}
+
+const labelOf = ({ kind, name }: ActivityEntry): string =>
+  kind === 'command' ? `/${bareName(name)}` : `skill ${bareName(name)}`
+
+const phaseSection = ({ activity, now }: SessionData): Section => {
+  const { active, states } = phaseViewOf(activity)
+  const phases = PHASES.map(phase => ({
+    text: `${SYMBOL[states[phase]]} ${PHASE_LABEL[phase]}`,
+    isDim: states[phase] !== 'active',
+  }))
+  const evidence =
+    active === null
+      ? { text: 'No phase yet', isDim: true }
+      : { text: `${PHASE_LABEL[active.phase]} · since ${labelOf(active)}, ${ago(active.at, now)}`, isDim: false }
+
+  return { key: 'phase', title: null, lines: [...phases, evidence] }
+}
+
+const activitySection = ({ activity, now }: SessionData): Section => {
+  if (activity.length === 0) return { key: 'activity', title: null, lines: empty('No activity yet.') }
+  const lines = [...activity].reverse().map(entry => ({
+    text: [labelOf(entry), entry.phase === null ? null : PHASE_LABEL[entry.phase], ago(entry.at, now)]
+      .filter(part => part !== null)
+      .join(' · '),
+    isDim: false,
+  }))
+
+  return { key: 'activity', title: 'Activity', lines }
+}
+
+export const sectionsOf = (data: SessionData): Section[] => [phaseSection(data), activitySection(data)]

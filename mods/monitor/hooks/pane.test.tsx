@@ -1,4 +1,4 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 import { sessionStart, typedCommand } from './fixtures/live-events'
 
@@ -18,7 +18,23 @@ const PANE = {
   },
 } as const
 
+const EMPTY_SUMMARY = [
+  'No screen here shows panes, so here is the Workflow panel as text.',
+  '',
+  'Workflow',
+  '○ Define',
+  '○ Plan',
+  '○ Build',
+  '○ Verify',
+  '○ Review',
+  '○ Ship',
+  'No phase yet',
+  '',
+  'No activity yet.',
+].join('\n')
+
 test('/monitor opens the Workflow pane', async ($, on) => {
+  mock.clock(on)
   const opened: unknown[] = []
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('ui.open', (_, e) => {
@@ -35,6 +51,7 @@ test('/monitor opens the Workflow pane', async ($, on) => {
 })
 
 test('/monitor replies with the text summary when no surface shows the pane', async ($, on) => {
+  mock.clock(on)
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -42,18 +59,12 @@ test('/monitor replies with the text summary when no surface shows the pane', as
   await $.session.start(sessionStart)
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
 
-  expect(out.text).toBe(
-    [
-      'No screen here shows panes, so here is the Workflow panel as text.',
-      '',
-      'Workflow',
-      'No phase yet',
-      'No activity yet.',
-    ].join('\n'),
-  )
+  // /monitor itself is an unmapped command, so it is the one activity row.
+  expect(out.text).toBe(EMPTY_SUMMARY.replace('No activity yet.', 'Activity: /monitor · just now'))
 })
 
 test('/monitor still says the panel opened when a surface shows it', async ($, on) => {
+  mock.clock(on)
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -65,6 +76,7 @@ test('/monitor still says the panel opened when a surface shows it', async ($, o
 })
 
 test('session.start and other commands pass through unchanged', async ($, on) => {
+  mock.clock(on)
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', () => ({ cwd: '/from/the/engine' }))
   on('command.run', (_, e) => ({ text: `engine ran ${e.command}` }))
@@ -73,12 +85,14 @@ test('session.start and other commands pass through unchanged', async ($, on) =>
   expect(await $.command.run(typedCommand.commandRun)).toEqual({ text: 'engine ran spec' })
 })
 
-test('an empty session shows no phase and no activity, on every surface', async $ => {
+test('an empty session shows no phase and no activity, on every surface', async ($, on) => {
+  mock.clock(on)
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
 
     expect((await ui.find({ type: 'Text', text: 'No phase yet' }))?.text).toBe('No phase yet')
     expect((await ui.find({ type: 'Text', text: 'No activity yet.' }))?.text).toBe('No activity yet.')
+    expect((await ui.find({ type: 'Text', text: '○ Define' }))?.text).toBe('○ Define')
     await ui.unmount()
   }
 })
