@@ -97,6 +97,15 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [x] Definition of Done: Correctness, Quality, Integration and Documentation (README, spec decisions current)
 - [ ] Human review before anything goes to the fork's `main`
 
+### Phase 4: Simpler layout (after the first draw on a real screen)
+- [ ] Task 12: The new blocks (stepper, current step, Recent, totals) and the text summary
+- [ ] Task 13: Draw the pane: spacing, sizes and theme colors
+
+### Checkpoint D: Simpler layout
+- [ ] Tests, type-check and validate pass
+- [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
+- [ ] Human review
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |

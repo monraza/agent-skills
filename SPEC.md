@@ -43,18 +43,20 @@ Where no screen shows panes (the Android app attaches none to a cloud session), 
 | Ship | `/ship` | git-workflow-and-versioning, ci-cd-and-automation, deprecation-and-migration, documentation-and-adrs, observability-and-instrumentation, shipping-and-launch |
 | *(no phase)* | `/constraints` | constraint-driven-development, using-agent-skills |
 
-Unmapped commands and skills appear in the activity list but never change the phase.
+Commands and skills outside the table are recorded but not shown, and never change the phase.
 
 **Active phase:**
 - Set by the most recent mapped slash command (`command.run`).
 - A mapped skill (`skill.prompt`) sets it only when the skill fires in a turn that didn't start with a mapped command. For example, `/test` followed by test-driven-development firing in the same turn stays in Verify.
-- **Evidence is always shown.** The active phase is a guess from the last command or skill, so the pane says what set it and when, e.g. `Build · since /build, 4 min ago` or `Build · since skill test-driven-development, just now`. When nothing has set a phase yet, it says `No phase yet`, with no guess.
+- **Evidence is always shown.** The active phase is a guess from the last command or skill, so the panel says what started it and when, e.g. `started by /build · 4 min ago` or `started by skill test-driven-development · just now`. When nothing has set a phase yet, it says `No step yet`, with no guess.
 
 **Phase states:** `todo`, `active`, `visited` (was active earlier this session) or `done`. `done` comes from files in the session's working directory:
 - **Define is done** when a spec exists at one of the paths `/build` accepts: `SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md`, or a file under `spec/`.
 - **Plan is done** when `tasks/plan.md` exists.
 - **Build shows progress** as `checked/total` from the `- [ ]` / `- [x]` items in `tasks/todo.md`. It is done when there's at least one item and all are checked.
 - **Verify, Review and Ship** have no file to read, so they are only ever `todo`, `active` or `visited`.
+
+**Shown as:** ● the current step, ✓ a step that's done or that the session has been through, ○ a step not reached yet.
 
 **Freshness:** these files are read at session start, at each turn start, and after any Edit, Write or NotebookEdit call whose path is one of them.
 
@@ -73,8 +75,8 @@ Tracking starts at session start whether or not the pane is open, so opening it 
 |---|---|---|
 | Activity | `command.run`, `skill.prompt` | time, kind, name, phase (if mapped) |
 | Tasks | `tasks/todo.md`; `TodoWrite`, `TaskCreate`, `TaskUpdate` tool calls | file counts; session task subject and status |
-| Files changed | `Edit`, `Write`, `NotebookEdit` tool calls | path relative to the working directory, once each |
-| Commits | Bash results carrying `gitOperation.commit` | short hash from `gitOperation`, subject from the commit's output line |
+| Files changed | `Edit`, `Write`, `NotebookEdit` tool calls | path relative to the working directory, once each, with the time of its latest change |
+| Commits | Bash results carrying `gitOperation.commit` | short hash from `gitOperation`, subject from the commit's output line, time |
 | Checks | Bash calls matching the check list below | time, label, pass/fail |
 
 **Check commands (V1, built in):** `npm test` / `npm run test` / `npm run lint`, `node scripts/run-evals.js`, `node scripts/validate-*.js`, `bash hooks/*-test.sh`, `claude plugin validate|test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`.
@@ -87,49 +89,58 @@ Each list keeps its newest 200 entries.
 
 ### Pane layout (V1, read-only)
 
-```
-Workflow
-✓ Define  ✓ Plan  ◉ Build 3/7  · Verify  ○ Review  ○ Ship
-Build · since /build, 4 min ago
+Revised after the first draw on a real screen (Decision 10): one clear "you are here", one short feed, and one line of totals.
 
-Tasks      todo.md 3/7 done · session 2/4 done
-Activity   skill spec-driven-development · 2 min ago
-           /spec · 4 min ago
-Files (5)  skills/…/SKILL.md, SPEC.md, …
-Commits    a1b2c3d docs(spec): add workflow panel spec
-Checks     ✓ run-evals · just now   ✗ npm test · 3 min ago
+```
+✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
+
+BUILD · step 3 of 6
+started by /build · 4 min ago
+3 of 7 tasks checked in tasks/todo.md
+
+Recent
+  ✓ npm test                      just now
+  edited src/rate-limiter.ts      2 min ago
+  committed a1b2c3d feat(api)…    3 min ago
+  /build                          4 min ago
+
+5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
 ```
 
-- When the pane is 40 columns or narrower (and on `mobile`), the phase row stacks to one phase per line.
-- Lists show newest first and are cut to fit the pane's rows, with "+N more".
-- When there's nothing to show, the pane says so ("No activity yet.").
-- Times are relative to now: `just now` under a minute, then `N min ago`, then `N h ago`. While the pane is open it redraws at least once a minute, so they stay current.
+- **Stepper.** The six steps on one row. The current one is bold in the theme's accent color, ✓ is in its success color, and ○ is dim. At 40 columns or narrower, and on `mobile`, it stacks one step per line.
+- **Current step.** Its name, large and in the accent color, with its number; the line that started it; and, while in Build, the todo count. Before any step: `No step yet`, and that the panel is waiting for an agent-skills command or skill.
+- **Recent.** The newest 4 events, newest first, each with its relative time:
+  - workflow commands and skills (those in the phase table)
+  - file edits, as `edited <path>`
+  - commits, as `committed <sha> <subject>`
+  - checks, as `✓ <label>` or `✗ <label>`, in the success or error color
+
+  It's left out when there's nothing yet.
+- **Totals.** One dim line: files changed, commits, checks (with how many failed), and session tasks when there are any.
+- **Left out:** commands and skills outside the workflow (`/model`, `/monitor`, other plugins' skills), and empty states other than `No step yet`.
+- **Times** are relative to now: `just now` under a minute, then `N min ago`, then `N h ago`. While the pane is open it redraws at least once a minute, so they stay current.
 
 ### Text summary
 
-When nothing shows the pane, `/monitor` replies with the panel as plain text, for example:
+When nothing shows the pane, `/monitor` replies with the same blocks as plain text:
 
 ```
-No screen here shows panes, so here is the Workflow panel as text.
-
 Workflow
-✓ Define
-✓ Plan
-◉ Build 3/7
-○ Verify
-○ Review
-○ Ship
-Build · since /build, 4 min ago
+✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
 
-Tasks: todo.md 3/7 done · session 2/4 done
-Activity: skill spec-driven-development · 2 min ago; /spec · 4 min ago
-...
+BUILD · step 3 of 6
+started by /build · 4 min ago
+3 of 7 tasks checked in tasks/todo.md
+
+Recent
+  ✓ npm test · just now
+  edited src/rate-limiter.ts · 2 min ago
+
+5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
 ```
 
-- It has the same sections, in the same order, as the pane, and they come from the same data, so the two never disagree.
-- It uses the narrow layout: the phase list is stacked one per line, which suits a phone.
-- Each list shows its newest 5 entries, then "+N more".
-- The text is a snapshot at the moment `/monitor` runs. Run it again to refresh.
+- **Same blocks, same data** as the pane, so the two never disagree.
+- **A snapshot:** the text reflects the moment `/monitor` runs. Run it again to refresh.
 
 ## Tech Stack
 
@@ -267,29 +278,31 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 
 ## Success Criteria
 
-1. Running `/spec` makes Define active. Then running `/plan` makes Plan active and shows Define as visited (or done if a spec file exists).
-2. With no command run, a Skill-tool invocation of `test-driven-development` makes Build active. `agent-skills:build` and `build` map the same way.
-3. `/test` followed by test-driven-development firing in the same turn leaves Verify active.
-4. In a repo with `SPEC.md`, `tasks/plan.md` and a `tasks/todo.md` with 3 of 7 items checked, the pane shows Define ✓, Plan ✓ and Build 3/7 at session start, before any command runs.
+1. Running `/spec` makes Define the current step. Then running `/plan` makes Plan current and marks Define ✓.
+2. With no command run, a Skill-tool invocation of `test-driven-development` makes Build the current step. `agent-skills:build` and `build` map the same way.
+3. `/test` followed by test-driven-development firing in the same turn leaves Verify current.
+4. In a repo with `SPEC.md`, `tasks/plan.md` and a `tasks/todo.md` with 3 of 7 items checked, the stepper shows ✓ Define, ✓ Plan and ○ Build 3/7 at session start, before any command runs.
 5. Checking a todo item via an Edit call updates the Build count after that call.
-6. Each file changed by Edit, Write or NotebookEdit appears once, as a path relative to the working directory, with the total count.
-7. A successful `git commit` Bash call adds its short hash and subject. A failed one adds nothing.
-8. A matching check command appears with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. A Bash command that isn't a check doesn't appear.
-9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the session tasks' done/total.
-10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, the phase row stacks.
+6. Each file changed by Edit, Write or NotebookEdit counts once in the totals, and shows in Recent as `edited <path>`, relative to the working directory.
+7. A successful `git commit` Bash call shows in Recent as `committed <sha> <subject>` and counts in the totals. A failed one adds nothing.
+8. A matching check command shows in Recent with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. It counts in the totals, with failures. A Bash command that isn't a check doesn't appear.
+9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the totals' session task count.
+10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, and on `mobile`, the stepper stacks.
 11. In a directory with `SPEC.md` or `tasks/`, the pane opens at session start. In a directory with neither, it stays closed until a phase-table command or skill runs, then opens once. After it's closed, only `/monitor` reopens it, and `/monitor` works in any directory. Opening it late still shows everything since session start.
 12. A stored value of an older shape is dropped without error. After an ordinary hot reload of the mod's code, the session's data is still shown (seen live after Tasks 8 and 9). A fresh load of the mod starts empty (Decision 9).
 13. For every hooked event, the returned result equals the engine's (pass-through test).
 14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
-15. The active phase always shows the command or skill that set it, and how long ago. Relative times move on without any new event (`just now` → `1 min ago`). With nothing set yet, the pane shows `No phase yet`.
+15. The current step always shows the command or skill that started it, and how long ago (`started by /build · 4 min ago`). Relative times move on without any new event (`just now` → `1 min ago`).
 16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
-17. When the pane isn't placed, `/monitor` replies with a text summary holding every section the pane would show, from the same data. On the Android app, `/monitor` shows that summary.
+17. When the pane isn't placed, `/monitor` replies with the same blocks as text, from the same data. On the Android app, `/monitor` shows that text.
+18. Commands and skills outside the workflow, and empty states other than `No step yet`, are not shown. Recent holds at most 4 events.
 
 ## Out of Scope (Deferred)
 
 - Buttons, such as "run the next command": V1 is read-only by choice.
 - A "suggested next command" hint: it goes with the button idea.
 - History across sessions (`$.store`): V1 is about the current session.
+- A full list of the session's files, commits and checks: Recent shows the newest 4 and the totals count all (Decision 10).
 - Saving the session's data to `$.store` so it survives a fresh load (a re-enable or a worker restart): ordinary hot reloads keep it already, and `$.store` can't survive a new cloud container either (Decision 9).
 - User-configurable check-command patterns (`userConfig`): the built-in list comes first, so we learn what's missing.
 - A separate view of subagent activity: it adds a second event stream to reason about.
@@ -309,6 +322,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 7. **Relative times.** Times show as `just now`, `N min ago` or `N h ago`, never as clock times, because a cloud session's clock is UTC rather than your local time.
 8. **Text summary for screens without panes (Checkpoint A).** The Android app attaches no surface to a cloud session (`$.session.surfaces()` is empty), so the pane never draws there and only a command's text reply reaches the phone. The Windows desktop app viewing the same cloud session doesn't attach one either. The pane draws where Claude Code runs on your own machine: the terminal, or a local session in the desktop app's Code tab. `/monitor` replies with the panel as text whenever the pane isn't placed.
 9. **A fresh load starts empty: accepted for V1 (Checkpoint B, corrected in Task 10).** Twice in this cloud session (after Tasks 6 and 7), the session's activity, files, commits and checks were lost. Both times the engine reported that it had turned on mod hot-reloading and loaded the mods, which is a fresh load. The ordinary hot reloads after Tasks 8 and 9 kept the data, as the API docs say `$.state` does. Counts read from files come back either way, since they are re-read. Accepted for V1: a fresh load only happens when the mod is (re-)enabled or the worker restarts.
+10. **A simpler layout (after the first draw on a real screen, 2026-11-18).** In the Windows desktop app, in a local session, the pane drew correctly but was dense. Every block had the same weight, three lines were empty states, commands outside the workflow crowded the activity list, and what happened was split across four lists. Chosen from three mockups: a stepper, a large current-step header, a Recent feed of the newest 4 events, and one totals line, in the theme's colors.
 
 ## Open Questions
 

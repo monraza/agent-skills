@@ -171,3 +171,31 @@ Every task, before it's checked off:
 - [x] The repo's checks pass: all CI steps, including evals (157 checks) and the 295 script tests
 - [x] Definition of Done: Correctness, Quality, Integration and Documentation (README, spec decisions current)
 - [ ] Human review before anything goes to the fork's `main`
+
+## Phase 4: Simpler layout (spec Decision 10)
+
+- [ ] **Task 12: The new blocks and the text summary** · M · Dependencies: 11
+  - **What:**
+    - `sections.ts` produces four blocks: the stepper, the current step, Recent (the newest 4 workflow events) and one totals line.
+    - Files and commits gain the time of their change.
+    - Commands and skills outside the workflow, and empty states other than `No step yet`, are left out.
+    - The text summary uses the same blocks.
+  - **Acceptance:** spec success criteria 1–4, 6–9, 15, 17 and 18 as revised. The existing behaviour tests are rewritten against the new blocks.
+  - **Verify:** `claude plugin test mods/monitor`, `tsc -p mods/monitor`, `claude plugin validate mods/monitor`.
+  - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/register.tsx`, `hooks/classify.ts`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 13: Draw the pane** · S · Dependencies: 12
+  - **What:** `view.tsx` draws the blocks:
+    - the stepper as a row, or stacked at 40 columns or narrower and on mobile
+    - the current step large and bold in the accent color
+    - Recent rows with the time on the right
+    - ✓ and ✗ in the success and error colors
+    - a blank line between blocks
+  - **Acceptance:** spec success criterion 10 as revised. Each block draws on all four surfaces at both widths.
+  - **Verify:** the layout tests, and a look on a real screen.
+  - **Files:** `hooks/view.tsx`, `hooks/layout.test.tsx`
+
+### Checkpoint D: Simpler layout
+- [ ] Tests, type-check and validate pass
+- [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
+- [ ] Human review
