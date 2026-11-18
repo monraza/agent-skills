@@ -5,6 +5,7 @@ Source spec: SPEC.md · Plan: tasks/plan.md
 Every task, before it's checked off:
 - `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` pass, from Task 2 on
 - each new hook has a pass-through test (spec success criterion 13)
+- from Task 2a on, each new section goes into `hooks/sections.ts`, so it shows in both the pane and `/monitor`'s text summary, and its tests check both
 - it's committed and pushed to the working branch
 
 ## Phase 1: Foundation
@@ -38,6 +39,18 @@ Every task, before it's checked off:
     - Test: mount on `desktop`, find both texts.
     - Live: type `/monitor`.
   - **Files:** `mods/monitor/.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, `tsconfig.json`, `hooks/pane.test.tsx`. That's 7 files, but two are one-line config files.
+
+- [ ] **Task 2a: Shared sections and the `/monitor` text summary** · M · Dependencies: 2
+  - **What:** what the pane shows moves into `sections.ts` (pure: session data → ordered sections). `view.tsx` draws those sections, and `summary.ts` turns them into plain text. `/monitor` replies with the text when the pane isn't placed.
+  - **Acceptance:**
+    - Spec success criterion 17 holds for the sections that exist now (the empty state: `No phase yet`, `No activity yet.`).
+    - The reply starts `No screen here shows panes, so here is the Workflow panel as text.`
+    - When the pane is placed, `/monitor` still replies `Workflow panel opened.`
+  - **Verify:**
+    - Unit: the sections and summary of an empty session.
+    - Integration: `/monitor` with `ui.open` answering `isPlaced: false` → the summary text. The pane still draws the same texts on all four surfaces.
+    - Live: type `/monitor` on the phone → the summary.
+  - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `hooks/pane.test.tsx`, `hooks/sections.test.ts`
 
 ### Checkpoint A
 - [x] The fixtures exist, and the Decisions are updated
@@ -97,7 +110,7 @@ Every task, before it's checked off:
 
 ### Checkpoint B
 - [ ] validate, tsc and test pass
-- [ ] Live run in a scratch repo: `/spec` → `/plan` → edit `tasks/todo.md` → run a check → commit. The pane matches each step.
+- [ ] Live run in a scratch repo: `/spec` → `/plan` → edit `tasks/todo.md` → run a check → commit. The pane, or `/monitor`'s text on the phone, matches each step.
 - [ ] Human review
 
 ## Phase 3: Behaviour and polish
@@ -117,7 +130,7 @@ Every task, before it's checked off:
   - **Acceptance:**
     - Spec success criterion 10 passes.
     - At 40 columns or fewer, and on `mobile`, the phase row stacks.
-    - Lists are newest first and cut to the pane's rows with "+N more".
+    - Lists are newest first and cut to the pane's rows with "+N more". The text summary shows the newest 5 of each list, then "+N more".
     - Empty sections say so.
   - **Verify:**
     - Integration: mount on `terminal`, `desktop`, `vscode` and `mobile`, at wide and ≤40 columns, with a full and an empty session.

@@ -14,6 +14,7 @@ Build `monitor`, a read-only Claude Code mod in `mods/monitor/`. Its pane shows 
   - `register.tsx` maps events to those functions and writes atoms.
   - `view.tsx` only draws.
   - Unit tests call the pure modules directly, and integration tests go through the engine `$`.
+- **One list of sections, two outputs.** `sections.ts` turns session data into the ordered sections. `view.tsx` draws them as the pane, and `summary.ts` writes them as `/monitor`'s text for screens that show no panes, such as the Android app (spec Decision 8). Each later task adds its section once and gets both.
 - **Observe, never steer.** Every hook records, then returns `next(e)` unchanged. Each slice ships its own pass-through test, so a hook that rewrites anything fails in the task that added it.
 - **Auto-open at most once per session.** An `autoOpened` flag in `$.state` lets the pane open on its own once, and it survives reloads. That covers "after you close it, only `/monitor` reopens it" without detecting the close.
 - **Dev loop in this cloud session.**
@@ -29,6 +30,8 @@ Build `monitor`, a read-only Claude Code mod in `mods/monitor/`. Its pane shows 
 Task 1 live check ──→ fixtures + decisions (isError, TaskCreate id, /monitor clash, name formats, event order)
    │
 Task 2 skeleton: /monitor opens an empty pane
+   │
+Task 2a shared sections + /monitor text summary
    │
    ├── Task 3 phase + evidence + activity ──┐
    ├── Task 4 artifacts: done marks, Build x/y ─┤
@@ -51,6 +54,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 ### Phase 1: Foundation
 - [x] Task 1: Live event check: record real events, settle Decisions 1–3
 - [x] Task 2: Mod skeleton: loads, validates, `/monitor` opens an empty pane
+- [ ] Task 2a: Shared sections and the `/monitor` text summary (added at Checkpoint A)
 
 ### Checkpoint A: Foundation
 - [ ] The fixtures file exists, and Decisions 1–3 in SPEC.md record their outcomes
@@ -89,7 +93,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 | `/spec` typed fires `skill.prompt` as well as `command.run`, logging two activity rows | Med | Task 1 records the order. If both fire, Task 3 merges them into one row |
 | The mod API changes when Claude Code updates itself | Med | Validate, tsc and test on every task. The README states the version it was tested with (2.1.326) |
 | `/monitor` clashes with an existing command | Med | Task 1 checks. On a clash, stop and ask for a name (Decision 3) |
-| The mobile app attaches no surface, so no pane (or any mod drawing) shows there; only a command's text reply reaches the phone | High (you use mobile) | Decide at Checkpoint A: a text summary from `/monitor` when nothing shows the pane, or check the pane on a computer |
+| The mobile app attaches no surface, so no pane (or any mod drawing) shows there; only a command's text reply reaches the phone | High (you use mobile) | Decided at Checkpoint A: `/monitor` replies with a text summary when the pane isn't placed (Task 2a, spec Decision 8) |
 | The model can't type slash commands, so live checks need the user | Low | Task 1 and Checkpoint B list exactly which commands to type |
 | The repo folder isn't hot-reloaded in this session | Low | Symlink or copy into the session's mods folder (Architecture Decisions) |
 | `validate-versions.js` reads only `plugins[0]` of the marketplace file | Low | The `monitor` entry goes after `agent-skills` |

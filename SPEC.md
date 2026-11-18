@@ -8,6 +8,8 @@ A Claude Code panel that sits beside the chat and shows where the current sessio
 
 **What it is:** a Claude Code mod (a function-hooks plugin) named `monitor`. It lives in its own folder in this fork and is listed in the fork's marketplace file. It only watches and displays. It never changes, blocks or delays anything the session does.
 
+Where no screen shows panes (the Android app attaches none to a cloud session), `/monitor` replies with the same content as text instead, so the panel is readable on a phone.
+
 **User stories**
 
 - As I run `/spec`, `/plan`, `/build`…, I see the current phase highlighted and the phases I've been through marked.
@@ -63,7 +65,7 @@ Tracking starts at session start whether or not the pane is open, so opening it 
 - **At session start**, the pane opens on its own only when the working directory has a spec at one of the known paths or a `tasks/` folder.
 - **Otherwise**, it opens on its own the first time a command or skill from the phase table runs, including the phase-less ones.
 - **At most once per session.** After you close it, nothing reopens it except `/monitor`.
-- **`/monitor`** opens it any time, in any project.
+- **`/monitor`** opens it any time, in any project. When the engine reports the pane isn't placed (`isPlaced: false`), `/monitor` replies with the text summary instead (see below).
 
 ### What's tracked
 
@@ -98,6 +100,32 @@ Checks     ✓ run-evals · just now   ✗ npm test · 3 min ago
 - Lists show newest first and are cut to fit the pane's rows, with "+N more".
 - When there's nothing to show, the pane says so ("No activity yet.").
 - Times are relative to now: `just now` under a minute, then `N min ago`, then `N h ago`. While the pane is open it redraws at least once a minute, so they stay current.
+
+### Text summary
+
+When nothing shows the pane, `/monitor` replies with the panel as plain text, for example:
+
+```
+No screen here shows panes, so here is the Workflow panel as text.
+
+Workflow
+✓ Define
+✓ Plan
+◉ Build 3/7
+○ Verify
+○ Review
+○ Ship
+Build · since /build, 4 min ago
+
+Tasks: todo.md 3/7 done · session 2/4 done
+Activity: skill spec-driven-development · 2 min ago; /spec · 4 min ago
+...
+```
+
+- It has the same sections, in the same order, as the pane, and they come from the same data, so the two never disagree.
+- It uses the narrow layout: the phase list is stacked one per line, which suits a phone.
+- Each list shows its newest 5 entries, then "+N more".
+- The text is a snapshot at the moment `/monitor` runs. Run it again to refresh.
 
 ## Tech Stack
 
@@ -134,7 +162,9 @@ mods/monitor/
   hooks/phases.ts              → phase map and active/visited/done rules (pure)
   hooks/artifacts.ts           → spec / plan / todo detection and checkbox counting (pure)
   hooks/classify.ts            → check-command matching, commit-output parsing, path relativising (pure)
-  hooks/view.tsx               → the pane's drawing, per surface and width
+  hooks/sections.ts            → pure: session data → the ordered sections both outputs show
+  hooks/view.tsx               → the pane's drawing of those sections, per surface and width
+  hooks/summary.ts             → pure: the same sections as plain text for /monitor
   hooks/*.test.ts(x)           → claude plugin test suites
   hooks/fixtures/live-events.ts → event inputs and results recorded in the live check, trimmed to the fields the mod reads
   types/index.d.ts             → PluginState contract for every $.state value
@@ -203,6 +233,7 @@ All automated tests run under `claude plugin test`, importing `test`, `expect` a
   - drive `session.start`, `command.run`, `skill.prompt` and `tool.call` with stubbed engine hooks beneath the plugin
   - mount the pane with `$.ui.mount` on `terminal`, `desktop`, `vscode` and `mobile`, at a wide and a narrow (≤40 columns) width
   - assert on the drawn text with `ui.find`
+  - run `/monitor` with `ui.open` answering `isPlaced: false`, and assert the text summary holds the same sections
 - **State compatibility:** seed `state.get` with a value of an older shape. The pane must draw its empty state, not fail.
 - **Pass-through:** for each hooked event, the result the plugin returns equals what the stubbed engine returned, so nothing is rewritten.
 - **Manual, once per surface available:** load the mod in a live session, run `/spec` → `/plan` → `/build` in a scratch repo, and compare the pane with what happened. Watch the transcript for any failed-hook line.
@@ -248,6 +279,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
 15. The active phase always shows the command or skill that set it, and how long ago. Relative times move on without any new event (`just now` → `1 min ago`). With nothing set yet, the pane shows `No phase yet`.
 16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
+17. When the pane isn't placed, `/monitor` replies with a text summary holding every section the pane would show, from the same data. On the Android app, `/monitor` shows that summary.
 
 ## Out of Scope (Deferred)
 
@@ -270,6 +302,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
 6. **Commit hash from the engine (live check). A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
 7. **Relative times.** Times show as `just now`, `N min ago` or `N h ago`, never as clock times, because a cloud session's clock is UTC rather than your local time.
+8. **Text summary for screens without panes (Checkpoint A).** The Android app attaches no surface to a cloud session (`$.session.surfaces()` is empty), so the pane never draws there and only a command's text reply reaches the phone. `/monitor` replies with the panel as text whenever the pane isn't placed.
 
 ## Open Questions
 
