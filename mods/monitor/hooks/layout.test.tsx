@@ -154,9 +154,9 @@ test('the pane is drawn with hierarchy and the theme colors, on every surface', 
     expect(await props('✓ npm test')).toMatchObject({ color: 'success' })
     expect(await props('Checks · 2, 1 failing')).toMatchObject({ size: 'caption', dimColor: true })
 
-    // A blank line between blocks, not before the first.
+    // A blank line after the stepper and after the header, not before the stepper.
     expect((await ui.find({ type: 'Box', key: 'phases' }))?.props.marginTop).toBeUndefined()
-    for (const key of ['header', 'checks']) {
+    for (const key of ['header', 'body']) {
       expect((await ui.find({ type: 'Box', key }))?.props.marginTop).toBe(1)
     }
     await ui.unmount()

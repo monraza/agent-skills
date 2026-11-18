@@ -64,6 +64,8 @@ declare module 'claude-code' {
       viewing: PhaseId | null
       // Which of Build's task groups are unfolded in the pane.
       groups: Shaped<OpenGroups>
+      // The first of the pane's own rows on show under the pinned stepper.
+      scrollTop: number
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

@@ -6,13 +6,21 @@ import type { Line, Section, Tone } from './sections'
 
 type Table = Elements[RenderSurface]
 
-export type Layout = { columns: number; surface: RenderSurface }
+// `rows`: the pane body's rows (its `scroll.bodyRows`), which the drawing
+// keeps within, so the engine never scrolls it and the stepper stays put.
+export type Layout = { columns: number; surface: RenderSurface; rows: number }
 
 // What the pane's buttons do: a step in the stepper, the button back to the
 // current step, and a task group's name.
 export type Actions = { onStep: (phase: PhaseId) => void; onBack: () => void; onGroup: (group: GroupId) => void }
 
-const isNarrow = ({ columns, surface }: Layout) => surface === 'mobile' || columns <= 40
+// A drawing, and how far its rows can scroll under the stepper.
+export type Drawn<T> = { tree: T; maxTop: number }
+
+const isNarrow = ({ columns, surface }: Pick<Layout, 'columns' | 'surface'>) => surface === 'mobile' || columns <= 40
+
+// A row kept for a heading drawn taller than one line on a graphical surface.
+const SLACK = 1
 
 // The theme's own colors, so the pane follows the person's theme: its accent
 // for the current step, success and error for ✓ and ✗, dim for the rest.
@@ -24,14 +32,35 @@ const STYLE: Record<Tone, { color?: string; weight?: 'bold'; dimColor?: boolean 
   muted: { dimColor: true },
 }
 
-export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Section[], layout: Layout, actions: Actions) => {
-  const text = (line: Line) => <Text {...STYLE[line.tone]}>{line.text}</Text>
+// The stepper's rows: one per step when stacked; otherwise its text, with
+// ' ─ ' between steps, over the width.
+export const stepperRows = (lines: readonly Line[], layout: Pick<Layout, 'columns' | 'surface'>): number => {
+  if (isNarrow(layout)) return lines.length
+  const width = lines.reduce((sum, line) => sum + line.text.length, 0) + 3 * Math.max(0, lines.length - 1)
+
+  return Math.max(1, Math.ceil(width / Math.max(1, layout.columns)))
+}
+
+// The stepper and the step's header, pinned at the top; below them, a window
+// of `top` onward over the rest, one line to a row, as many rows as fit.
+export const drawPane = (
+  { Box, Button, Text }: Table,
+  sections: readonly Section[],
+  layout: Layout,
+  actions: Actions,
+  top: number,
+) => {
+  const text = (line: Line) => (
+    <Text {...STYLE[line.tone]} wrap="truncate-end">
+      {line.text}
+    </Text>
+  )
 
   // A started or done step is a plain button that shows it; the step on
   // show, when it isn't the current one, is underlined.
   const step = (line: Line) =>
     line.phase === undefined ? (
-      text(line)
+      <Text {...STYLE[line.tone]}>{line.text}</Text>
     ) : (
       <Button key={`step-${line.phase}`} plain onPress={() => actions.onStep(line.phase as PhaseId)}>
         <Text {...STYLE[line.tone]} underline={line.selected === true}>
@@ -53,7 +82,7 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
     )
 
   const heading = (line: Line) => (
-    <Text {...STYLE[line.tone]} size="heading" weight="bold">
+    <Text {...STYLE[line.tone]} size="heading" weight="bold" wrap="truncate-end">
       {line.text}
     </Text>
   )
@@ -81,7 +110,7 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
   const row = (line: Line) =>
     line.group !== undefined ? (
       <Button key={`group-${line.group}`} plain onPress={() => actions.onGroup(line.group as GroupId)}>
-        <Text {...STYLE[line.tone]}>{`${line.open === true ? '▾' : '▸'} ${line.text}`}</Text>
+        <Text {...STYLE[line.tone]} wrap="truncate-end">{`${line.open === true ? '▾' : '▸'} ${line.text}`}</Text>
       </Button>
     ) : line.indent === true ? (
       <Box paddingLeft={2}>{text(line)}</Box>
@@ -94,22 +123,45 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
       </Box>
     )
 
-  return (
-    <Box flexDirection="column">
-      {sections.map(({ key, title, lines }) =>
-        key === 'stepper' ? (
-          stepper(lines)
-        ) : (
-          <Box key={key} flexDirection="column" marginTop={1}>
-            {title !== null && (
-              <Text size="caption" weight="semibold" dimColor>
-                {title}
-              </Text>
-            )}
-            {key === 'header' ? header(lines) : lines.map(row)}
+  // Every block after the stepper as rows: a blank row between blocks, then
+  // its title, then its lines.
+  const rowsOf = (blocks: readonly Section[]) =>
+    blocks.flatMap(({ key, title, lines }, index) => [
+      ...(index === 0 ? [] : [<Text> </Text>]),
+      ...(title === null
+        ? []
+        : [
+            <Text size="caption" weight="semibold" dimColor wrap="truncate-end">
+              {title}
+            </Text>,
+          ]),
+      ...(key === 'header' ? header(lines) : lines.map(row)),
+    ])
+
+  // The stepper and the step's header stay put; the blocks after them scroll.
+  const steps = sections.find(section => section.key === 'stepper')
+  const head = sections.find(section => section.key === 'header')
+  const rows = rowsOf(sections.filter(section => section !== steps && section !== head))
+  const pinnedRows =
+    (steps === undefined ? 0 : stepperRows(steps.lines, layout)) + (head === undefined ? 0 : head.lines.length + 1) + 1
+  const room = Math.max(1, layout.rows - pinnedRows - SLACK)
+  const maxTop = Math.max(0, rows.length - room)
+  const from = Math.min(Math.max(0, top), maxTop)
+
+  return {
+    maxTop,
+    tree: (
+      <Box flexDirection="column">
+        {steps !== undefined && stepper(steps.lines)}
+        {head !== undefined && (
+          <Box key="header" flexDirection="column" marginTop={1}>
+            {header(head.lines)}
           </Box>
-        ),
-      )}
-    </Box>
-  )
+        )}
+        <Box key="body" flexDirection="column" marginTop={1}>
+          {rows.slice(from, from + room)}
+        </Box>
+      </Box>
+    ),
+  }
 }

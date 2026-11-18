@@ -6,42 +6,64 @@ A Claude Code mod that shows where your session is in the agent-skills workflow 
 ✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
 
 BUILD
-started by /build · 4 min ago
+started by /build · 25 min ago
 
 Tasks · 3 of 7 done
-  ✓ Task 1: Live event check
-  ✓ Task 2: Mod skeleton
-  ✓ Task 3: Phase and activity
-  ▸ Task 4: Done marks from files
-  ○ Task 5: Files and commits
-  ○ Task 6: Checks
-  ○ Task 7: Session tasks
+▸ Completed · 3
+▾ In progress · 1
+    ● 4. Done marks from files
+▾ To do · 3
+    ○ 5. Files and commits
+    ○ 6. Checks
+    ○ 7. Session tasks
 
-Recent
-  ✓ npm test                      just now
-  edited hooks/phases.ts          2 min ago
+Files changed · 2
+  edited hooks/phases.ts                   2 min ago
+  created hooks/phases.test.ts             9 min ago
 
-5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
+Commits · 1
+  2fffc88 feat(monitor): phases            5 min ago
+
+Checks · 2, 1 failing
+  ✗ tsc                                    just now
+  ✓ claude plugin test                     3 min ago
 ```
 
 ## What it shows
 
-- **Stepper:** ● the current step, ✓ a step that's done or that the session has been through, ○ a step not reached yet. ✓ also comes from your files: Define when a spec exists (`SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md` or a file under `spec/`), Plan when `tasks/plan.md` exists, and Build once every box in `tasks/todo.md` is checked. Build shows that file's count.
-- **The current step**, large and in your theme's accent color, with what started it. It is set by the most recent agent-skills command (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`…), or by an agent-skills skill in a turn that didn't start with a command. Because it's a guess, the panel always says what started it.
-- **Build's tasks:** while Build is the current step, `tasks/todo.md`'s tasks: ✓ done, ▸ the first open one (next up), ○ the rest. A task is a checkbox line starting with `Task`, or every checkbox line when none does. Without a `tasks/todo.md`, the session's own task list.
-- **Recent:** the newest 4 workflow events. These are agent-skills commands and skills, files created or edited, commits, and checks with ✓ or ✗. Checks are test, lint and validate commands: `npm test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`, `claude plugin validate|test`, and this repo's `run-evals`, `validate-*` and hook tests.
-- **Totals:** files changed, commits, checks (with failures), and the session's own tasks.
+- **Stepper,** pinned at the top with the step's name, while everything below scrolls:
+  - ● is the current step, ✓ a step that's done or that the session has been through, and ○ a step not reached yet.
+  - ✓ also comes from your files:
+    - Define, when a spec exists (`SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md` or a file under `spec/`)
+    - Plan, when `tasks/plan.md` exists
+    - Build, once every task in `tasks/todo.md` is done. Build shows that file's count.
+- **The step's name,** large, with what started it. The current step is the one set by the most recent agent-skills command (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`…), or by an agent-skills skill in a turn that didn't start with a command. Because it's a guess, the panel always says what started it.
+- **Build's tasks,** in three groups, in this order: Completed, In progress and To do.
+  - **Folding:** press a group's name to fold or unfold it. Completed starts folded.
+  - **Numbers:** each task shows its number, from its `Task N:` title.
+  - **In progress:** a task with some of its boxes checked, or else the first open one.
+  - **Where tasks come from** (`tasks/todo.md`), in this order of preference:
+    - checkbox lines starting with `Task`
+    - the planning skill's `## Task N:` headings, one task each, done when every box under it is checked
+    - every checkbox line
+  - **Without a `tasks/todo.md`,** the session's own task list.
+- **Files changed:** each file created or edited during the step, once.
+- **Commits:** the commits made during the step.
+- **Checks:** each check once, with its latest ✓ or ✗; the title counts the failing ones. Checks are test, lint and validate commands:
+  - `npm test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`
+  - `claude plugin validate|test`
+  - this repo's `run-evals`, `validate-*` and hook tests
 
-Commands and skills outside the workflow (`/model`, `/monitor`, other plugins' skills) aren't shown. Times are relative (`just now`, `4 min ago`) and stay current. Each list keeps its newest 200 entries.
+Each file, commit and check belongs to the step that was current when it happened. Commands and skills aren't listed, since the header already names the one that started the step. Times are relative (`just now`, `4 min ago`) and stay current. Each list keeps its newest 200 entries.
 
-## Look back
+## Other steps
 
-Press a step in the stepper to see what happened while it was the current step: the files created or edited, and its commands, skills, commits and checks. **Back**, or pressing the step again, returns to the current step. On the phone, `/monitor plan` (or any step's name) gives the same view as text.
+Press ✓ Define, ✓ Plan or any started step to see the same view for it. The view shows that step's files, commits and checks, and for Build, its tasks. **Back to Build** (named after the current step) returns, and so does pressing the current step. A step not reached yet isn't a button. On the phone, `/monitor plan` (or any step's name) gives the same view as text.
 
 ## Where it shows
 
 - **Claude Code on your own machine** (the terminal, or a local session in the desktop app's Code tab) draws it as a pane beside the chat.
-- **Where no screen shows panes** (the mobile app, or the desktop app viewing a cloud session), `/monitor` replies with the same panel as text, and `/monitor <step>` with that step's look-back view. Run it again to refresh.
+- **Where no screen shows panes** (the mobile app, or the desktop app viewing a cloud session), `/monitor` replies with the same panel as text, every task group unfolded, and `/monitor <step>` with that step's view. Run it again to refresh.
 
 The pane opens on its own once per session: at session start in a project with a spec or a `tasks/` folder, otherwise on the first agent-skills command or skill. After that, `/monitor` opens it.
 

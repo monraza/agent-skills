@@ -42,6 +42,12 @@ const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 const hasOpened = atom({ plugin: 'monitor', key: 'hasOpened' } as const, false)
 const viewing = atom({ plugin: 'monitor', key: 'viewing' } as const, null)
 const groups = atom({ plugin: 'monitor', key: 'groups' } as const, GROUPS_AT_START, { shape: 'groups-1' })
+const scrollTop = atom({ plugin: 'monitor', key: 'scrollTop' } as const, 0)
+
+// How far the pane's rows can scroll, as of its last drawing: the scroll
+// hook clamps to it. Derived on every draw, so losing it to a reload is
+// harmless.
+let maxTop = 0
 
 const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   activity: await read($, activity),
@@ -141,6 +147,7 @@ export const register: Register = on => {
     }
     await update($, hasOpened, () => true)
     await update($, viewing, () => step)
+    await update($, scrollTop, () => 0)
     const opened = await $.ui.open(PANE)
     if (opened.isPlaced) {
       return { text: step === null ? 'Workflow panel opened.' : `Workflow panel opened on ${PHASE_LABEL[step]}.` }
@@ -199,17 +206,35 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: 'monitor' }, async ($, e) => {
     await read($, tick) // subscribes the drawing, so relative times move on
-    const layout = { columns: e.props.bodyColumns, surface: e.surface }
+    const layout = { columns: e.props.bodyColumns, surface: e.surface, rows: e.props.scroll.bodyRows }
     const data = await sessionData($)
     const current = phaseViewOf(data.activity).active?.phase ?? null
     // Pressing the current step, or the one on show, returns to the current
     // step; any other started or done step shows that step.
+    // Showing another step starts it at the top.
+    const show = async (change: (shown: PhaseId | null) => PhaseId | null) => {
+      await update($, scrollTop, () => 0)
+      await update($, viewing, change)
+    }
     const actions = {
-      onStep: (phase: PhaseId) => void update($, viewing, shown => (phase === shown || phase === current ? null : phase)),
-      onBack: () => void update($, viewing, () => null),
+      onStep: (phase: PhaseId) => void show(shown => (phase === shown || phase === current ? null : phase)),
+      onBack: () => void show(() => null),
       onGroup: (group: GroupId) => void update($, groups, open => ({ ...open, [group]: !open[group] })),
     }
 
-    return drawPane($.ui.resolve(e), sectionsOf(data, await read($, viewing), await read($, groups)), layout, actions)
+    const sections = sectionsOf(data, await read($, viewing), await read($, groups))
+    const drawn = drawPane($.ui.resolve(e), sections, layout, actions, await read($, scrollTop))
+    maxTop = drawn.maxTop
+
+    return drawn.tree
+  })
+
+  // The pane scrolls its own rows under the pinned stepper (SPEC.md, Pane
+  // layout): the engine's window is kept where it is, so it never scrolls
+  // the stepper away, and the drawing moves instead.
+  on('ui.scroll', { component: 'Pane', requestId: 'monitor' }, async ($, e) => {
+    await update($, scrollTop, top => Math.min(Math.max(0, Math.min(top, maxTop) + e.by), maxTop))
+
+    return {}
   })
 }

@@ -120,7 +120,7 @@ Checks · 2, 1 failing
   ✓ claude plugin test                     3 min ago
 ```
 
-- **Stepper.** The six steps on one row, pinned at the top: the rest of the pane scrolls under it.
+- **Stepper.** The six steps on one row, pinned at the top with the step header below it: the rest of the pane scrolls under them.
   - **Colours:** the current step (●) is bold in the theme's accent colour, ✓ is in its success colour, and ○ is dim.
   - **Narrow screens:** at 40 columns or narrower, and on `mobile`, it stacks one step per line.
   - **Buttons:** a step that has started or is done (● or ✓) is a button that shows that step. A step not reached (○) isn't a button.
@@ -342,7 +342,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 19. When Build is the step on show, the panel lists `tasks/todo.md`'s tasks under `Tasks · N of M done`, with ✓ done, ● in progress and ○ to do. With no `tasks/todo.md`, it lists the session's own tasks.
 20. Pressing a started or done step in the stepper shows that step's view: its files, commits and checks, from while it was current, under a header with no `looking back`. A step not reached isn't a button. `Back to <current step>` returns to the current step. `/monitor <step>` gives the same view as text, and an unknown step name gets a reply listing the valid ones.
 21. The tasks show in three groups, in order: `Completed`, `In progress`, `To do`. Each is numbered, and each group folds and unfolds when its name is pressed; `Completed` starts folded. A `tasks/todo.md` written with the planning skill's `## Task N:` headings counts one task per heading, not one per checkbox.
-22. The stepper stays at the top of the pane while the rest scrolls.
+22. The stepper and the step's header (with `Back to <step>`) stay at the top of the pane while the rest scrolls.
 
 ## Out of Scope (Deferred)
 
@@ -375,7 +375,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
     - **Returning:** `Back to <step>` names where it goes. Steps not reached aren't buttons.
     - **Tasks:** they show in foldable groups (`Completed`, `In progress`, `To do`), numbered.
     - **Headings:** a `## Task N:` heading counts as one task.
-    - **Stepper:** it's pinned, because the pane scrolls its own rows under it (`ui.scroll`).
+    - **Stepper:** it's pinned, with the step's header, because the pane scrolls its own rows under them (`ui.scroll`). The header is pinned too, so `Back to <step>` never scrolls away.
 
 ## Open Questions
 

@@ -120,10 +120,10 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [x] Task 17: Read the planning skill's `## Task N:` headings (one task per heading), and keep each task's number
 - [x] Task 18: One view per step: `Files changed`, `Commits` and `Checks` for the step on show; `Back to <step>`; only started or done steps are buttons
 - [x] Task 19: Task groups that fold: `Completed`, `In progress`, `To do`, numbered
-- [ ] Task 20: Pin the stepper: the pane scrolls its own rows under it
+- [x] Task 20: Pin the stepper: the pane scrolls its own rows under it
 
 ### Checkpoint F
-- [ ] Tests, type-check and validate pass (every surface)
+- [x] Tests, type-check and validate pass (125 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
 

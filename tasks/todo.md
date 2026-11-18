@@ -254,13 +254,13 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criteria 19 and 21.
   - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 20: Pin the stepper** · M · Dependencies: 19
+- [x] **Task 20: Pin the stepper** · M · Dependencies: 19
   - **What:** the pane draws the stepper, then only the rows that fit below it. A `ui.scroll` hook moves those rows itself (a `scrollTop` atom) and keeps the engine's window still.
   - **Acceptance:** spec success criterion 22. Scrolling moves the rows and never the stepper, on every surface.
   - **Verify:** the layout tests, and a look on a real screen.
   - **Files:** `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
 ### Checkpoint F
-- [ ] Tests, type-check and validate pass (every surface)
+- [x] Tests, type-check and validate pass (125 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
