@@ -23,7 +23,7 @@ A Claude Code panel that sits beside the chat and shows where the current sessio
 2. Memory lasts for the current session only (`$.state`). Nothing is kept across sessions.
 3. It works on all four surfaces the engine draws for: `terminal`, `desktop`, `vscode`, `mobile`.
 4. It targets the mod API of Claude Code 2.1.326. The API is early access and can change between releases, and the types file is the authority.
-5. The pane opens on its own at session start, and a `/monitor` command reopens it.
+5. The pane opens on its own only where it's relevant (see Opening rules), and `/monitor` opens it any time.
 6. A check "passed" when its Bash call returned without `isError` and wasn't interrupted. This is checked early in the build (see Decisions).
 7. agent-skills names match with or without the `agent-skills:` prefix (`/spec` from this repo's `.claude/commands/`, `agent-skills:spec` when installed as a plugin).
 
@@ -46,6 +46,7 @@ Unmapped commands and skills appear in the activity list but never change the ph
 **Active phase:**
 - Set by the most recent mapped slash command (`command.run`).
 - A mapped skill (`skill.prompt`) sets it only when the skill fires in a turn that didn't start with a mapped command. For example, `/test` followed by test-driven-development firing in the same turn stays in Verify.
+- **Evidence is always shown.** The active phase is a guess from the last command or skill, so the pane says what set it and when, e.g. `Build · since /build 12:03` or `Build · since skill test-driven-development 12:07`. When nothing has set a phase yet, it says `No phase yet`, with no guess.
 
 **Phase states:** `todo`, `active`, `visited` (was active earlier this session) or `done`. `done` comes from files in the session's working directory:
 - **Define is done** when a spec exists at one of the paths `/build` accepts: `SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md`, or a file under `spec/`.
@@ -54,6 +55,15 @@ Unmapped commands and skills appear in the activity list but never change the ph
 - **Verify, Review and Ship** have no file to read, so they are only ever `todo`, `active` or `visited`.
 
 **Freshness:** these files are read at session start, at each turn start, and after any Edit, Write or NotebookEdit call whose path is one of them.
+
+### Opening rules
+
+Tracking starts at session start whether or not the pane is open, so opening it later shows the whole session.
+
+- **At session start**, the pane opens on its own only when the working directory has a spec at one of the known paths or a `tasks/` folder.
+- **Otherwise**, it opens on its own the first time a command or skill from the phase table runs, including the phase-less ones.
+- **At most once per session.** After you close it, nothing reopens it except `/monitor`.
+- **`/monitor`** opens it any time, in any project.
 
 ### What's tracked
 
@@ -74,6 +84,7 @@ Each list keeps its newest 200 entries.
 ```
 Workflow
 ✓ Define  ✓ Plan  ◉ Build 3/7  · Verify  ○ Review  ○ Ship
+Build · since /build 12:03
 
 Tasks      todo.md 3/7 done · session 2/4 done
 Activity   12:05 skill spec-driven-development
@@ -124,6 +135,7 @@ mods/monitor/
   hooks/classify.ts            → check-command matching, commit-output parsing, path relativising (pure)
   hooks/view.tsx               → the pane's drawing, per surface and width
   hooks/*.test.ts(x)           → claude plugin test suites
+  hooks/fixtures/live-events.ts → event inputs and results recorded in the live check, trimmed to the fields the mod reads
   types/index.d.ts             → PluginState contract for every $.state value
   tsconfig.json                → extends .claude-plugin/types/tsconfig.json
   README.md                    → what it shows, install line, how to try it
@@ -169,6 +181,16 @@ Naming: atoms are named for what they hold (`activity`, `files`, `checks`), and 
 ## Testing Strategy
 
 All automated tests run under `claude plugin test`, importing `test`, `expect` and `mock` from `claude-code/testing`.
+
+- **Live event check (first, before any integration test):** `claude plugin test` stands in for Claude Code with events we write ourselves, so their shapes must come from the real engine, not from guesses.
+  - Load a throwaway probe mod in a real session. It is never committed and lives in the session's mods folder.
+  - Record what the engine really sends when we:
+    - run `/spec` and `/monitor` (also showing whether `/monitor` clashes with an existing command)
+    - let an agent-skills skill fire through the Skill tool
+    - run a passing and a failing Bash command
+    - make a `git commit`
+    - create and update a session task, and edit a file
+  - Save the records, trimmed to the fields the mod reads, in `hooks/fixtures/live-events.ts`. Integration tests build their events from these records.
 
 - **Unit (pure modules):**
   - every row of the phase table, with and without the `agent-skills:` prefix
@@ -219,10 +241,12 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 8. A matching check command appears with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. A Bash command that isn't a check doesn't appear.
 9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the session tasks' done/total.
 10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, the phase row stacks.
-11. The pane opens at session start, and `/monitor` reopens it after it's closed.
+11. In a directory with `SPEC.md` or `tasks/`, the pane opens at session start. In a directory with neither, it stays closed until a phase-table command or skill runs, then opens once. After it's closed, only `/monitor` reopens it, and `/monitor` works in any directory. Opening it late still shows everything since session start.
 12. After a mod reload, the session's data is still shown. A stored value of an older shape is dropped without error.
 13. For every hooked event, the returned result equals the engine's (pass-through test).
 14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
+15. The active phase always shows the command or skill that set it and its time. With nothing set yet, the pane shows `No phase yet`.
+16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
 
 ## Out of Scope (Deferred)
 
@@ -238,9 +262,9 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 
 ## Decisions
 
-1. **Bash pass/fail: test during the build.** Before the Checks section relies on `isError`, the build confirms in a live session that a non-zero exit sets it. If it doesn't, Checks show ran/interrupted only, and pass/fail moves to Deferred.
-2. **Matching session tasks: test during the build.** Before session tasks rely on it, the build confirms that a `TaskCreate` result carries the new task's id. If it doesn't, session tasks come from `TodoWrite` lists and `TaskList` results instead.
-3. **Name: `monitor`.** The slash command is `/monitor`, and the mod and its folder are named `monitor` too.
+1. **Bash pass/fail: settled by the live event check.** Before the Checks section relies on `isError`, the live check confirms that a non-zero exit sets it. If it doesn't, Checks show ran/interrupted only, and pass/fail moves to Deferred.
+2. **Matching session tasks: settled by the live event check.** Before session tasks rely on it, the live check confirms that a `TaskCreate` result carries the new task's id. If it doesn't, session tasks come from `TodoWrite` lists and `TaskList` results instead.
+3. **Name: `monitor`.** The slash command is `/monitor`, and the mod and its folder are named `monitor` too. If the live check shows that `/monitor` clashes with an existing command, the build stops and asks for another name.
 4. **Sync conflicts: accepted for now.** The entry stays in the shared `.claude-plugin/marketplace.json`, and any conflict is resolved at sync time.
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
 
