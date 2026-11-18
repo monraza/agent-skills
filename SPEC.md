@@ -6,7 +6,7 @@ A Claude Code panel that sits beside the chat and shows where the current sessio
 
 **User:** someone using the agent-skills commands and skills in Claude Code, in the terminal, desktop app, VS Code or the mobile app. Today they have to scroll the transcript to see which phase they're in, which tasks remain, what changed, and whether checks passed.
 
-**What it is:** a Claude Code mod (a function-hooks plugin) named `workflow-panel`. It lives in its own folder in this fork and is listed in the fork's marketplace file. It only watches and displays. It never changes, blocks or delays anything the session does.
+**What it is:** a Claude Code mod (a function-hooks plugin) named `monitor`. It lives in its own folder in this fork and is listed in the fork's marketplace file. It only watches and displays. It never changes, blocks or delays anything the session does.
 
 **User stories**
 
@@ -98,11 +98,11 @@ Checks     ✓ run-evals 12:10   ✗ npm test 12:08
 ## Commands
 
 ```
-Validate:    claude plugin validate mods/workflow-panel
-Type-check:  tsc -p mods/workflow-panel      # after the engine has loaded the mod once and written .claude-plugin/types/
-Test:        claude plugin test mods/workflow-panel
-Try it:      claude --plugin-dir ./mods/workflow-panel
-Install:     /plugin install workflow-panel --marketplace monraza/agent-skills   # once on the fork's main
+Validate:    claude plugin validate mods/monitor
+Type-check:  tsc -p mods/monitor      # after the engine has loaded the mod once and written .claude-plugin/types/
+Test:        claude plugin test mods/monitor
+Try it:      claude --plugin-dir ./mods/monitor
+Install:     /plugin install monitor --marketplace monraza/agent-skills   # once on the fork's main
 
 Repo checks that must stay green:
              node scripts/validate-skills.js
@@ -114,7 +114,7 @@ Repo checks that must stay green:
 ## Project Structure
 
 ```
-mods/workflow-panel/
+mods/monitor/
   .claude-plugin/plugin.json   → name, version, description, "types": "./types/index.d.ts"
   .claude-plugin/types/        → written by the engine on load; gitignored by the engine
   hooks/hooks.json             → { "modules": ["./register.tsx"] }
@@ -127,7 +127,7 @@ mods/workflow-panel/
   types/index.d.ts             → PluginState contract for every $.state value
   tsconfig.json                → extends .claude-plugin/types/tsconfig.json
   README.md                    → what it shows, install line, how to try it
-.claude-plugin/marketplace.json → adds one entry: { "name": "workflow-panel", "source": "./mods/workflow-panel" }, after agent-skills
+.claude-plugin/marketplace.json → adds one entry: { "name": "monitor", "source": "./mods/monitor" }, after agent-skills
 ```
 
 Nothing under `skills/`, `.claude/commands/`, `hooks/` (the repo's shell hooks) or the agent-skills `plugin.json` changes.
@@ -193,7 +193,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
   - keep all state in `$.state` under the declared contract
   - run validate, type-check and test before each commit
   - keep the repo's existing checks green
-  - keep the mod self-contained in `mods/workflow-panel/`
+  - keep the mod self-contained in `mods/monitor/`
 - **Ask first:**
   - adding a `package.json` or any npm dependency
   - changing CI workflows (e.g. adding the mod's tests to CI)
@@ -222,7 +222,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 11. The pane opens at session start, and `/monitor` reopens it after it's closed.
 12. After a mod reload, the session's data is still shown. A stored value of an older shape is dropped without error.
 13. For every hooked event, the returned result equals the engine's (pass-through test).
-14. `claude plugin validate mods/workflow-panel`, `tsc -p mods/workflow-panel` and `claude plugin test mods/workflow-panel` all pass. The four repo checks under Commands still pass.
+14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
 
 ## Out of Scope (Deferred)
 
@@ -240,7 +240,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 
 1. **Bash pass/fail: test during the build.** Before the Checks section relies on `isError`, the build confirms in a live session that a non-zero exit sets it. If it doesn't, Checks show ran/interrupted only, and pass/fail moves to Deferred.
 2. **Matching session tasks: test during the build.** Before session tasks rely on it, the build confirms that a `TaskCreate` result carries the new task's id. If it doesn't, session tasks come from `TodoWrite` lists and `TaskList` results instead.
-3. **Command name: `/monitor`.** The mod and folder keep the name `workflow-panel`.
+3. **Name: `monitor`.** The slash command is `/monitor`, and the mod and its folder are named `monitor` too.
 4. **Sync conflicts: accepted for now.** The entry stays in the shared `.claude-plugin/marketplace.json`, and any conflict is resolved at sync time.
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
 
