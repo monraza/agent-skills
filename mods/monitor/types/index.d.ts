@@ -28,6 +28,10 @@ export type Commit = { sha: string; subject: string }
 
 export type Check = { at: number; label: string; ok: boolean }
 
+export type TaskStatus = 'pending' | 'in_progress' | 'completed'
+
+export type SessionTask = { id: string; subject: string; status: TaskStatus }
+
 declare module 'claude-code' {
   interface PluginState {
     monitor: {
@@ -37,6 +41,7 @@ declare module 'claude-code' {
       files: Shaped<string[]>
       commits: Shaped<Commit[]>
       checks: Shaped<Check[]>
+      tasks: Shaped<SessionTask[]>
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

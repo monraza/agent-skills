@@ -9,7 +9,7 @@ const MINUTE = 60_000
 
 describe('sections', () => {
   test('an empty session lists the six phases, no phase yet, and no activity', () => {
-    expect(sectionsOf({ activity: [], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], now: 0 })).toEqual([
+    expect(sectionsOf({ activity: [], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], tasks: [], now: 0 })).toEqual([
       {
         key: 'phase',
         title: null,
@@ -23,6 +23,7 @@ describe('sections', () => {
           { text: 'No phase yet', isDim: true },
         ],
       },
+      { key: 'tasks', title: null, lines: [{ text: 'No tasks yet.', isDim: true }] },
       { key: 'activity', title: null, lines: [{ text: 'No activity yet.', isDim: true }] },
       { key: 'files', title: null, lines: [{ text: 'No files changed yet.', isDim: true }] },
       { key: 'commits', title: null, lines: [{ text: 'No commits yet.', isDim: true }] },
@@ -32,7 +33,7 @@ describe('sections', () => {
 
   test('activity is newest first, with phase and age', () => {
     const activity = [commandEntry('spec', 0), commandEntry('compact', 2 * MINUTE)]
-    const [, section] = sectionsOf({ activity, artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], now: 5 * MINUTE })
+    const [, , section] = sectionsOf({ activity, artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], tasks: [], now: 5 * MINUTE })
 
     expect(section).toEqual({
       key: 'activity',

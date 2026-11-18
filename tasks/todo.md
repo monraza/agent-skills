@@ -100,7 +100,7 @@ Every task, before it's checked off:
     - Integration: fixture passing and failing Bash events → ✓ and ✗ rows.
   - **Files:** `hooks/classify.ts`, `hooks/classify.test.ts`, `hooks/register.tsx`, `hooks/view.tsx`
 
-- [ ] **Task 7: Session tasks** · S · Dependencies: 2, and Decision 2
+- [x] **Task 7: Session tasks** · S · Dependencies: 2, and Decision 2
   - **Acceptance:**
     - Spec success criterion 9 passes using the source Decision 2 settled on: `TaskCreate` ids, or `TodoWrite` / `TaskList`.
     - The Tasks line shows both counts: `todo.md 3/7 done · session 2/4 done`.

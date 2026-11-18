@@ -1,7 +1,8 @@
-import type { ActivityEntry, Artifacts, Check, Commit, PhaseId } from '../types'
+import type { ActivityEntry, Artifacts, Check, Commit, PhaseId, SessionTask } from '../types'
 
 import { doneFrom } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
+import { taskCounts } from './tasks'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
 // the pane (view.tsx) and /monitor's text (summary.ts) never disagree.
@@ -18,6 +19,7 @@ export type SessionData = {
   files: readonly string[]
   commits: readonly Commit[]
   checks: readonly Check[]
+  tasks: readonly SessionTask[]
   now: number
 }
 
@@ -95,8 +97,21 @@ const checksSection = ({ checks, now }: SessionData): Section =>
         })),
       }
 
+const tasksSection = ({ artifacts, tasks }: SessionData): Section => {
+  const session = taskCounts(tasks)
+  const parts = [
+    artifacts.todo === null ? null : `todo.md ${artifacts.todo.done}/${artifacts.todo.total} done`,
+    tasks.length === 0 ? null : `session ${session.done}/${session.total} done`,
+  ].filter(part => part !== null)
+
+  return parts.length === 0
+    ? { key: 'tasks', title: null, lines: empty('No tasks yet.') }
+    : { key: 'tasks', title: 'Tasks', lines: [{ text: parts.join(' · '), isDim: false }] }
+}
+
 export const sectionsOf = (data: SessionData): Section[] => [
   phaseSection(data),
+  tasksSection(data),
   activitySection(data),
   filesSection(data),
   commitsSection(data),

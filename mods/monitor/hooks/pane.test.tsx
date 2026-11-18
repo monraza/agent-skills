@@ -30,6 +30,7 @@ const EMPTY_SUMMARY = [
   '○ Ship',
   'No phase yet',
   '',
+  'No tasks yet.',
   'No activity yet.',
   'No files changed yet.',
   'No commits yet.',

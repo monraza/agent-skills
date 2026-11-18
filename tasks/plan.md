@@ -66,7 +66,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [x] Task 4: Done marks and Build progress from SPEC / plan / todo
 - [x] Task 5: Files changed and commits
 - [x] Task 6: Checks with pass/fail
-- [ ] Task 7: Session tasks
+- [x] Task 7: Session tasks
 
 ### Checkpoint B: Core sections
 - [ ] validate, tsc and test pass

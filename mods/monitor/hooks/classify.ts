@@ -2,7 +2,7 @@ import type { Check, Commit } from '../types'
 
 // Pure: no `$`, no I/O. What a tool call's result means for the panel.
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 // A successful `git commit` result carries `result.gitOperation.commit.sha`

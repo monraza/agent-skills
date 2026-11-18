@@ -9,6 +9,7 @@ import { NEW_TURN, afterCommand, afterTurnStart, commandEntry, isOwnExpansion, s
 import { sectionsOf } from './sections'
 import type { SessionData } from './sections'
 import { summaryOf } from './summary'
+import { taskCreated, taskUpdated, todosWritten } from './tasks'
 import { drawPane } from './view'
 
 const PANE = { id: 'monitor', title: 'Workflow' } as const
@@ -21,6 +22,7 @@ const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTI
 const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-1' })
 const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-1' })
 const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
+const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-1' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 
@@ -30,6 +32,7 @@ const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   files: await read($, files),
   commits: await read($, commits),
   checks: await read($, checks),
+  tasks: await read($, tasks),
   now: await $.clock.now(),
 })
 
@@ -136,6 +139,9 @@ export const register: Register = on => {
       const check = checkOf(e.command, ran, await $.clock.now())
       if (check !== null) await update($, checks, list => [...list, check])
     }
+    if (e.tool === 'TaskCreate') await update($, tasks, list => taskCreated(list, ran))
+    if (e.tool === 'TaskUpdate') await update($, tasks, list => taskUpdated(list, e, ran))
+    if (e.tool === 'TodoWrite' && ran.isError !== true) await update($, tasks, () => todosWritten(e.todos))
 
     return ran
   })
