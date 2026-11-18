@@ -72,7 +72,7 @@ Tracking starts at session start whether or not the pane is open, so opening it 
 | Activity | `command.run`, `skill.prompt` | time, kind, name, phase (if mapped) |
 | Tasks | `tasks/todo.md`; `TodoWrite`, `TaskCreate`, `TaskUpdate` tool calls | file counts; session task subject and status |
 | Files changed | `Edit`, `Write`, `NotebookEdit` tool calls | path relative to the working directory, once each |
-| Commits | successful Bash calls containing `git commit` | short hash and subject parsed from the commit's output |
+| Commits | Bash results carrying `gitOperation.commit` | short hash from `gitOperation`, subject from the commit's output line |
 | Checks | Bash calls matching the check list below | time, label, pass/fail |
 
 **Check commands (V1, built in):** `npm test` / `npm run test` / `npm run lint`, `node scripts/run-evals.js`, `node scripts/validate-*.js`, `bash hooks/*-test.sh`, `claude plugin validate|test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`.
@@ -262,11 +262,12 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 
 ## Decisions
 
-1. **Bash pass/fail: settled by the live event check.** Before the Checks section relies on `isError`, the live check confirms that a non-zero exit sets it. If it doesn't, Checks show ran/interrupted only, and pass/fail moves to Deferred.
-2. **Matching session tasks: settled by the live event check.** Before session tasks rely on it, the live check confirms that a `TaskCreate` result carries the new task's id. If it doesn't, session tasks come from `TodoWrite` lists and `TaskList` results instead.
-3. **Name: `monitor`.** The slash command is `/monitor`, and the mod and its folder are named `monitor` too. If the live check shows that `/monitor` clashes with an existing command, the build stops and asks for another name.
+1. **Bash pass/fail: confirmed (live check, 2026-11-18).** A non-zero exit sets `isError: true` on the tool.call result, and a zero exit has no `isError` key. ✓/✗ stays as specified.
+2. **Matching session tasks: confirmed (live check).** `TaskCreate`'s result carries the new id at `result.task.id`, and `TaskUpdate`'s carries `taskId` and `statusChange`. Session tasks are matched by id.
+3. **Name: `monitor`, no clash (live check).** The slash command is `/monitor`, and the mod and its folder are named `monitor` too. The live command list has no `monitor`.
 4. **Sync conflicts: accepted for now.** The entry stays in the shared `.claude-plugin/marketplace.json`, and any conflict is resolved at sync time.
 5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
+6. **Commit hash from the engine (live check).** A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
 
 ## Open Questions
 

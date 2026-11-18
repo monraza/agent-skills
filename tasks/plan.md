@@ -20,6 +20,7 @@ Build `monitor`, a read-only Claude Code mod in `mods/monitor/`. Its pane shows 
   - The session hot-reloads only its own mods folder (`/root/.claude/dev-mods/<session>/`), not the repo.
   - Task 1 tests whether a symlink from there to `mods/monitor/` is followed. If not, each live check copies the folder there first, leaving out `.claude-plugin/types/`.
   - If the symlink works, the engine also writes `.claude-plugin/types/` into the repo folder, which `tsc -p mods/monitor` needs. Otherwise type-checking uses the types file's header `tsconfig.json`, kept in the scratchpad.
+  - **Result (Task 1):** a symlink from the session's mods folder is followed, and the linked mod loaded. Live checks use `ln -s /home/user/agent-skills/mods/monitor <mods folder>/monitor`.
 - **Commit after every task**, because the container and the session's mods folder are temporary.
 
 ## Dependency Graph
