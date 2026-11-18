@@ -5,9 +5,9 @@ import type { Section } from './sections'
 
 const blockOf = ({ key, title, lines }: Section): string[] => {
   if (key === 'stepper') return [lines.map(line => line.text).join(' ─ ')]
-  const body = lines.map(line => (line.time === undefined ? line.text : `  ${line.text} · ${line.time}`))
+  if (title === null) return lines.map(line => line.text)
 
-  return title === null ? body : [title, ...body]
+  return [title, ...lines.map(line => `  ${line.text}${line.time === undefined ? '' : ` · ${line.time}`}`)]
 }
 
 export const summaryOf = (sections: readonly Section[]): string =>

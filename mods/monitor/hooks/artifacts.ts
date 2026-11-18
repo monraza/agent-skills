@@ -1,19 +1,35 @@
-import type { Artifacts, PhaseId, TodoCount } from '../types'
+import type { Artifacts, PhaseId, TodoCount, TodoTask } from '../types'
 
 // Pure: no `$`, no I/O. What the spec, plan and todo files mean for the
 // phases (SPEC.md, Phase rules). register.tsx reads the files.
 
-export const NO_ARTIFACTS: Artifacts = { hasSpec: false, hasPlan: false, todo: null }
+export const NO_ARTIFACTS: Artifacts = { hasSpec: false, hasPlan: false, todo: null, todoTasks: [] }
 
 export const PLAN_PATH = 'tasks/plan.md'
 export const TODO_PATH = 'tasks/todo.md'
 
-const TODO_ITEM = /^\s*[-*+]\s+\[([ xX])\]\s/
+const TODO_ITEM = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/
+
+// The todo's tasks: its checkbox items whose text starts with `Task`, or
+// every checkbox item when none does. A title loses its ** and is cut at
+// ' · ', where this repo's task lines start their size and dependencies.
+export const todoTasksOf = (text: string): TodoTask[] => {
+  const items = text.split('\n').flatMap(line => {
+    const match = line.match(TODO_ITEM)
+    if (match === null) return []
+    const title = (match[2] ?? '').replaceAll('**', '').split(' · ')[0]?.trim() ?? ''
+
+    return [{ title, done: match[1] !== ' ' }]
+  })
+  const tasks = items.filter(item => /^task\b/i.test(item.title))
+
+  return tasks.length > 0 ? tasks : items
+}
 
 export const countTodo = (text: string): TodoCount => {
-  const marks = text.split('\n').flatMap(line => line.match(TODO_ITEM)?.[1] ?? [])
+  const tasks = todoTasksOf(text)
 
-  return { done: marks.filter(mark => mark !== ' ').length, total: marks.length }
+  return { done: tasks.filter(task => task.done).length, total: tasks.length }
 }
 
 const ROOT_SPEC = /^SPEC(-[^/]+)?\.md$/

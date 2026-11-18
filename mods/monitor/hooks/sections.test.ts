@@ -47,27 +47,69 @@ describe('the blocks', () => {
     ])
   })
 
-  test('the current step: its name and number, what started it, and in Build the todo count', () => {
+  test('the current step: its name and what started it, with no step number', () => {
+    const data = { ...EMPTY, activity: [commandEntry('spec', 0)], now: 4 * MINUTE }
+
+    expect(block(data, 'current')?.lines).toEqual([
+      { text: 'DEFINE', tone: 'current' },
+      { text: 'started by /spec · 4 min ago', tone: 'muted' },
+    ])
+  })
+
+  test("while Build is current, the todo's tasks: ✓ done, ▸ the first open one, ○ the rest", () => {
     const data = {
       ...EMPTY,
       activity: [commandEntry('spec', 0), commandEntry('build', MINUTE)],
-      artifacts: { hasSpec: true, hasPlan: false, todo: { done: 3, total: 7 } },
+      artifacts: {
+        ...NO_ARTIFACTS,
+        hasSpec: true,
+        todo: { done: 1, total: 3 },
+        todoTasks: [
+          { title: 'Task 1: Parser', done: true },
+          { title: 'Task 2: Wiring', done: false },
+          { title: 'Task 3: Docs', done: false },
+        ],
+      },
       now: 5 * MINUTE,
     }
 
     expect(block(data, 'stepper')?.lines.map(line => line.text)).toEqual([
       '✓ Define',
       '○ Plan',
-      '● Build 3/7',
+      '● Build 1/3',
       '○ Verify',
       '○ Review',
       '○ Ship',
     ])
-    expect(block(data, 'current')?.lines).toEqual([
-      { text: 'BUILD · step 3 of 6', tone: 'current' },
-      { text: 'started by /build · 4 min ago', tone: 'muted' },
-      { text: '3 of 7 tasks checked in tasks/todo.md', tone: 'normal' },
-    ])
+    expect(block(data, 'tasks')).toEqual({
+      key: 'tasks',
+      title: 'Tasks · 1 of 3 done',
+      lines: [
+        { text: '✓ Task 1: Parser', tone: 'done' },
+        { text: '▸ Task 2: Wiring', tone: 'current' },
+        { text: '○ Task 3: Docs', tone: 'muted' },
+      ],
+    })
+  })
+
+  test("without a todo, Build lists the session's own tasks", () => {
+    const data: SessionData = {
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      tasks: [
+        { id: '1', subject: 'Write the test', status: 'completed' },
+        { id: '2', subject: 'Make it pass', status: 'in_progress' },
+      ],
+    }
+
+    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['✓ Write the test', '▸ Make it pass'])
+  })
+
+  test('the task list is only shown while Build is current', () => {
+    const artifacts = { ...NO_ARTIFACTS, todo: { done: 0, total: 1 }, todoTasks: [{ title: 'Task 1', done: false }] }
+
+    expect(block({ ...EMPTY, artifacts, activity: [commandEntry('plan', 0)] }, 'tasks')).toBeUndefined()
+    expect(block({ ...EMPTY, artifacts }, 'tasks')).toBeUndefined()
   })
 
   test('a step the session has been through shows ✓', () => {
@@ -157,7 +199,7 @@ describe('the text summary', () => {
         'Workflow',
         '○ Define ─ ○ Plan ─ ● Build ─ ○ Verify ─ ○ Review ─ ○ Ship',
         '',
-        'BUILD · step 3 of 6',
+        'BUILD',
         'started by /build · 4 min ago',
         '',
         'Recent',

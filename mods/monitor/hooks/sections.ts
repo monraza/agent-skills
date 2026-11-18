@@ -63,7 +63,7 @@ const stepperSection = ({ activity, artifacts }: SessionData): Section => {
   return { key: 'stepper', title: null, lines }
 }
 
-const currentSection = ({ activity, artifacts, now }: SessionData): Section => {
+const currentSection = ({ activity, now }: SessionData): Section => {
   const { active } = phaseViewOf(activity)
   if (active === null) {
     return {
@@ -75,16 +75,37 @@ const currentSection = ({ activity, artifacts, now }: SessionData): Section => {
       ],
     }
   }
-  const step = PHASES.indexOf(active.phase) + 1
-  const lines: Line[] = [
-    { text: `${PHASE_LABEL[active.phase].toUpperCase()} · step ${step} of ${PHASES.length}`, tone: 'current' },
-    { text: `started by ${labelOf(active)} · ${ago(active.at, now)}`, tone: 'muted' },
-  ]
-  if (active.phase === 'build' && artifacts.todo !== null) {
-    lines.push({ text: `${artifacts.todo.done} of ${artifacts.todo.total} tasks checked in tasks/todo.md`, tone: 'normal' })
+  return {
+    key: 'current',
+    title: null,
+    lines: [
+      { text: PHASE_LABEL[active.phase].toUpperCase(), tone: 'current' },
+      { text: `started by ${labelOf(active)} · ${ago(active.at, now)}`, tone: 'muted' },
+    ],
   }
+}
 
-  return { key: 'current', title: null, lines }
+// Build is the densest step, so while it's current the panel lists its
+// tasks: the todo's, or the session's own when there's no todo. ✓ done,
+// ▸ the first open task (next up), ○ the rest.
+const tasksSection = ({ activity, artifacts, tasks }: SessionData): Section | null => {
+  if (phaseViewOf(activity).active?.phase !== 'build') return null
+  const list =
+    artifacts.todo !== null
+      ? artifacts.todoTasks
+      : tasks.map(task => ({ title: task.subject, done: task.status === 'completed' }))
+  if (list.length === 0) return null
+  const next = list.findIndex(task => !task.done)
+  const lines = list.map(({ title, done }, index): Line =>
+    done
+      ? { text: `✓ ${title}`, tone: 'done' }
+      : index === next
+        ? { text: `▸ ${title}`, tone: 'current' }
+        : { text: `○ ${title}`, tone: 'muted' },
+  )
+  const doneCount = list.filter(task => task.done).length
+
+  return { key: 'tasks', title: `Tasks · ${doneCount} of ${list.length} done`, lines }
 }
 
 // Commands and skills outside the phase table (/model, /monitor, other
@@ -127,6 +148,6 @@ const totalsSection = ({ files, commits, checks, tasks }: SessionData): Section 
 }
 
 export const sectionsOf = (data: SessionData): Section[] =>
-  [stepperSection(data), currentSection(data), recentSection(data), totalsSection(data)].filter(
+  [stepperSection(data), currentSection(data), tasksSection(data), recentSection(data), totalsSection(data)].filter(
     (section): section is Section => section !== null,
   )

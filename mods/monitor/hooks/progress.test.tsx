@@ -169,3 +169,21 @@ test('tool.call passes through unchanged', async ($, on) => {
 
   expect(await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/todo.md` })).toEqual(edit.result)
 })
+
+test("once Build starts, the todo's tasks are listed with the next one marked", async ($, on) => {
+  mock.clock(on)
+  fakeRepo(on, fullRepo())
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.command.run({ ...typedCommand.commandRun, command: 'build', args: '' })
+  await $.turn.start({ ...typedCommand.turnStart, turnId: 'turn-build' })
+
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown).toContain('● Build 3/7')
+  expect(shown).toContain('Tasks · 3 of 7 done')
+  expect(shown).toContain('✓ task 3')
+  expect(shown).toContain('▸ task 4')
+  expect(shown).toContain('○ task 7')
+  await ui.unmount()
+})

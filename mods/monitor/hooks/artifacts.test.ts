@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { NO_ARTIFACTS, countTodo, doneFrom, hasSpecIn, isTrackedPath, relativeTo } from './artifacts'
+import { NO_ARTIFACTS, countTodo, doneFrom, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
 
 describe('todo counting', () => {
   test('counts checkbox items, nested or not, and ignores other lines', () => {
@@ -22,6 +22,37 @@ describe('todo counting', () => {
 
   test('an empty file has no items', () => {
     expect(countTodo('')).toEqual({ done: 0, total: 0 })
+  })
+
+  test("counts only the 'Task' lines when there are any, so checkpoint items don't count", () => {
+    const text = ['- [x] **Task 1: One** · S', '- [ ] Task 2: Two', '### Checkpoint', '- [x] Tests pass', '- [ ] Human review'].join('\n')
+
+    expect(countTodo(text)).toEqual({ done: 1, total: 2 })
+  })
+})
+
+describe('todo task lines', () => {
+  test("keep each 'Task' line's title, without ** and cut at ' · ', and whether it's done", () => {
+    const text = [
+      '# Tasks',
+      '- [x] **Task 1: Live event check** · S · Dependencies: none',
+      '  - **What:** a probe',
+      '- [ ] Task 2: Mod skeleton',
+      '### Checkpoint A',
+      '- [x] validate, tsc and test pass',
+    ].join('\n')
+
+    expect(todoTasksOf(text)).toEqual([
+      { title: 'Task 1: Live event check', done: true },
+      { title: 'Task 2: Mod skeleton', done: false },
+    ])
+  })
+
+  test("without any 'Task' lines, every checkbox item is a task", () => {
+    expect(todoTasksOf('- [x] write the parser\n- [ ] wire it up')).toEqual([
+      { title: 'write the parser', done: true },
+      { title: 'wire it up', done: false },
+    ])
   })
 })
 
@@ -72,7 +103,7 @@ describe('done marks', () => {
       review: false,
       ship: false,
     })
-    const files = { hasSpec: true, hasPlan: true, todo: { done: 7, total: 7 } }
+    const files = { ...NO_ARTIFACTS, hasSpec: true, hasPlan: true, todo: { done: 7, total: 7 } }
     expect(doneFrom(files)).toEqual({ define: true, plan: true, build: true, verify: false, review: false, ship: false })
   })
 

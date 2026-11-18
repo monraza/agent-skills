@@ -45,7 +45,7 @@ test('a typed /spec makes Define the current step, shows one Recent row, and its
 
   const ui = await $.ui.mount(PANE)
   expect(await texts(ui)).toContain('● Define')
-  expect(await texts(ui)).toContain('DEFINE · step 1 of 6')
+  expect(await texts(ui)).toContain('DEFINE')
   expect(await texts(ui)).toContain('started by /spec · just now')
   // The command's own skill event is not a second row.
   expect((await texts(ui)).filter(text => text === '/spec')).toEqual(['/spec'])
@@ -96,7 +96,7 @@ test('/test then test-driven-development in the same turn leaves Verify current'
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('VERIFY · step 4 of 6')
+  expect(shown).toContain('VERIFY')
   expect(shown).toContain('started by /test · just now')
   expect(shown).toContain('skill test-driven-development')
   await ui.unmount()
@@ -126,7 +126,7 @@ test("/monitor's text summary shows the same step and Recent", async ($, on) => 
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
   expect(out.text).toContain('● Define ─ ○ Plan')
-  expect(out.text).toContain('\nDEFINE · step 1 of 6\nstarted by /spec · just now\n')
+  expect(out.text).toContain('\nDEFINE\nstarted by /spec · just now\n')
   expect(out.text).toContain('\nRecent\n  /spec · just now\n')
 })
 

@@ -202,7 +202,7 @@ Every task, before it's checked off:
 
 ## Phase 5: Build's tasks and looking back (spec Decision 11)
 
-- [ ] **Task 14: Build's task list** · M · Dependencies: 13
+- [x] **Task 14: Build's task list** · M · Dependencies: 13
   - **What:**
     - Reading `tasks/todo.md` also keeps its task lines, title and done (artifacts shape 2).
     - While Build is current, the panel lists them with ✓, ▸ (the first open task) and ○, under `Tasks · N of M done`. It falls back to the session's tasks when there's no todo.

@@ -77,7 +77,7 @@ test('a full session draws on every surface at both widths', async ($, on) => {
       const shown = await texts(ui)
       for (const text of [
         '● Define',
-        'DEFINE · step 1 of 6',
+        'DEFINE',
         'started by /spec · just now',
         'edited notes.md',
         'committed 298bd7b probe: first commit',
@@ -146,7 +146,7 @@ test('the pane is drawn with hierarchy and the theme colors, on every surface', 
     const ui = await $.ui.mount(paneAt(surface, WIDE))
     const props = async (text: string) => (await ui.find({ type: 'Text', text }))?.props ?? {}
 
-    expect(await props('DEFINE · step 1 of 6')).toMatchObject({ size: 'heading', weight: 'bold', color: 'claude' })
+    expect(await props('DEFINE')).toMatchObject({ size: 'heading', weight: 'bold', color: 'claude' })
     expect(await props('● Define')).toMatchObject({ weight: 'bold', color: 'claude' })
     expect(await props('○ Plan')).toMatchObject({ dimColor: true })
     expect(await props('✗ tsc')).toMatchObject({ color: 'error' })

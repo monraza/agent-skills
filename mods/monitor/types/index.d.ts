@@ -17,11 +17,16 @@ export type Turn = {
 
 export type TodoCount = { done: number; total: number }
 
-// What the working directory's files say: counts and flags, never contents.
+// One task line of tasks/todo.md: its title and whether it's checked.
+export type TodoTask = { title: string; done: boolean }
+
+// What the working directory's files say: flags, counts, and the todo's task
+// lines (the only file text kept, for Build's task list).
 export type Artifacts = {
   hasSpec: boolean
   hasPlan: boolean
   todo: TodoCount | null
+  todoTasks: TodoTask[]
 }
 
 export type Commit = { sha: string; subject: string; at: number }
