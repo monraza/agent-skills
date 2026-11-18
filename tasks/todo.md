@@ -111,7 +111,7 @@ Every task, before it's checked off:
 ### Checkpoint B
 - [x] validate, tsc and test pass (71 tests)
 - [x] Live run, in this session, through `/monitor` on the phone. Between reloads it showed the done marks and Build count, a changed file, a commit and a passing check. A quiet commit (`-q`) isn't listed. A reload of the mod's code wiped the session's data.
-- [x] Human review: reloads accepted for V1 (spec Decision 9)
+- [x] Human review: reloads accepted for V1 (spec Decision 9; corrected in Task 10: only a fresh load empties the panel)
 
 ## Phase 3: Behaviour and polish
 
@@ -136,7 +136,7 @@ Every task, before it's checked off:
     - Integration: mount on `terminal`, `desktop`, `vscode` and `mobile`, at wide and ≤40 columns, with a full and an empty session.
   - **Files:** `hooks/view.tsx`, `hooks/layout.test.tsx`
 
-- [ ] **Task 10: Reload, old state shapes and caps** · S · Dependencies: 3–7
+- [x] **Task 10: Reload, old state shapes and caps** · S · Dependencies: 3–7
   - **Acceptance:**
     - Spec success criterion 12 passes.
     - Each list keeps its newest 200 entries.

@@ -278,7 +278,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the session tasks' done/total.
 10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, the phase row stacks.
 11. In a directory with `SPEC.md` or `tasks/`, the pane opens at session start. In a directory with neither, it stays closed until a phase-table command or skill runs, then opens once. After it's closed, only `/monitor` reopens it, and `/monitor` works in any directory. Opening it late still shows everything since session start.
-12. A stored value of an older shape is dropped without error. Keeping the session's data across a reload of the mod's code is not required in V1 (Decision 9).
+12. A stored value of an older shape is dropped without error. After an ordinary hot reload of the mod's code, the session's data is still shown (seen live after Tasks 8 and 9). A fresh load of the mod starts empty (Decision 9).
 13. For every hooked event, the returned result equals the engine's (pass-through test).
 14. `claude plugin validate mods/monitor`, `tsc -p mods/monitor` and `claude plugin test mods/monitor` all pass. The four repo checks under Commands still pass.
 15. The active phase always shows the command or skill that set it, and how long ago. Relative times move on without any new event (`just now` → `1 min ago`). With nothing set yet, the pane shows `No phase yet`.
@@ -290,7 +290,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 - Buttons, such as "run the next command": V1 is read-only by choice.
 - A "suggested next command" hint: it goes with the button idea.
 - History across sessions (`$.store`): V1 is about the current session.
-- Saving the session's data to `$.store` so it survives a reload or a worker restart: only a code change, a plugin update or a worker restart starts the mod fresh, and `$.store` can't survive a new cloud container either (Decision 9).
+- Saving the session's data to `$.store` so it survives a fresh load (a re-enable or a worker restart): ordinary hot reloads keep it already, and `$.store` can't survive a new cloud container either (Decision 9).
 - User-configurable check-command patterns (`userConfig`): the built-in list comes first, so we learn what's missing.
 - A separate view of subagent activity: it adds a second event stream to reason about.
 - A status-line or above-prompt band version: a second surface to design.
@@ -308,7 +308,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 6. **Commit hash from the engine (live check). A successful `git commit` result carries `result.gitOperation.commit.sha`, so the hash comes from there. The subject is read from the `[branch sha] subject` line of its output.
 7. **Relative times.** Times show as `just now`, `N min ago` or `N h ago`, never as clock times, because a cloud session's clock is UTC rather than your local time.
 8. **Text summary for screens without panes (Checkpoint A).** The Android app attaches no surface to a cloud session (`$.session.surfaces()` is empty), so the pane never draws there and only a command's text reply reaches the phone. The Windows desktop app viewing the same cloud session doesn't attach one either. The pane draws where Claude Code runs on your own machine: the terminal, or a local session in the desktop app's Code tab. `/monitor` replies with the panel as text whenever the pane isn't placed.
-9. **A reload starts fresh: accepted for V1 (Checkpoint B).** In a cloud session, each change to the mod's code started it fresh, and the session's activity, files, commits and checks were lost. Counts read from files come back, since they are re-read. The API docs say `$.state` survives a hot reload, but here each change re-enabled the mod instead. An installed copy that isn't being edited keeps its data for the whole session.
+9. **A fresh load starts empty: accepted for V1 (Checkpoint B, corrected in Task 10).** Twice in this cloud session (after Tasks 6 and 7), the session's activity, files, commits and checks were lost. Both times the engine reported that it had turned on mod hot-reloading and loaded the mods, which is a fresh load. The ordinary hot reloads after Tasks 8 and 9 kept the data, as the API docs say `$.state` does. Counts read from files come back either way, since they are re-read. Accepted for V1: a fresh load only happens when the mod is (re-)enabled or the worker restarts.
 
 ## Open Questions
 

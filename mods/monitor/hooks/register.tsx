@@ -24,6 +24,10 @@ import { drawPane } from './view'
 const PANE = { id: 'monitor', title: 'Workflow' } as const
 const MINUTE = 60_000
 
+// Each list keeps its newest 200 entries.
+const LIST_LIMIT = 200
+const keepNewest = <T,>(list: readonly T[]): T[] => list.slice(-LIST_LIMIT)
+
 // Change a shape tag when its value's fields change: it declines what an
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
@@ -114,7 +118,7 @@ export const register: Register = on => {
 
   on('command.run', async ($, e, next) => {
     const at = await $.clock.now()
-    await update($, activity, list => [...list, commandEntry(e.command, at)])
+    await update($, activity, list => keepNewest([...list, commandEntry(e.command, at)]))
     await update($, turn, current => afterCommand(current, e.command))
     if (phaseOfCommand(e.command) !== undefined) await openOnce($)
 
@@ -143,7 +147,7 @@ export const register: Register = on => {
     const current = await read($, turn)
     if (!isOwnExpansion(current, e.skill)) {
       const at = await $.clock.now()
-      await update($, activity, list => [...list, skillEntry(e.skill, at, current)])
+      await update($, activity, list => keepNewest([...list, skillEntry(e.skill, at, current)]))
       if (phaseOfSkill(e.skill) !== undefined) await openOnce($)
     }
 
@@ -158,7 +162,7 @@ export const register: Register = on => {
     if (edited !== null && ran.isError !== true) {
       try {
         const path = relativeTo(await $.session.cwd(), edited)
-        await update($, files, list => addFile(list, path))
+        await update($, files, list => keepNewest(addFile(list, path)))
         if (isTrackedPath(path)) await refreshArtifacts($)
       } catch {
         // no working directory to compare with: nothing recorded
@@ -166,9 +170,9 @@ export const register: Register = on => {
     }
     if (e.tool === 'Bash') {
       const commit = commitOf(ran)
-      if (commit !== null) await update($, commits, list => [...list, commit])
+      if (commit !== null) await update($, commits, list => keepNewest([...list, commit]))
       const check = checkOf(e.command, ran, await $.clock.now())
-      if (check !== null) await update($, checks, list => [...list, check])
+      if (check !== null) await update($, checks, list => keepNewest([...list, check]))
     }
     if (e.tool === 'TaskCreate') await update($, tasks, list => taskCreated(list, ran))
     if (e.tool === 'TaskUpdate') await update($, tasks, list => taskUpdated(list, e, ran))
