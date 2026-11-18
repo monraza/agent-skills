@@ -27,12 +27,12 @@ describe('the blocks', () => {
         key: 'stepper',
         title: null,
         lines: [
-          { text: '○ Define', tone: 'muted' },
-          { text: '○ Plan', tone: 'muted' },
-          { text: '○ Build', tone: 'muted' },
-          { text: '○ Verify', tone: 'muted' },
-          { text: '○ Review', tone: 'muted' },
-          { text: '○ Ship', tone: 'muted' },
+          { text: '○ Define', tone: 'muted', phase: 'define' },
+          { text: '○ Plan', tone: 'muted', phase: 'plan' },
+          { text: '○ Build', tone: 'muted', phase: 'build' },
+          { text: '○ Verify', tone: 'muted', phase: 'verify' },
+          { text: '○ Review', tone: 'muted', phase: 'review' },
+          { text: '○ Ship', tone: 'muted', phase: 'ship' },
         ],
       },
       {

@@ -1,7 +1,7 @@
 import type { ActivityEntry, Artifacts, Check, Commit, FileChange, PhaseId, SessionTask } from '../types'
 
 import { doneFrom } from './artifacts'
-import { PHASES, PHASE_LABEL, bareName, phaseOfCommand, phaseOfSkill, phaseViewOf } from './phases'
+import { PHASES, PHASE_LABEL, bareName, phaseAt, phaseOfCommand, phaseOfSkill, phaseViewOf } from './phases'
 import { taskCounts } from './tasks'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
@@ -12,8 +12,9 @@ import { taskCounts } from './tasks'
 // How a line reads: the current step, done (✓), failed (✗), plain or dim.
 export type Tone = 'current' | 'done' | 'failed' | 'normal' | 'muted'
 
-// `time` is a Recent row's relative time, drawn apart from its text.
-export type Line = { text: string; tone: Tone; time?: string }
+// `time` is a row's relative time, drawn apart from its text; `phase` makes a
+// stepper line a button for that step.
+export type Line = { text: string; tone: Tone; time?: string; phase?: PhaseId }
 
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
@@ -57,7 +58,7 @@ const stepperSection = ({ activity, artifacts }: SessionData): Section => {
   const lines = PHASES.map((phase): Line => {
     const state = stateOf(phase)
 
-    return { text: `${SYMBOL[state]} ${PHASE_LABEL[phase]}${progress(phase)}`, tone: state === 'todo' ? 'muted' : state }
+    return { text: `${SYMBOL[state]} ${PHASE_LABEL[phase]}${progress(phase)}`, tone: state === 'todo' ? 'muted' : state, phase }
   })
 
   return { key: 'stepper', title: null, lines }
@@ -155,7 +156,53 @@ const totalsSection = ({ files, commits, checks, tasks }: SessionData): Section 
   return { key: 'totals', title: null, lines: [{ text: parts.join(' · '), tone: 'muted' }] }
 }
 
-export const sectionsOf = (data: SessionData): Section[] =>
-  [stepperSection(data), currentSection(data), tasksSection(data), recentSection(data), totalsSection(data)].filter(
+// Looking back at a step: what happened while it was the current one. Each
+// event belongs to the step current at its moment (phaseAt).
+const lookBackSections = (data: SessionData, step: PhaseId): Section[] => {
+  const { activity, files, commits, checks, now } = data
+  const inStep = (at: number) => phaseAt(activity, at) === step
+  const started = activity.filter(entry => entry.setsPhase && entry.phase === step).at(-1)
+  const header: Section = {
+    key: 'lookback',
+    title: null,
+    lines: [
+      { text: `${PHASE_LABEL[step].toUpperCase()} · looking back`, tone: 'current' },
+      started === undefined
+        ? { text: 'not started in this session', tone: 'muted' }
+        : { text: `started by ${labelOf(started)} · ${ago(started.at, now)}`, tone: 'muted' },
+    ],
+  }
+  // Each path once, newest first; created if any change in the step created it.
+  const stepFiles = files.filter(file => inStep(file.at))
+  const fileLines = latestPerPath(stepFiles).map(({ path, at }) => ({
+    text: `${stepFiles.some(file => file.path === path && file.created) ? 'created' : 'edited'} ${path}`,
+    tone: 'normal' as const,
+    time: ago(at, now),
+  }))
+  const events: Event[] = [
+    ...[...activity].reverse().filter(entry => isWorkflow(entry) && inStep(entry.at)).map(entry => ({ at: entry.at, text: labelOf(entry), tone: 'normal' as const })),
+    ...[...commits].reverse().filter(commit => inStep(commit.at)).map(({ sha, subject, at }) => ({ at, text: `committed ${sha} ${subject}`.trim(), tone: 'normal' as const })),
+    ...[...checks].reverse().filter(check => inStep(check.at)).map(({ label, ok, at }) => ({ at, text: `${ok ? '✓' : '✗'} ${label}`, tone: ok ? ('done' as const) : ('failed' as const) })),
+  ]
+  const activityLines = events.sort((a, b) => b.at - a.at).map(({ at, text, tone }) => ({ text, tone, time: ago(at, now) }))
+  if (fileLines.length === 0 && activityLines.length === 0) {
+    return [header, { key: 'empty', title: null, lines: [{ text: 'Nothing recorded for this step yet.', tone: 'muted' }] }]
+  }
+
+  return [
+    header,
+    ...(fileLines.length === 0 ? [] : [{ key: 'files', title: 'Files', lines: fileLines }]),
+    ...(activityLines.length === 0 ? [] : [{ key: 'history', title: 'Activity', lines: activityLines }]),
+  ]
+}
+
+// `viewing` is the step being looked back at; the current step, or none,
+// shows the normal view.
+export const sectionsOf = (data: SessionData, viewing: PhaseId | null = null): Section[] => {
+  const current = phaseViewOf(data.activity).active?.phase ?? null
+  if (viewing !== null && viewing !== current) return [stepperSection(data), ...lookBackSections(data, viewing)]
+
+  return [stepperSection(data), currentSection(data), tasksSection(data), recentSection(data), totalsSection(data)].filter(
     (section): section is Section => section !== null,
   )
+}

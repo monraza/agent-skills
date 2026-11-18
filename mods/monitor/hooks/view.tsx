@@ -1,10 +1,15 @@
 import type { Elements, RenderSurface } from 'claude-code'
 
+import type { PhaseId } from '../types'
+
 import type { Line, Section, Tone } from './sections'
 
 type Table = Elements[RenderSurface]
 
 export type Layout = { columns: number; surface: RenderSurface }
+
+// What the pane's buttons do: a step in the stepper, and Back.
+export type Actions = { onStep: (phase: PhaseId) => void; onBack: () => void }
 
 const isNarrow = ({ columns, surface }: Layout) => surface === 'mobile' || columns <= 40
 
@@ -18,34 +23,55 @@ const STYLE: Record<Tone, { color?: string; weight?: 'bold'; dimColor?: boolean 
   muted: { dimColor: true },
 }
 
-export const drawPane = ({ Box, Text }: Table, sections: readonly Section[], layout: Layout) => {
+export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Section[], layout: Layout, actions: Actions) => {
   const text = (line: Line) => <Text {...STYLE[line.tone]}>{line.text}</Text>
+
+  // Each step is a plain button that opens its look-back view.
+  const step = (line: Line) =>
+    line.phase === undefined ? (
+      text(line)
+    ) : (
+      <Button key={`step-${line.phase}`} plain onPress={() => actions.onStep(line.phase as PhaseId)}>
+        {text(line)}
+      </Button>
+    )
 
   // The six steps: one row with ─ between them, or one per line when narrow.
   const stepper = (lines: readonly Line[]) =>
     isNarrow(layout) ? (
       <Box key="phases" flexDirection="column">
-        {lines.map(text)}
+        {lines.map(step)}
       </Box>
     ) : (
       <Box key="phases" flexDirection="row" columnGap={1} flexWrap="wrap">
-        {lines.flatMap((line, index) => (index === 0 ? [text(line)] : [<Text dimColor>─</Text>, text(line)]))}
+        {lines.flatMap((line, index) => (index === 0 ? [step(line)] : [<Text dimColor>─</Text>, step(line)]))}
       </Box>
     )
 
-  // The current step's name, large; then what started it, and progress.
-  const current = (lines: readonly Line[]) =>
+  const heading = (line: Line) => (
+    <Text {...STYLE[line.tone]} size="heading" weight="bold">
+      {line.text}
+    </Text>
+  )
+
+  // The step's name, large; looking back, with Back on the right.
+  const header = (key: string, lines: readonly Line[]) =>
     lines.map((line, index) =>
-      index === 0 ? (
-        <Text {...STYLE[line.tone]} size="heading" weight="bold">
-          {line.text}
-        </Text>
-      ) : (
+      index !== 0 ? (
         text(line)
+      ) : key === 'lookback' ? (
+        <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
+          {heading(line)}
+          <Button key="back" onPress={actions.onBack}>
+            Back
+          </Button>
+        </Box>
+      ) : (
+        heading(line)
       ),
     )
 
-  // A Recent row: what happened on the left, when on the right.
+  // A row: what happened on the left, when on the right.
   const row = (line: Line) =>
     line.time === undefined ? (
       text(line)
@@ -68,7 +94,7 @@ export const drawPane = ({ Box, Text }: Table, sections: readonly Section[], lay
                 {title}
               </Text>
             )}
-            {key === 'current' ? current(lines) : lines.map(row)}
+            {key === 'current' || key === 'lookback' ? header(key, lines) : lines.map(row)}
           </Box>
         ),
       )}

@@ -55,6 +55,9 @@ const SKILL_PHASE: Readonly<Record<string, PhaseId | null>> = {
   'using-agent-skills': null,
 }
 
+// A step by its name as typed (`/monitor plan`); null for anything else.
+export const phaseNamed = (name: string): PhaseId | null => PHASES.find(phase => phase === name.trim().toLowerCase()) ?? null
+
 // `/spec` from this repo's .claude/commands, `agent-skills:spec` installed.
 export const bareName = (name: string): string => name.replace(/^agent-skills:/, '')
 

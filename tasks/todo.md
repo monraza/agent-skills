@@ -219,7 +219,7 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criterion 6, unchanged in what it shows.
   - **Files:** `hooks/classify.ts`, `hooks/phases.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 16: Look back** · M · Dependencies: 15
+- [x] **Task 16: Look back** · M · Dependencies: 15
   - **What:**
     - Each step in the stepper is a button that sets the step being viewed (a `viewing` atom).
     - The look-back view shows that step's files and activity, with `Back`.
@@ -228,6 +228,6 @@ Every task, before it's checked off:
   - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
 ### Checkpoint E
-- [ ] Tests, type-check and validate pass
+- [x] Tests, type-check and validate pass (110 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review

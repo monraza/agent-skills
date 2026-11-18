@@ -54,6 +54,8 @@ declare module 'claude-code' {
       // Set once the pane has been opened, by the mod or by /monitor: the mod
       // opens it on its own at most once per session.
       hasOpened: boolean
+      // The earlier step the pane is looking back at; null for the current one.
+      viewing: PhaseId | null
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

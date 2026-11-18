@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Artifacts } from '../types'
+import type { Artifacts, PhaseId } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
 import { checkOf, commitOf, isCreated, keepNewest } from './classify'
@@ -11,8 +11,12 @@ import {
   afterTurnStart,
   commandEntry,
   isOwnExpansion,
+  PHASES,
+  PHASE_LABEL,
+  phaseNamed,
   phaseOfCommand,
   phaseOfSkill,
+  phaseViewOf,
   skillEntry,
 } from './phases'
 import { sectionsOf } from './sections'
@@ -36,6 +40,7 @@ const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 't
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 const hasOpened = atom({ plugin: 'monitor', key: 'hasOpened' } as const, false)
+const viewing = atom({ plugin: 'monitor', key: 'viewing' } as const, null)
 
 const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   activity: await read($, activity),
@@ -127,12 +132,21 @@ export const register: Register = on => {
 
   // Where no screen shows panes (the Android app attaches none to a cloud
   // session), the reply carries the panel as text instead.
-  on('command.run', { command: 'monitor' }, async $ => {
+  // `/monitor <step>` looks back at that step; `/monitor` alone shows the
+  // current one.
+  on('command.run', { command: 'monitor' }, async ($, e) => {
+    const step = phaseNamed(e.args)
+    if (e.args.trim() !== '' && step === null) {
+      return { text: `Unknown step "${e.args.trim()}". Use one of: ${PHASES.join(', ')}.` }
+    }
     await update($, hasOpened, () => true)
+    await update($, viewing, () => step)
     const opened = await $.ui.open(PANE)
-    if (opened.isPlaced) return { text: 'Workflow panel opened.' }
+    if (opened.isPlaced) {
+      return { text: step === null ? 'Workflow panel opened.' : `Workflow panel opened, looking back at ${PHASE_LABEL[step]}.` }
+    }
 
-    return { text: summaryOf(sectionsOf(await sessionData($))) }
+    return { text: summaryOf(sectionsOf(await sessionData($), step)) }
   })
 
   on('turn.start', async ($, e, next) => {
@@ -186,7 +200,15 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: 'monitor' }, async ($, e) => {
     await read($, tick) // subscribes the drawing, so relative times move on
     const layout = { columns: e.props.bodyColumns, surface: e.surface }
+    const data = await sessionData($)
+    const current = phaseViewOf(data.activity).active?.phase ?? null
+    // Pressing the current step, or the one being viewed, returns to the
+    // current step; any other step opens its look-back view.
+    const actions = {
+      onStep: (phase: PhaseId) => void update($, viewing, shown => (phase === shown || phase === current ? null : phase)),
+      onBack: () => void update($, viewing, () => null),
+    }
 
-    return drawPane($.ui.resolve(e), sectionsOf(await sessionData($)), layout)
+    return drawPane($.ui.resolve(e), sectionsOf(data, await read($, viewing)), layout, actions)
   })
 }
