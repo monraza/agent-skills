@@ -231,3 +231,36 @@ Every task, before it's checked off:
 - [x] Tests, type-check and validate pass (110 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
+
+## Phase 6: One view per step, a pinned stepper (spec Decision 12)
+
+- [ ] **Task 17: Task headings and numbers** · S · Dependencies: 16
+  - **What:**
+    - `tasks/todo.md` written with the planning skill's `## Task N: title` headings counts one task per heading. A heading's task is done when all the boxes under it are checked, and started when some are.
+    - Each task keeps its number: the `N` of `Task N:`, or else its place. Artifacts shape 3.
+  - **Acceptance:** spec success criteria 4 and 21 (the heading part). `Build 0/85` on a heading-style todo reads one count per task.
+  - **Files:** `hooks/artifacts.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 18: One view per step** · M · Dependencies: 17
+  - **What:**
+    - The same view for the current step and any earlier one: header, Build's tasks, `Files changed`, `Commits` and `Checks` (each check once, latest result) for that step.
+    - `Recent`, `Activity`, the totals line and `looking back` go.
+    - `Back to <step>`. Steps not reached aren't buttons, and the step on show is underlined.
+  - **Acceptance:** spec success criteria 6–9, 18 and 20, on every surface.
+  - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, and the tests
+
+- [ ] **Task 19: Task groups that fold** · S · Dependencies: 18
+  - **What:** `Completed`, `In progress`, `To do`, in that order, each task numbered. Each group's name is a button that folds it (a `groups` atom); `Completed` starts folded. The text summary unfolds all three.
+  - **Acceptance:** spec success criteria 19 and 21.
+  - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 20: Pin the stepper** · M · Dependencies: 19
+  - **What:** the pane draws the stepper, then only the rows that fit below it. A `ui.scroll` hook moves those rows itself (a `scrollTop` atom) and keeps the engine's window still.
+  - **Acceptance:** spec success criterion 22. Scrolling moves the rows and never the stepper, on every surface.
+  - **Verify:** the layout tests, and a look on a real screen.
+  - **Files:** `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+### Checkpoint F
+- [ ] Tests, type-check and validate pass (every surface)
+- [ ] Seen on a real screen and the phone
+- [ ] Human review

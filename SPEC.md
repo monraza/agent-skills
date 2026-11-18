@@ -91,94 +91,94 @@ Each list keeps its newest 200 entries.
 
 ### Pane layout (V1)
 
-Revised after the first draw on a real screen (Decisions 10 and 11): one clear "you are here", room for Build's tasks, one short feed, one line of totals, and a way to look back at an earlier step.
+Revised after each look on a real screen (Decisions 10–12): a stepper pinned at the top, one view per step, and room for Build's tasks.
 
 ```
 ✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
 
 BUILD
-started by /build · 4 min ago
+started by /build · 25 min ago
 
 Tasks · 3 of 7 done
-  ✓ Task 1: Live event check
-  ✓ Task 2: Mod skeleton
-  ✓ Task 3: Phase and activity
-  ▸ Task 4: Done marks from files
-  ○ Task 5: Files and commits
-  ○ Task 6: Checks
-  ○ Task 7: Session tasks
+▸ Completed · 3
+▾ In progress · 1
+    ● 4. Done marks from files
+▾ To do · 3
+    ○ 5. Files and commits
+    ○ 6. Checks
+    ○ 7. Session tasks
 
-Recent
-  ✓ npm test                      just now
-  edited hooks/phases.ts          2 min ago
+Files changed · 2
+  edited hooks/phases.ts                   2 min ago
+  created hooks/phases.test.ts             9 min ago
 
-5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
+Commits · 1
+  2fffc88 feat(monitor): phases            5 min ago
+
+Checks · 2, 1 failing
+  ✗ tsc                                    just now
+  ✓ claude plugin test                     3 min ago
 ```
 
-- **Stepper.** The six steps on one row. The current one is bold in the theme's accent color, ✓ is in its success color, and ○ is dim. At 40 columns or narrower, and on `mobile`, it stacks one step per line. Each step is a button that opens its look-back view.
-- **Current step.** Its name, large and in the accent color, and the line that started it. Before any step: `No step yet`, and that the panel is waiting for an agent-skills command or skill.
-- **Build's tasks.** While Build is the current step, the panel lists `tasks/todo.md`'s tasks under `Tasks · N of M done`:
-  - the task lines are its checkbox items whose text starts with `Task`; if it has none, all its checkbox items
-  - each title is cut at ` · ` and stripped of `**`
-  - ✓ done, ▸ the first open task (next up), ○ the rest
-  - with no `tasks/todo.md`, the session's own task list, by subject
-- **Recent.** The newest 4 events, newest first, each with its relative time:
-  - workflow commands and skills (those in the phase table)
-  - file changes, as `created <path>` or `edited <path>`, each path once
-  - commits, as `committed <sha> <subject>`
-  - checks, as `✓ <label>` or `✗ <label>`, in the success or error color
+- **Stepper.** The six steps on one row, pinned at the top: the rest of the pane scrolls under it.
+  - **Colours:** the current step (●) is bold in the theme's accent colour, ✓ is in its success colour, and ○ is dim.
+  - **Narrow screens:** at 40 columns or narrower, and on `mobile`, it stacks one step per line.
+  - **Buttons:** a step that has started or is done (● or ✓) is a button that shows that step. A step not reached (○) isn't a button.
+  - **The step on show:** when it isn't the current step, it's underlined.
+- **Step header.** The step's name, large. It's in the accent colour for the current step and the success colour for any other. Below it is one line:
+  - `started by /build · 25 min ago`
+  - `done before this session`, for a step done before this session
+  - `not started in this session`
 
-  It's left out when there's nothing yet.
-- **Totals.** One dim line: files changed, commits, checks (with how many failed), and session tasks when there are any.
-- **Left out:** commands and skills outside the workflow (`/model`, `/monitor`, other plugins' skills), and empty states other than `No step yet`.
+  Before any step, the header is `No step yet`, and that the panel is waiting for an agent-skills command or skill.
+- **Back to <step>.** While an earlier step is on show, a button on the right of its header names the current step and returns to it. Pressing the current step in the stepper does the same.
+- **Tasks.** When Build is the step on show, `Tasks · N of M done`, then three groups in this order. Each group's name is a button that folds or unfolds it:
+  - `Completed` (✓), folded at first
+  - `In progress` (●):
+    - a session task marked in progress, or a todo task with some of its boxes checked
+    - otherwise, the first open task
+  - `To do` (○)
+
+  Each task shows its number: the `N` of a `Task N:` title, or else its place in the list. Where the tasks come from (`tasks/todo.md`, in this order of preference):
+  - the checkbox items whose text starts with `Task`; each title is cut at ` · ` and stripped of `**`
+  - the planning skill's `## Task N: title` headings; a heading's task is done when all the boxes under it are checked
+  - all its checkbox items
+  - with no `tasks/todo.md`, the session's own task list
+- **Files changed · N.** The files created or edited while the step on show was current, each path once, newest first, as `created <path>` or `edited <path>`. A path counts as created if any change during the step created it.
+- **Commits · N.** `<sha> <subject>`, newest first.
+- **Checks · N, K failing.** Each check once, with its latest result (✓ or ✗, in the success or error colour), newest first. `K failing` counts the checks whose latest result is ✗, and is left out when there are none.
+- **Which step an event belongs to.** The step that was current when it happened. An event before any step belongs to the `No step yet` view.
+- **Nothing yet.** A step with no files, commits or checks says `Nothing changed in this step yet.`
+- **Left out:**
+  - commands and skills (the header names the one that started the step)
+  - empty lists
 - **Times** are relative to now: `just now` under a minute, then `N min ago`, then `N h ago`. While the pane is open it redraws at least once a minute, so they stay current.
-
-#### Look back
-
-Pressing a step in the stepper shows what happened while it was the current step:
-
-```
-✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
-
-PLAN · looking back                                   Back
-started by /plan · 2 h ago
-
-Files
-  created tasks/plan.md           2 h ago
-  edited tasks/todo.md            2 h ago
-
-Activity
-  skill planning-and-task-breakdown   2 h ago
-  /plan                           2 h ago
-```
-
-- **Files:** the files created or edited during that step, each path once, newest first. A path counts as created if any change during the step created it.
-- **Activity:** that step's commands, skills, commits and checks, newest first.
-- **Empty:** a step with nothing recorded says `Nothing recorded for this step yet.`
-- **Back:** returns to the current step. So does pressing the step being viewed, or the current one.
-- **Phone:** `/monitor <step>` (e.g. `/monitor plan`) gives the same view as text.
+- **Phone:** `/monitor <step>` (e.g. `/monitor plan`) gives that step's view as text.
 
 ### Text summary
 
-When nothing shows the pane, `/monitor` replies with the same blocks as plain text, and `/monitor <step>` with that step's look-back view:
+When nothing shows the pane, `/monitor` replies with the current step's view as plain text, and `/monitor <step>` with that step's. Every task group is unfolded:
 
 ```
 Workflow
 ✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
 
 BUILD
-started by /build · 4 min ago
+started by /build · 25 min ago
 
 Tasks · 3 of 7 done
-  ✓ Task 1: Live event check
-  ▸ Task 4: Done marks from files
-  …
+  Completed · 3
+    ✓ 1. Live event check
+    …
+  In progress · 1
+    ● 4. Done marks from files
+  To do · 3
+    ○ 5. Files and commits
+    …
 
-Recent
-  ✓ npm test · just now
+Files changed · 2
   edited hooks/phases.ts · 2 min ago
-
-5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
+  …
 ```
 
 - **Same blocks, same data** as the pane, so the two never disagree.
@@ -326,10 +326,10 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 3. `/test` followed by test-driven-development firing in the same turn leaves Verify current.
 4. In a repo with `SPEC.md`, `tasks/plan.md` and a `tasks/todo.md` with 3 of 7 items checked, the stepper shows ✓ Define, ✓ Plan and ○ Build 3/7 at session start, before any command runs.
 5. Checking a todo item via an Edit call updates the Build count after that call.
-6. Each file changed by Edit, Write or NotebookEdit counts once in the totals, and shows in Recent as `edited <path>`, relative to the working directory.
-7. A successful `git commit` Bash call shows in Recent as `committed <sha> <subject>` and counts in the totals. A failed one adds nothing.
-8. A matching check command shows in Recent with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. It counts in the totals, with failures. A Bash command that isn't a check doesn't appear.
-9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the totals' session task count.
+6. Each file changed by Edit, Write or NotebookEdit shows once under `Files changed` for the step current at the time, as `created <path>` or `edited <path>`, relative to the working directory.
+7. A successful `git commit` Bash call shows under `Commits` as `<sha> <subject>`. A failed one adds nothing.
+8. A matching check command shows under `Checks` with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. Each check shows once, with its latest result, and the title counts the failing ones. A Bash command that isn't a check doesn't appear.
+9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in Build's task list when there's no `tasks/todo.md`.
 10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, and on `mobile`, the stepper stacks.
 11. In a directory with `SPEC.md` or `tasks/`, the pane opens at session start. In a directory with neither, it stays closed until a phase-table command or skill runs, then opens once. After it's closed, only `/monitor` reopens it, and `/monitor` works in any directory. Opening it late still shows everything since session start.
 12. A stored value of an older shape is dropped without error. After an ordinary hot reload of the mod's code, the session's data is still shown (seen live after Tasks 8 and 9). A fresh load of the mod starts empty (Decision 9).
@@ -338,16 +338,17 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 15. The current step always shows the command or skill that started it, and how long ago (`started by /build · 4 min ago`), with no step number. Relative times move on without any new event (`just now` → `1 min ago`).
 16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
 17. When the pane isn't placed, `/monitor` replies with the same blocks as text, from the same data. On the Android app, `/monitor` shows that text.
-18. Commands and skills outside the workflow, and empty states other than `No step yet`, are not shown. Recent holds at most 4 events.
-19. While Build is the current step, the panel lists `tasks/todo.md`'s tasks with ✓ done, ▸ the first open task and ○ the rest, under `Tasks · N of M done`. With no `tasks/todo.md`, it lists the session's own tasks.
-20. Pressing a step in the stepper shows the files created or edited, and the commands, skills, commits and checks, from while that step was current. `Back` returns to the current step. `/monitor <step>` gives the same view as text, and an unknown step name gets a reply listing the valid ones.
+18. Commands, skills and empty lists are not shown; the header names the command or skill that started the step.
+19. When Build is the step on show, the panel lists `tasks/todo.md`'s tasks under `Tasks · N of M done`, with ✓ done, ● in progress and ○ to do. With no `tasks/todo.md`, it lists the session's own tasks.
+20. Pressing a started or done step in the stepper shows that step's view: its files, commits and checks, from while it was current, under a header with no `looking back`. A step not reached isn't a button. `Back to <current step>` returns to the current step. `/monitor <step>` gives the same view as text, and an unknown step name gets a reply listing the valid ones.
+21. The tasks show in three groups, in order: `Completed`, `In progress`, `To do`. Each is numbered, and each group folds and unfolds when its name is pressed; `Completed` starts folded. A `tasks/todo.md` written with the planning skill's `## Task N:` headings counts one task per heading, not one per checkbox.
+22. The stepper stays at the top of the pane while the rest scrolls.
 
 ## Out of Scope (Deferred)
 
 - Buttons that act on the session, such as "run the next command": the only buttons choose which step the panel shows (Decision 11).
 - A "suggested next command" hint: it goes with the button idea.
 - History across sessions (`$.store`): V1 is about the current session.
-- A full list of the session's files, commits and checks: Recent shows the newest 4 and the totals count all (Decision 10).
 - Saving the session's data to `$.store` so it survives a fresh load (a re-enable or a worker restart): ordinary hot reloads keep it already, and `$.store` can't survive a new cloud container either (Decision 9).
 - User-configurable check-command patterns (`userConfig`): the built-in list comes first, so we learn what's missing.
 - A separate view of subagent activity: it adds a second event stream to reason about.
@@ -369,6 +370,12 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 9. **A fresh load starts empty: accepted for V1 (Checkpoint B, corrected in Task 10).** Twice in this cloud session (after Tasks 6 and 7), the session's activity, files, commits and checks were lost. Both times the engine reported that it had turned on mod hot-reloading and loaded the mods, which is a fresh load. The ordinary hot reloads after Tasks 8 and 9 kept the data, as the API docs say `$.state` does. Counts read from files come back either way, since they are re-read. Accepted for V1: a fresh load only happens when the mod is (re-)enabled or the worker restarts.
 10. **A simpler layout (after the first draw on a real screen, 2026-11-18).** In the Windows desktop app, in a local session, the pane drew correctly but was dense. Every block had the same weight, three lines were empty states, commands outside the workflow crowded the activity list, and what happened was split across four lists. Chosen from three mockups: a stepper, a large current-step header, a Recent feed of the newest 4 events, and one totals line, in the theme's colors.
 11. **Build's tasks and looking back (after the second look, 2026-11-18).** Build is the densest step, so while it's current the panel lists `tasks/todo.md`'s tasks and which are done, and drops the step number. Each step in the stepper becomes a button that shows what happened during it: files created or edited, and its activity. The phone gets the same through `/monitor <step>`. To show task titles, the panel keeps the todo's task lines (title and done) in state.
+12. **One view per step, a pinned stepper (after the third look, 2026-11-18).** On a real screen, `Recent` and `Activity` were unclear: they mixed commands, skills, files, commits and checks under names that didn't say which. `looking back` and `Back` didn't say where you were or where Back went. The stepper scrolled away. `Build 0/85` counted every acceptance-criterion checkbox of a todo written with the planning skill's `## Task N:` headings. Now:
+    - **Same layout for every step:** the current step and any earlier one show the same view, with `Files changed`, `Commits` and `Checks` for that step. `Recent`, `Activity` and the totals line are gone, as are commands and skills (the header names the one that started the step).
+    - **Returning:** `Back to <step>` names where it goes. Steps not reached aren't buttons.
+    - **Tasks:** they show in foldable groups (`Completed`, `In progress`, `To do`), numbered.
+    - **Headings:** a `## Task N:` heading counts as one task.
+    - **Stepper:** it's pinned, because the pane scrolls its own rows under it (`ui.scroll`).
 
 ## Open Questions
 
