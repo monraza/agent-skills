@@ -144,7 +144,7 @@ Every task, before it's checked off:
     - Integration: seed `state.get` with an older shape → empty state, no failure. Seed current data → it survives. Push 250 entries → 200 kept.
   - **Files:** `hooks/register.tsx`, `types/index.d.ts`, `hooks/state.test.tsx`
 
-- [ ] **Task 11: Packaging** · S · Dependencies: 8–10
+- [x] **Task 11: Packaging** · S · Dependencies: 8–10
   - **Acceptance:**
     - Spec success criterion 14 passes.
     - The `monitor` entry sits in `.claude-plugin/marketplace.json` after `agent-skills`.
@@ -155,7 +155,19 @@ Every task, before it's checked off:
   - **Files:** `.claude-plugin/marketplace.json`, `mods/monitor/README.md`
 
 ### Checkpoint C: Complete
-- [ ] Spec success criteria 1–16 each have a passing test or a recorded manual check
-- [ ] The four repo checks pass
-- [ ] Definition of Done: Correctness, Quality, Integration and Documentation
+- [x] Spec success criteria 1–17 each have a passing test or a recorded manual check:
+  - 1–3, 15: `activity.test.tsx`, `phases.test.ts`; live: `◉ Build · since /build` on the phone
+  - 4–5: `progress.test.tsx`, `artifacts.test.ts`; live: `✓ Define ✓ Plan ◉ Build 17/23`
+  - 6–7: `changes.test.tsx`, `classify.test.ts`; live: a changed file and commit `27caa2a` (not `-q` commits, a documented limit)
+  - 8: `checks.test.tsx`, `classify.test.ts`; live: ✓ and ✗ both seen
+  - 9: `tasks.test.tsx`; live: `session 4/4 done`
+  - 10: `layout.test.tsx` on all four surfaces at both widths. Live drawing still to be seen: no surface attaches to a cloud session (Decision 8)
+  - 11: `opening.test.tsx`
+  - 12: `state.test.tsx`; live: data kept across the hot reloads after Tasks 8 and 9
+  - 13: a pass-through test in each test file
+  - 14: validate, tsc, 89 tests, and every CI check
+  - 16: every integration test imports `hooks/fixtures/live-events.ts`
+  - 17: `pane.test.tsx` and each section's summary test; live: `/monitor` on Android and the Windows desktop app
+- [x] The repo's checks pass: all CI steps, including evals (157 checks) and the 295 script tests
+- [x] Definition of Done: Correctness, Quality, Integration and Documentation (README, spec decisions current)
 - [ ] Human review before anything goes to the fork's `main`

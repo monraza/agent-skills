@@ -18,6 +18,12 @@
       "homepage": "https://github.com/addyosmani/agent-skills",
       "license": "MIT",
       "keywords": ["skills", "agents", "engineering", "spec", "tdd", "review", "ship"]
+    },
+    {
+      "name": "monitor",
+      "source": "./mods/monitor",
+      "description": "A read-only pane showing where the session is in the agent-skills workflow, and what it has done: tasks, activity, changed files, commits and checks.",
+      "keywords": ["workflow", "pane", "progress", "agent-skills"]
     }
   ]
 }
