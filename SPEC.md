@@ -23,8 +23,8 @@ A Claude Code panel that sits beside the chat and shows where the current sessio
 2. Memory lasts for the current session only (`$.state`). Nothing is kept across sessions.
 3. It works on all four surfaces the engine draws for: `terminal`, `desktop`, `vscode`, `mobile`.
 4. It targets the mod API of Claude Code 2.1.326. The API is early access and can change between releases, and the types file is the authority.
-5. The pane opens on its own at session start, and a `/workflow` command reopens it.
-6. A check "passed" when its Bash call returned without `isError` and wasn't interrupted (see Open Questions).
+5. The pane opens on its own at session start, and a `/monitor` command reopens it.
+6. A check "passed" when its Bash call returned without `isError` and wasn't interrupted. This is checked early in the build (see Decisions).
 7. agent-skills names match with or without the `agent-skills:` prefix (`/spec` from this repo's `.claude/commands/`, `agent-skills:spec` when installed as a plugin).
 
 ### Phase rules
@@ -118,7 +118,7 @@ mods/workflow-panel/
   .claude-plugin/plugin.json   → name, version, description, "types": "./types/index.d.ts"
   .claude-plugin/types/        → written by the engine on load; gitignored by the engine
   hooks/hooks.json             → { "modules": ["./register.tsx"] }
-  hooks/register.tsx           → wiring only: events → pure functions → atoms; the /workflow command; opens the pane
+  hooks/register.tsx           → wiring only: events → pure functions → atoms; the /monitor command; opens the pane
   hooks/phases.ts              → phase map and active/visited/done rules (pure)
   hooks/artifacts.ts           → spec / plan / todo detection and checkbox counting (pure)
   hooks/classify.ts            → check-command matching, commit-output parsing, path relativising (pure)
@@ -219,7 +219,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 8. A matching check command appears with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. A Bash command that isn't a check doesn't appear.
 9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in the session tasks' done/total.
 10. The pane draws on `terminal`, `desktop`, `vscode` and `mobile` with no failed-hook notice. At 40 columns or fewer, the phase row stacks.
-11. The pane opens at session start, and `/workflow` reopens it after it's closed.
+11. The pane opens at session start, and `/monitor` reopens it after it's closed.
 12. After a mod reload, the session's data is still shown. A stored value of an older shape is dropped without error.
 13. For every hooked event, the returned result equals the engine's (pass-through test).
 14. `claude plugin validate mods/workflow-panel`, `tsc -p mods/workflow-panel` and `claude plugin test mods/workflow-panel` all pass. The four repo checks under Commands still pass.
@@ -236,10 +236,14 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 - A CI job running the mod's tests: changing CI is ask-first, and it needs a decision on CI cost.
 - Contributing upstream to addyosmani/agent-skills: needs the CONTRIBUTING.md pre-flight and maintainer buy-in.
 
+## Decisions
+
+1. **Bash pass/fail: test during the build.** Before the Checks section relies on `isError`, the build confirms in a live session that a non-zero exit sets it. If it doesn't, Checks show ran/interrupted only, and pass/fail moves to Deferred.
+2. **Matching session tasks: test during the build.** Before session tasks rely on it, the build confirms that a `TaskCreate` result carries the new task's id. If it doesn't, session tasks come from `TodoWrite` lists and `TaskList` results instead.
+3. **Command name: `/monitor`.** The mod and folder keep the name `workflow-panel`.
+4. **Sync conflicts: accepted for now.** The entry stays in the shared `.claude-plugin/marketplace.json`, and any conflict is resolved at sync time.
+5. **Phase-less items: confirmed.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase.
+
 ## Open Questions
 
-1. **Bash pass/fail.** The Bash result has no exit code field, so ✓/✗ relies on the call's `isError` flag. This needs confirming in a live session: does a non-zero exit set `isError`?
-2. **Matching session tasks.** Does a `TaskCreate` result carry the new task's id, so later `TaskUpdate` calls can be matched to it? If not, session tasks fall back to `TodoWrite` lists and `TaskList` results.
-3. **Command name.** Is `/workflow` the right name, or would you prefer another?
-4. **Sync conflicts.** The marketplace entry lives in a file upstream also edits (version bumps), so upstream syncs may hit small merge conflicts there. Is that acceptable, or should the mod get its own marketplace file inside `mods/workflow-panel/`?
-5. **Phase-less items.** `constraint-driven-development`, `using-agent-skills` and `/constraints` show in Activity without changing the phase. Is that right?
+None.
