@@ -29,7 +29,7 @@ Every task, before it's checked off:
   - **Needs the user:** to type `/spec probe` and `/monitor` once the probe has loaded.
   - **Files:** `mods/monitor/hooks/fixtures/live-events.ts`, `SPEC.md` (Decisions), `tasks/plan.md` (dev-loop note)
 
-- [ ] **Task 2: Mod skeleton: `/monitor` opens an empty pane** · M · Dependencies: 1
+- [x] **Task 2: Mod skeleton: `/monitor` opens an empty pane** · M · Dependencies: 1
   - **Acceptance:**
     - The mod loads with no failed-hook line.
     - `/monitor` opens a pane titled "Workflow" that shows `No phase yet` and `No activity yet.`
@@ -40,9 +40,9 @@ Every task, before it's checked off:
   - **Files:** `mods/monitor/.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`, `tsconfig.json`, `hooks/pane.test.tsx`. That's 7 files, but two are one-line config files.
 
 ### Checkpoint A
-- [ ] The fixtures exist, and the Decisions are updated
-- [ ] validate, tsc and test pass
-- [ ] `/monitor` works live
+- [x] The fixtures exist, and the Decisions are updated
+- [x] validate, tsc and test pass
+- [x] `/monitor` works live: it's registered, runs, and opens the pane. On the Android app the pane is open but undrawn, because the app attaches no surface (`$.session.surfaces()` is empty). `/monitor` now says so instead of claiming success.
 - [ ] Human review
 
 ## Phase 2: Core sections
