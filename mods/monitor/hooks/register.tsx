@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Artifacts, PhaseId } from '../types'
+import type { Artifacts, GroupId, PhaseId } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
 import { checkOf, commitOf, isCreated, keepNewest } from './classify'
@@ -19,7 +19,7 @@ import {
   phaseViewOf,
   skillEntry,
 } from './phases'
-import { sectionsOf } from './sections'
+import { GROUPS_AT_START, sectionsOf } from './sections'
 import type { SessionData } from './sections'
 import { summaryOf } from './summary'
 import { taskCreated, taskUpdated, todosWritten } from './tasks'
@@ -41,6 +41,7 @@ const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 const hasOpened = atom({ plugin: 'monitor', key: 'hasOpened' } as const, false)
 const viewing = atom({ plugin: 'monitor', key: 'viewing' } as const, null)
+const groups = atom({ plugin: 'monitor', key: 'groups' } as const, GROUPS_AT_START, { shape: 'groups-1' })
 
 const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   activity: await read($, activity),
@@ -206,8 +207,9 @@ export const register: Register = on => {
     const actions = {
       onStep: (phase: PhaseId) => void update($, viewing, shown => (phase === shown || phase === current ? null : phase)),
       onBack: () => void update($, viewing, () => null),
+      onGroup: (group: GroupId) => void update($, groups, open => ({ ...open, [group]: !open[group] })),
     }
 
-    return drawPane($.ui.resolve(e), sectionsOf(data, await read($, viewing)), layout, actions)
+    return drawPane($.ui.resolve(e), sectionsOf(data, await read($, viewing), await read($, groups)), layout, actions)
   })
 }

@@ -170,7 +170,7 @@ test('tool.call passes through unchanged', async ($, on) => {
   expect(await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/todo.md` })).toEqual(edit.result)
 })
 
-test("once Build starts, the todo's tasks are listed with the next one marked", async ($, on) => {
+test("once Build starts, the todo's tasks show in groups that fold; Completed starts folded", async ($, on) => {
   mock.clock(on)
   fakeRepo(on, fullRepo())
   engine(on)
@@ -182,8 +182,21 @@ test("once Build starts, the todo's tasks are listed with the next one marked", 
   const shown = await texts(ui)
   expect(shown).toContain('● Build 3/7')
   expect(shown).toContain('Tasks · 3 of 7 done')
-  expect(shown).toContain('✓ 3. task 3')
-  expect(shown).toContain('▸ 4. task 4')
+  expect(shown).toContain('▸ Completed · 3')
+  expect(shown).not.toContain('✓ 3. task 3')
+  expect(shown).toContain('▾ In progress · 1')
+  expect(shown).toContain('● 4. task 4')
+  expect(shown).toContain('▾ To do · 3')
   expect(shown).toContain('○ 7. task 7')
+  // Completed above, in progress in the middle, to do at the bottom.
+  expect(shown.indexOf('▸ Completed · 3')).toBeLessThan(shown.indexOf('● 4. task 4'))
+  expect(shown.indexOf('● 4. task 4')).toBeLessThan(shown.indexOf('○ 7. task 7'))
+
+  await ui.press({ key: 'group-completed' })
+  expect(await texts(ui)).toContain('▾ Completed · 3')
+  expect(await texts(ui)).toContain('✓ 3. task 3')
+  await ui.press({ key: 'group-todo' })
+  expect(await texts(ui)).toContain('▸ To do · 3')
+  expect(await texts(ui)).not.toContain('○ 7. task 7')
   await ui.unmount()
 })

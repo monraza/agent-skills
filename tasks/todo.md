@@ -249,7 +249,7 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criteria 6–9, 18 and 20, on every surface.
   - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, and the tests
 
-- [ ] **Task 19: Task groups that fold** · S · Dependencies: 18
+- [x] **Task 19: Task groups that fold** · S · Dependencies: 18
   - **What:** `Completed`, `In progress`, `To do`, in that order, each task numbered. Each group's name is a button that folds it (a `groups` atom); `Completed` starts folded. The text summary unfolds all three.
   - **Acceptance:** spec success criteria 19 and 21.
   - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `hooks/register.tsx`, `types/index.d.ts`, and the tests

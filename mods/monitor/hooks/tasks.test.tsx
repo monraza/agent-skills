@@ -101,7 +101,12 @@ describe('session tasks', () => {
     const list = (of: typeof tasks) => sectionsOf({ ...base, tasks: of }).find(section => section.key === 'tasks')
 
     expect(list(tasks)?.title).toBe('Tasks · 1 of 2 done')
-    expect(list(tasks)?.lines.map(line => line.text)).toEqual(['✓ 1. Live event check for the monitor mod', '▸ 2. Second task'])
+    expect(list(tasks)?.lines.map(line => line.text)).toEqual([
+      'Completed · 1',
+      '✓ 1. Live event check for the monitor mod',
+      'In progress · 1',
+      '● 2. Second task',
+    ])
     expect(list([])).toBeUndefined()
   })
 })
@@ -151,7 +156,7 @@ test("/monitor's text summary shows the same tasks", async ($, on) => {
   await $.tool.call(taskCreate.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\nTasks · 0 of 1 done\n  ▸ 1. Live event check for the monitor mod')
+  expect(out.text).toContain('\nTasks · 0 of 1 done\n  In progress · 1\n    ● 1. Live event check for the monitor mod')
 })
 
 test('task tool calls pass through unchanged', async ($, on) => {

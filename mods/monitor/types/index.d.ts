@@ -39,6 +39,10 @@ export type FileChange = { path: string; at: number; created: boolean }
 
 export type Check = { at: number; label: string; ok: boolean }
 
+// Build's task groups, and which are unfolded.
+export type GroupId = 'completed' | 'working' | 'todo'
+export type OpenGroups = Record<GroupId, boolean>
+
 export type TaskStatus = 'pending' | 'in_progress' | 'completed'
 
 export type SessionTask = { id: string; subject: string; status: TaskStatus }
@@ -56,8 +60,10 @@ declare module 'claude-code' {
       // Set once the pane has been opened, by the mod or by /monitor: the mod
       // opens it on its own at most once per session.
       hasOpened: boolean
-      // The earlier step the pane is looking back at; null for the current one.
+      // The step chosen to show (a press, `/monitor <step>`); null for the current one.
       viewing: PhaseId | null
+      // Which of Build's task groups are unfolded in the pane.
+      groups: Shaped<OpenGroups>
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

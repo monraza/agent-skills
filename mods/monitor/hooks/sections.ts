@@ -1,4 +1,4 @@
-import type { ActivityEntry, Artifacts, Check, Commit, FileChange, PhaseId, SessionTask } from '../types'
+import type { ActivityEntry, Artifacts, Check, Commit, FileChange, GroupId, OpenGroups, PhaseId, SessionTask } from '../types'
 
 import { doneFrom, numbered } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseAt, phaseViewOf } from './phases'
@@ -15,8 +15,20 @@ export type Tone = 'current' | 'done' | 'failed' | 'normal' | 'muted'
 // `time` is a row's relative time, drawn apart from its text. On the
 // stepper, `phase` makes a step a button that shows it, and `selected` marks
 // the step on show when it isn't the current one. On a header, `back` is the
-// label of the button back to the current step.
-export type Line = { text: string; tone: Tone; time?: string; phase?: PhaseId; selected?: boolean; back?: string }
+// label of the button back to the current step. In Build's tasks, `group`
+// makes a group's name a button that folds it (`open` says whether it is
+// unfolded), and `indent` puts a task under its group.
+export type Line = {
+  text: string
+  tone: Tone
+  time?: string
+  phase?: PhaseId
+  selected?: boolean
+  back?: string
+  group?: GroupId
+  open?: boolean
+  indent?: boolean
+}
 
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
@@ -96,27 +108,60 @@ const headerSection = (data: SessionData, shown: PhaseId | null): Section => {
   return { key: 'header', title: null, lines: [name, { text: since, tone: 'muted' }] }
 }
 
-// Build is the densest step, so when it's on show the panel lists its
-// tasks: the todo's, or the session's own when there's no todo. ✓ done,
-// ▸ the first open task (next up), ○ the rest.
-const tasksSection = ({ artifacts, tasks }: SessionData, shown: PhaseId | null): Section | null => {
-  if (shown !== 'build') return null
-  const list =
-    artifacts.todo !== null
-      ? artifacts.todoTasks
-      : tasks.map(task => ({ ...numbered(task.subject, task.id), done: task.status === 'completed' }))
-  if (list.length === 0) return null
-  const next = list.findIndex(task => !task.done)
-  const lines = list.map(({ number, title, done }, index): Line =>
-    done
-      ? { text: `✓ ${number}. ${title}`, tone: 'done' }
-      : index === next
-        ? { text: `▸ ${number}. ${title}`, tone: 'current' }
-        : { text: `○ ${number}. ${title}`, tone: 'muted' },
-  )
-  const doneCount = list.filter(task => task.done).length
+// Every group unfolded: the text summary, where nothing folds.
+export const ALL_OPEN: OpenGroups = { completed: true, working: true, todo: true }
 
-  return { key: 'tasks', title: `Tasks · ${doneCount} of ${list.length} done`, lines }
+// The pane starts with Completed folded.
+export const GROUPS_AT_START: OpenGroups = { completed: false, working: true, todo: true }
+
+type TaskState = 'done' | 'working' | 'open'
+type ListedTask = { number: string; title: string; state: TaskState }
+
+const GROUPS: readonly { id: GroupId; state: TaskState; name: string; mark: string; tone: Tone }[] = [
+  { id: 'completed', state: 'done', name: 'Completed', mark: '✓', tone: 'done' },
+  { id: 'working', state: 'working', name: 'In progress', mark: '●', tone: 'current' },
+  { id: 'todo', state: 'open', name: 'To do', mark: '○', tone: 'muted' },
+]
+
+// The todo's tasks, or the session's own when there's no todo. In progress:
+// a session task marked so, or a todo task with some boxes checked; with
+// none, the first open task.
+const listedTasks = ({ artifacts, tasks }: SessionData): ListedTask[] => {
+  const listed: ListedTask[] =
+    artifacts.todo !== null
+      ? artifacts.todoTasks.map(({ number, title, done, started }) => ({
+          number,
+          title,
+          state: done ? 'done' : started ? 'working' : 'open',
+        }))
+      : tasks.map(task => ({
+          ...numbered(task.subject, task.id),
+          state: task.status === 'completed' ? 'done' : task.status === 'in_progress' ? 'working' : 'open',
+        }))
+  if (listed.some(task => task.state === 'working')) return listed
+  const next = listed.findIndex(task => task.state === 'open')
+
+  return listed.map((task, index) => (index === next ? { ...task, state: 'working' } : task))
+}
+
+// Build is the densest step, so when it's on show the panel lists its tasks
+// in three groups, in order: completed, in progress, to do. A group with no
+// tasks is left out; a folded one shows only its name and count.
+const tasksSection = (data: SessionData, shown: PhaseId | null, open: OpenGroups): Section | null => {
+  if (shown !== 'build') return null
+  const listed = listedTasks(data)
+  if (listed.length === 0) return null
+  const lines = GROUPS.flatMap(({ id, state, name, mark, tone }): Line[] => {
+    const members = listed.filter(task => task.state === state)
+    if (members.length === 0) return []
+    const header: Line = { text: `${name} · ${members.length}`, tone: 'normal', group: id, open: open[id] }
+    if (!open[id]) return [header]
+
+    return [header, ...members.map(({ number, title }): Line => ({ text: `${mark} ${number}. ${title}`, tone, indent: true }))]
+  })
+  const done = listed.filter(task => task.state === 'done').length
+
+  return { key: 'tasks', title: `Tasks · ${done} of ${listed.length} done`, lines }
 }
 
 // Each key once, as of its latest entry, newest first.
@@ -161,11 +206,12 @@ const changeSections = (data: SessionData, shown: PhaseId | null): Section[] => 
 }
 
 // `viewing` is the step on show when it was chosen (a press, `/monitor
-// <step>`); otherwise the current step is.
-export const sectionsOf = (data: SessionData, viewing: PhaseId | null = null): Section[] => {
+// <step>`); otherwise the current step is. `open` says which task groups
+// are unfolded.
+export const sectionsOf = (data: SessionData, viewing: PhaseId | null = null, open: OpenGroups = ALL_OPEN): Section[] => {
   const shown = viewing ?? currentOf(data)
 
-  return [stepperSection(data, shown), headerSection(data, shown), tasksSection(data, shown), ...changeSections(data, shown)].filter(
+  return [stepperSection(data, shown), headerSection(data, shown), tasksSection(data, shown, open), ...changeSections(data, shown)].filter(
     (section): section is Section => section !== null,
   )
 }

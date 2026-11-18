@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import type { PhaseId } from '../types'
+import type { OpenGroups, PhaseId } from '../types'
 
 import { NO_ARTIFACTS } from './artifacts'
 import { NEW_TURN, afterCommand, afterTurnStart, commandEntry, skillEntry } from './phases'
-import { ago, sectionsOf } from './sections'
+import { GROUPS_AT_START, ago, sectionsOf } from './sections'
 import type { SessionData } from './sections'
 import { summaryOf } from './summary'
 
@@ -61,18 +61,19 @@ describe('the blocks', () => {
     ])
   })
 
-  test("while Build is current, the todo's tasks: ✓ done, ▸ the first open one, ○ the rest", () => {
+  test("while Build is current, the todo's tasks in three groups: completed, in progress, to do", () => {
     const data = {
       ...EMPTY,
       activity: [commandEntry('spec', 0), commandEntry('build', MINUTE)],
       artifacts: {
         ...NO_ARTIFACTS,
         hasSpec: true,
-        todo: { done: 1, total: 3 },
+        todo: { done: 1, total: 4 },
         todoTasks: [
-          { number: '1', title: 'Parser', done: true, started: false },
+          { number: '1', title: 'Parser', done: true, started: true },
           { number: '2', title: 'Wiring', done: false, started: false },
-          { number: '3', title: 'Docs', done: false, started: false },
+          { number: '3', title: 'Docs', done: false, started: true },
+          { number: '4', title: 'Release', done: false, started: false },
         ],
       },
       now: 5 * MINUTE,
@@ -81,33 +82,90 @@ describe('the blocks', () => {
     expect(block(data, 'stepper')?.lines.map(line => line.text)).toEqual([
       '✓ Define',
       '○ Plan',
-      '● Build 1/3',
+      '● Build 1/4',
       '○ Verify',
       '○ Review',
       '○ Ship',
     ])
+    // A task with some boxes checked is in progress, wherever it is.
     expect(block(data, 'tasks')).toEqual({
       key: 'tasks',
-      title: 'Tasks · 1 of 3 done',
+      title: 'Tasks · 1 of 4 done',
       lines: [
-        { text: '✓ 1. Parser', tone: 'done' },
-        { text: '▸ 2. Wiring', tone: 'current' },
-        { text: '○ 3. Docs', tone: 'muted' },
+        { text: 'Completed · 1', tone: 'normal', group: 'completed', open: true },
+        { text: '✓ 1. Parser', tone: 'done', indent: true },
+        { text: 'In progress · 1', tone: 'normal', group: 'working', open: true },
+        { text: '● 3. Docs', tone: 'current', indent: true },
+        { text: 'To do · 2', tone: 'normal', group: 'todo', open: true },
+        { text: '○ 2. Wiring', tone: 'muted', indent: true },
+        { text: '○ 4. Release', tone: 'muted', indent: true },
       ],
     })
   })
 
-  test("without a todo, Build lists the session's own tasks", () => {
+  test("a folded group shows its name and count, not its tasks; Completed starts folded", () => {
+    const data = {
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      artifacts: {
+        ...NO_ARTIFACTS,
+        todo: { done: 1, total: 2 },
+        todoTasks: [
+          { number: '1', title: 'Parser', done: true, started: false },
+          { number: '2', title: 'Wiring', done: false, started: false },
+        ],
+      },
+    }
+    const lines = (open: OpenGroups) => sectionsOf(data, null, open).find(section => section.key === 'tasks')?.lines
+
+    expect(lines(GROUPS_AT_START)).toEqual([
+      { text: 'Completed · 1', tone: 'normal', group: 'completed', open: false },
+      { text: 'In progress · 1', tone: 'normal', group: 'working', open: true },
+      { text: '● 2. Wiring', tone: 'current', indent: true },
+    ])
+    expect(lines({ completed: true, working: false, todo: true })?.map(line => line.text)).toEqual([
+      'Completed · 1',
+      '✓ 1. Parser',
+      'In progress · 1',
+    ])
+  })
+
+  test("with nothing started, the first open task is in progress; a group with no tasks isn't shown", () => {
+    const data = {
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      artifacts: {
+        ...NO_ARTIFACTS,
+        todo: { done: 0, total: 2 },
+        todoTasks: [
+          { number: '1', title: 'Parser', done: false, started: false },
+          { number: '2', title: 'Wiring', done: false, started: false },
+        ],
+      },
+    }
+
+    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['In progress · 1', '● 1. Parser', 'To do · 1', '○ 2. Wiring'])
+  })
+
+  test("without a todo, Build lists the session's own tasks by their status", () => {
     const data: SessionData = {
       ...EMPTY,
       activity: [commandEntry('build', 0)],
       tasks: [
         { id: '1', subject: 'Write the test', status: 'completed' },
-        { id: '2', subject: 'Make it pass', status: 'in_progress' },
+        { id: '2', subject: 'Make it pass', status: 'pending' },
+        { id: '3', subject: 'Refactor', status: 'in_progress' },
       ],
     }
 
-    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['✓ 1. Write the test', '▸ 2. Make it pass'])
+    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual([
+      'Completed · 1',
+      '✓ 1. Write the test',
+      'In progress · 1',
+      '● 3. Refactor',
+      'To do · 1',
+      '○ 2. Make it pass',
+    ])
   })
 
   test('the task list shows whenever Build is the step on show', () => {
@@ -266,6 +324,21 @@ describe('relative times', () => {
 })
 
 describe('the text summary', () => {
+  test('task groups are unfolded, their tasks indented under them', () => {
+    const data: SessionData = {
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      tasks: [
+        { id: '1', subject: 'Write the test', status: 'completed' },
+        { id: '2', subject: 'Make it pass', status: 'in_progress' },
+      ],
+    }
+
+    expect(summaryOf(sectionsOf(data))).toContain(
+      ['Tasks · 1 of 2 done', '  Completed · 1', '    ✓ 1. Write the test', '  In progress · 1', '    ● 2. Make it pass'].join('\n'),
+    )
+  })
+
   test('the same blocks, separated by blank lines, the stepper on one line', () => {
     const data: SessionData = {
       ...EMPTY,

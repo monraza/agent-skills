@@ -1,6 +1,6 @@
 import type { Elements, RenderSurface } from 'claude-code'
 
-import type { PhaseId } from '../types'
+import type { GroupId, PhaseId } from '../types'
 
 import type { Line, Section, Tone } from './sections'
 
@@ -8,8 +8,9 @@ type Table = Elements[RenderSurface]
 
 export type Layout = { columns: number; surface: RenderSurface }
 
-// What the pane's buttons do: a step in the stepper, and Back.
-export type Actions = { onStep: (phase: PhaseId) => void; onBack: () => void }
+// What the pane's buttons do: a step in the stepper, the button back to the
+// current step, and a task group's name.
+export type Actions = { onStep: (phase: PhaseId) => void; onBack: () => void; onGroup: (group: GroupId) => void }
 
 const isNarrow = ({ columns, surface }: Layout) => surface === 'mobile' || columns <= 40
 
@@ -75,9 +76,16 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
       ),
     )
 
-  // A row: what happened on the left, when on the right.
+  // A row: what happened on the left, when on the right. A task group's name
+  // is a button that folds it (▾ unfolded, ▸ folded); a task sits under it.
   const row = (line: Line) =>
-    line.time === undefined ? (
+    line.group !== undefined ? (
+      <Button key={`group-${line.group}`} plain onPress={() => actions.onGroup(line.group as GroupId)}>
+        <Text {...STYLE[line.tone]}>{`${line.open === true ? '▾' : '▸'} ${line.text}`}</Text>
+      </Button>
+    ) : line.indent === true ? (
+      <Box paddingLeft={2}>{text(line)}</Box>
+    ) : line.time === undefined ? (
       text(line)
     ) : (
       <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
