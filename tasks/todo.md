@@ -126,7 +126,7 @@ Every task, before it's checked off:
     - Integration: count the `ui.open` calls in each case, including a reload after auto-open (no second open).
   - **Files:** `hooks/register.tsx`, `types/index.d.ts`, `hooks/opening.test.tsx`
 
-- [ ] **Task 9: Layout across surfaces and widths** · M · Dependencies: 3–7
+- [x] **Task 9: Layout across surfaces and widths** · M · Dependencies: 3–7
   - **Acceptance:**
     - Spec success criterion 10 passes.
     - At 40 columns or fewer, and on `mobile`, the phase row stacks.

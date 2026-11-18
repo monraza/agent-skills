@@ -75,7 +75,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 
 ### Phase 3: Behaviour and polish
 - [x] Task 8: Opening rules
-- [ ] Task 9: Layout across surfaces and widths
+- [x] Task 9: Layout across surfaces and widths
 - [ ] Task 10: Reload, old state shapes and caps
 - [ ] Task 11: Packaging: marketplace entry, README, repo checks
 

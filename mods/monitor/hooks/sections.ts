@@ -40,7 +40,14 @@ export const ago = (at: number, now: number): string => {
 const labelOf = ({ kind, name }: ActivityEntry): string =>
   kind === 'command' ? `/${bareName(name)}` : `skill ${bareName(name)}`
 
-const phaseSection = ({ activity, artifacts, now }: SessionData): Section => {
+// The first `maxItems` lines, then one "+N more" line for the rest.
+export const cut = (lines: readonly Line[], maxItems: number): readonly Line[] =>
+  lines.length <= maxItems
+    ? lines
+    : [...lines.slice(0, maxItems), { text: `+${lines.length - maxItems} more`, isDim: true }]
+
+// The six phases (a row when there's room: view.tsx), then the evidence line.
+const phaseSections = ({ activity, artifacts, now }: SessionData): Section[] => {
   const { active, states } = phaseViewOf(activity)
   const done = doneFrom(artifacts)
   // The active phase wins over a done mark: it is what the session is doing.
@@ -56,7 +63,10 @@ const phaseSection = ({ activity, artifacts, now }: SessionData): Section => {
       ? { text: 'No phase yet', isDim: true }
       : { text: `${PHASE_LABEL[active.phase]} · since ${labelOf(active)}, ${ago(active.at, now)}`, isDim: false }
 
-  return { key: 'phase', title: null, lines: [...phases, evidence] }
+  return [
+    { key: 'phases', title: null, lines: phases },
+    { key: 'evidence', title: null, lines: [evidence] },
+  ]
 }
 
 const activitySection = ({ activity, now }: SessionData): Section => {
@@ -110,7 +120,7 @@ const tasksSection = ({ artifacts, tasks }: SessionData): Section => {
 }
 
 export const sectionsOf = (data: SessionData): Section[] => [
-  phaseSection(data),
+  ...phaseSections(data),
   tasksSection(data),
   activitySection(data),
   filesSection(data),

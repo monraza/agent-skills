@@ -179,6 +179,12 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: 'monitor' }, async ($, e) => {
     await read($, tick) // subscribes the drawing, so relative times move on
-    return drawPane($.ui.resolve(e), sectionsOf(await sessionData($)))
+    const layout = {
+      columns: e.props.bodyColumns,
+      rows: e.props.scroll.bodyRows,
+      surface: e.surface,
+    }
+
+    return drawPane($.ui.resolve(e), sectionsOf(await sessionData($)), layout)
   })
 }

@@ -11,7 +11,7 @@ describe('sections', () => {
   test('an empty session lists the six phases, no phase yet, and no activity', () => {
     expect(sectionsOf({ activity: [], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], tasks: [], now: 0 })).toEqual([
       {
-        key: 'phase',
+        key: 'phases',
         title: null,
         lines: [
           { text: '○ Define', isDim: true },
@@ -20,9 +20,9 @@ describe('sections', () => {
           { text: '○ Verify', isDim: true },
           { text: '○ Review', isDim: true },
           { text: '○ Ship', isDim: true },
-          { text: 'No phase yet', isDim: true },
         ],
       },
+      { key: 'evidence', title: null, lines: [{ text: 'No phase yet', isDim: true }] },
       { key: 'tasks', title: null, lines: [{ text: 'No tasks yet.', isDim: true }] },
       { key: 'activity', title: null, lines: [{ text: 'No activity yet.', isDim: true }] },
       { key: 'files', title: null, lines: [{ text: 'No files changed yet.', isDim: true }] },
@@ -33,7 +33,9 @@ describe('sections', () => {
 
   test('activity is newest first, with phase and age', () => {
     const activity = [commandEntry('spec', 0), commandEntry('compact', 2 * MINUTE)]
-    const [, , section] = sectionsOf({ activity, artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], tasks: [], now: 5 * MINUTE })
+    const section = sectionsOf({ activity, artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], tasks: [], now: 5 * MINUTE }).find(
+      one => one.key === 'activity',
+    )
 
     expect(section).toEqual({
       key: 'activity',
@@ -61,9 +63,9 @@ describe('relative times', () => {
 })
 
 describe('summary', () => {
-  test('a blank line follows the phase section; a titled section is one line, its items joined', () => {
+  test('a blank line follows the evidence line; a titled section is one line, its items joined', () => {
     const sections = [
-      { key: 'phase', title: null, lines: [{ text: 'No phase yet', isDim: true }] },
+      { key: 'evidence', title: null, lines: [{ text: 'No phase yet', isDim: true }] },
       { key: 'files', title: 'Files (2)', lines: [{ text: 'SPEC.md', isDim: false }, { text: 'a.ts', isDim: false }] },
     ] as const
 
