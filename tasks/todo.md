@@ -184,7 +184,7 @@ Every task, before it's checked off:
   - **Verify:** `claude plugin test mods/monitor`, `tsc -p mods/monitor`, `claude plugin validate mods/monitor`.
   - **Files:** `hooks/sections.ts`, `hooks/summary.ts`, `hooks/register.tsx`, `hooks/classify.ts`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 13: Draw the pane** · S · Dependencies: 12
+- [x] **Task 13: Draw the pane** · S · Dependencies: 12
   - **What:** `view.tsx` draws the blocks:
     - the stepper as a row, or stacked at 40 columns or narrower and on mobile
     - the current step large and bold in the accent color
@@ -196,6 +196,6 @@ Every task, before it's checked off:
   - **Files:** `hooks/view.tsx`, `hooks/layout.test.tsx`
 
 ### Checkpoint D: Simpler layout
-- [ ] Tests, type-check and validate pass
+- [x] Tests, type-check and validate pass (95 tests, every surface)
 - [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
 - [ ] Human review

@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { bashPass, gitCommit, sessionStart, taskCreate, typedCommand, write } from './fixtures/live-events'
+import { bashFail, bashPass, gitCommit, sessionStart, taskCreate, typedCommand, write } from './fixtures/live-events'
 
 const SURFACES = ['terminal', 'desktop', 'vscode', 'mobile'] as const
 const WIDE = 80
@@ -28,6 +28,7 @@ const engine = (on: On) => {
     [write.input.tool_use_id]: write.result,
     [gitCommit.input.tool_use_id]: gitCommit.result,
     [taskCreate.input.tool_use_id]: taskCreate.result,
+    [bashFail.input.tool_use_id]: bashFail.result,
   }
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -129,4 +130,51 @@ test('Recent shows the newest 4 events; the totals count them all', async ($, on
 
   const out = await $.command.run(run('monitor'))
   expect((out.text ?? '').split('\n').filter(line => line.startsWith('  edited '))).toHaveLength(4)
+})
+
+test('the pane is drawn with hierarchy and the theme colors, on every surface', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.command.run(typedCommand.commandRun)
+  await $.turn.start(typedCommand.turnStart)
+  await $.tool.call({ ...bashPass.input, command: 'npm test' })
+  await clock.advance(60_000)
+  await $.tool.call({ ...bashFail.input, command: 'tsc' })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount(paneAt(surface, WIDE))
+    const props = async (text: string) => (await ui.find({ type: 'Text', text }))?.props ?? {}
+
+    expect(await props('DEFINE · step 1 of 6')).toMatchObject({ size: 'heading', weight: 'bold', color: 'claude' })
+    expect(await props('● Define')).toMatchObject({ weight: 'bold', color: 'claude' })
+    expect(await props('○ Plan')).toMatchObject({ dimColor: true })
+    expect(await props('✗ tsc')).toMatchObject({ color: 'error' })
+    expect(await props('✓ npm test')).toMatchObject({ color: 'success' })
+    expect(await props('Recent')).toMatchObject({ size: 'caption', dimColor: true })
+
+    // A blank line between blocks, not before the first.
+    expect((await ui.find({ type: 'Box', key: 'phases' }))?.props.marginTop).toBeUndefined()
+    for (const key of ['current', 'recent', 'totals']) {
+      expect((await ui.find({ type: 'Box', key }))?.props.marginTop).toBe(1)
+    }
+    await ui.unmount()
+  }
+})
+
+test('the stepper puts ─ between steps on a row, and none when stacked', async ($, on) => {
+  mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+
+  const separators = async (surface: (typeof SURFACES)[number], width: number) => {
+    const ui = await $.ui.mount(paneAt(surface, width))
+    const found = (await ui.findAll({ type: 'Text', text: '─' })).length
+    await ui.unmount()
+
+    return found
+  }
+  expect(await separators('desktop', WIDE)).toBe(5)
+  expect(await separators('desktop', NARROW)).toBe(0)
+  expect(await separators('mobile', WIDE)).toBe(0)
 })

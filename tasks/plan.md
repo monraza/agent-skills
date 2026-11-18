@@ -99,10 +99,10 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 
 ### Phase 4: Simpler layout (after the first draw on a real screen)
 - [x] Task 12: The new blocks (stepper, current step, Recent, totals) and the text summary
-- [ ] Task 13: Draw the pane: spacing, sizes and theme colors
+- [x] Task 13: Draw the pane: spacing, sizes and theme colors
 
 ### Checkpoint D: Simpler layout
-- [ ] Tests, type-check and validate pass
+- [x] Tests, type-check and validate pass (95 tests, every surface)
 - [ ] Seen on a real screen (your local session) and on the phone (`/monitor`)
 - [ ] Human review
 

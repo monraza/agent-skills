@@ -3,28 +3,29 @@
 A Claude Code mod that shows where your session is in the agent-skills workflow (Define → Plan → Build → Verify → Review → Ship), and what the session has done. It only watches: it never changes, blocks or delays anything the session does.
 
 ```
-Workflow
-✓ Define  ✓ Plan  ◉ Build 3/7  · Verify  ○ Review  ○ Ship
-Build · since /build, 4 min ago
+✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
 
-Tasks      todo.md 3/7 done · session 2/4 done
-Activity   /build · Build · 4 min ago
-Files (5)  SPEC.md, src/rate-limiter.ts, …
-Commits    a1b2c3d feat(api): add the rate limiter
-Checks     ✓ npm test · just now   ✗ tsc · 3 min ago
+BUILD · step 3 of 6
+started by /build · 4 min ago
+3 of 7 tasks checked in tasks/todo.md
+
+Recent
+  ✓ npm test                      just now
+  edited src/rate-limiter.ts      2 min ago
+  committed a1b2c3d feat(api)…    3 min ago
+  /build                          4 min ago
+
+5 files changed · 1 commit · 2 checks, 1 failed · 2/4 tasks
 ```
 
 ## What it shows
 
-- **Phases.** The active phase (◉) is set by the most recent agent-skills command (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`…), or by an agent-skills skill in a turn that didn't start with a command. The line below the phases says what set it and when, because it's a guess. Phases you've been through show `·`.
-- **Done marks from your files.** ✓ Define when a spec exists (`SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md` or a file under `spec/`). ✓ Plan when `tasks/plan.md` exists. Build shows the checked boxes in `tasks/todo.md`.
-- **Tasks:** the `tasks/todo.md` count and the session's own task list.
-- **Activity:** every command and skill the session used, newest first.
-- **Files** changed by Edit, Write or NotebookEdit, each listed once.
-- **Commits:** short hash and subject of each successful `git commit`.
-- **Checks:** test, lint and validate commands (`npm test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`, `claude plugin validate|test`, and this repo's `run-evals`, `validate-*` and hook tests), with ✓ or ✗.
+- **Stepper:** ● the current step, ✓ a step that's done or that the session has been through, ○ a step not reached yet. ✓ also comes from your files: Define when a spec exists (`SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md` or a file under `spec/`), Plan when `tasks/plan.md` exists, and Build once every box in `tasks/todo.md` is checked. Build shows that file's count.
+- **The current step**, large and in your theme's accent color, with what started it. It is set by the most recent agent-skills command (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`…), or by an agent-skills skill in a turn that didn't start with a command. Because it's a guess, the panel always says what started it.
+- **Recent:** the newest 4 workflow events. These are agent-skills commands and skills, file edits, commits, and checks with ✓ or ✗. Checks are test, lint and validate commands: `npm test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`, `claude plugin validate|test`, and this repo's `run-evals`, `validate-*` and hook tests.
+- **Totals:** files changed, commits, checks (with failures), and the session's own tasks.
 
-Times are relative (`just now`, `4 min ago`) and stay current. Each list keeps its newest 200 entries.
+Commands and skills outside the workflow (`/model`, `/monitor`, other plugins' skills) aren't shown. Times are relative (`just now`, `4 min ago`) and stay current. Each list keeps its newest 200 entries.
 
 ## Where it shows
 
