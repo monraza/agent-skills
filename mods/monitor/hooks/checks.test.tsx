@@ -47,7 +47,7 @@ test('a passing and a failing check show ✓ and ✗, newest first', async ($, o
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('no files changed · no commits · 2 checks, 1 failed')
+  expect(shown).toContain('Checks · 2, 1 failing')
   expect(shown.indexOf('✗ npm test')).toBeGreaterThan(-1)
   expect(shown.indexOf('✗ npm test')).toBeLessThan(shown.indexOf('✓ run-evals'))
   expect(shown).toContain('3 min ago')
@@ -61,7 +61,7 @@ test('a Bash command that is not a check is not listed', async ($, on) => {
   await $.tool.call(bashPass.input)
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('no files changed · no commits · no checks')
+  expect((await texts(ui)).filter(text => text?.startsWith('Checks'))).toEqual([])
   await ui.unmount()
 })
 
@@ -73,8 +73,23 @@ test("/monitor's text summary lists the same checks", async ($, on) => {
   await $.tool.call(testsFail)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\n  ✗ npm test · just now\n  ✓ run-evals · just now\n')
-  expect(out.text).toContain('\nno files changed · no commits · 2 checks, 1 failed')
+  expect(out.text).toContain('\nChecks · 2, 1 failing\n  ✗ npm test · just now\n  ✓ run-evals · just now')
+})
+
+test('a check that failed, then passed, shows once, with its latest result', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.tool.call(testsFail)
+  await clock.advance(MINUTE)
+  // The engine passes the same command run again (any other tool_use_id).
+  await $.tool.call({ ...testsFail, tool_use_id: 'toolu_tests_again' })
+
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown.filter(text => text?.includes('npm test'))).toEqual(['✓ npm test'])
+  expect(shown).toContain('Checks · 1')
+  await ui.unmount()
 })
 
 test('a check command passes through unchanged', async ($, on) => {

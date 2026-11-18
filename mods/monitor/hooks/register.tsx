@@ -132,8 +132,7 @@ export const register: Register = on => {
 
   // Where no screen shows panes (the Android app attaches none to a cloud
   // session), the reply carries the panel as text instead.
-  // `/monitor <step>` looks back at that step; `/monitor` alone shows the
-  // current one.
+  // `/monitor <step>` shows that step; `/monitor` alone, the current one.
   on('command.run', { command: 'monitor' }, async ($, e) => {
     const step = phaseNamed(e.args)
     if (e.args.trim() !== '' && step === null) {
@@ -143,7 +142,7 @@ export const register: Register = on => {
     await update($, viewing, () => step)
     const opened = await $.ui.open(PANE)
     if (opened.isPlaced) {
-      return { text: step === null ? 'Workflow panel opened.' : `Workflow panel opened, looking back at ${PHASE_LABEL[step]}.` }
+      return { text: step === null ? 'Workflow panel opened.' : `Workflow panel opened on ${PHASE_LABEL[step]}.` }
     }
 
     return { text: summaryOf(sectionsOf(await sessionData($), step)) }
@@ -202,8 +201,8 @@ export const register: Register = on => {
     const layout = { columns: e.props.bodyColumns, surface: e.surface }
     const data = await sessionData($)
     const current = phaseViewOf(data.activity).active?.phase ?? null
-    // Pressing the current step, or the one being viewed, returns to the
-    // current step; any other step opens its look-back view.
+    // Pressing the current step, or the one on show, returns to the current
+    // step; any other started or done step shows that step.
     const actions = {
       onStep: (phase: PhaseId) => void update($, viewing, shown => (phase === shown || phase === current ? null : phase)),
       onBack: () => void update($, viewing, () => null),

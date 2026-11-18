@@ -33,7 +33,7 @@ const engine = (on: On) => {
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
-test('a typed /spec makes Define the current step, shows one Recent row, and its age moves on', async ($, on) => {
+test('a typed /spec makes Define the current step, and its age moves on', async ($, on) => {
   const clock = mock.clock(on, { now: 10 * MINUTE })
   engine(on)
   await $.session.start(sessionStart)
@@ -47,8 +47,8 @@ test('a typed /spec makes Define the current step, shows one Recent row, and its
   expect(await texts(ui)).toContain('● Define')
   expect(await texts(ui)).toContain('DEFINE')
   expect(await texts(ui)).toContain('started by /spec · just now')
-  // The command's own skill event is not a second row.
-  expect((await texts(ui)).filter(text => text === '/spec')).toEqual(['/spec'])
+  // Commands and skills are not listed: the header names the one that started the step.
+  expect((await texts(ui)).filter(text => text?.includes('spec'))).toEqual(['started by /spec · just now'])
 
   await clock.advance(4 * MINUTE)
   expect(await texts(ui)).toContain('started by /spec · 4 min ago')
@@ -70,7 +70,6 @@ test('/plan after /spec makes Plan current and marks Define ✓', async ($, on) 
   expect(shown).toContain('✓ Define')
   expect(shown).toContain('● Plan')
   expect(shown).toContain('started by /plan · just now')
-  expect(shown.indexOf('/plan')).toBeLessThan(shown.indexOf('/spec'))
   await ui.unmount()
 })
 
@@ -98,7 +97,7 @@ test('/test then test-driven-development in the same turn leaves Verify current'
   const shown = await texts(ui)
   expect(shown).toContain('VERIFY')
   expect(shown).toContain('started by /test · just now')
-  expect(shown).toContain('skill test-driven-development')
+  expect(shown).not.toContain('skill test-driven-development')
   await ui.unmount()
 })
 
@@ -116,7 +115,7 @@ test('a skill outside the workflow is not shown and changes nothing', async ($, 
   await ui.unmount()
 })
 
-test("/monitor's text summary shows the same step and Recent", async ($, on) => {
+test("/monitor's text summary shows the same step", async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -127,7 +126,7 @@ test("/monitor's text summary shows the same step and Recent", async ($, on) => 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
   expect(out.text).toContain('● Define ─ ○ Plan')
   expect(out.text).toContain('\nDEFINE\nstarted by /spec · just now\n')
-  expect(out.text).toContain('\nRecent\n  /spec · just now\n')
+  expect(out.text).toContain('\nNothing changed in this step yet.')
 })
 
 test('command.run, skill.prompt and turn.start pass through unchanged', async ($, on) => {

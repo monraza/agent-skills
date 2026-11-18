@@ -67,7 +67,7 @@ const session = async ($: Engine, clock: MockClock) => {
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
-test("pressing a step shows that step's files and activity, on every surface", async ($, on) => {
+test("pressing a step shows that step's view, with a button back to the current step, on every surface", async ($, on) => {
   const clock = mock.clock(on)
   engine(on)
   await session($, clock)
@@ -77,23 +77,26 @@ test("pressing a step shows that step's files and activity, on every surface", a
     await ui.press({ key: 'step-plan' })
     const shown = await texts(ui)
 
-    expect(shown).toContain('PLAN · looking back')
+    expect(shown).toContain('PLAN')
     expect(shown).toContain('started by /plan · 1 h ago')
+    expect(shown).toContain('Files changed · 2')
     expect(shown).toContain('created tasks/plan.md')
     expect(shown).toContain('created tasks/todo.md')
-    expect(shown).toContain('/plan')
+    expect(shown.filter(text => text?.includes('looking back'))).toEqual([])
+    expect((await ui.find({ type: 'Button', key: 'back' }))?.text).toBe('Back to Build')
     // Define's and Build's events are not Plan's.
     expect(shown).not.toContain('created SPEC.md')
     expect(shown).not.toContain('edited SPEC.md')
-    expect(shown).not.toContain('/build')
+    expect(shown).not.toContain('BUILD')
 
     await ui.press({ key: 'back' })
     expect(await texts(ui)).toContain('BUILD')
+    expect(await ui.find({ type: 'Button', key: 'back' })).toBeUndefined()
     await ui.unmount()
   }
 })
 
-test("a file belongs to each step it changed in; the step's commits and checks are its activity", async ($, on) => {
+test('a file belongs to each step it changed in; so do commits and checks', async ($, on) => {
   const clock = mock.clock(on)
   engine(on)
   await session($, clock)
@@ -102,43 +105,50 @@ test("a file belongs to each step it changed in; the step's commits and checks a
   await ui.press({ key: 'step-define' })
   expect(await texts(ui)).toContain('created SPEC.md')
 
+  // Build is the current step: pressing it returns to the current view.
   await ui.press({ key: 'step-build' })
-  // Build is the current step: pressing it returns to the normal view.
-  expect(await texts(ui)).toContain('BUILD')
-  expect(await texts(ui)).not.toContain('BUILD · looking back')
+  const shown = await texts(ui)
+  expect(shown).toContain('BUILD')
+  expect(shown).toContain('edited SPEC.md')
+  expect(shown).toContain('Commits · 1')
+  expect(shown).toContain('✗ tsc')
   await ui.unmount()
 
   const out = await $.command.run(run('monitor', 'define'))
-  expect(out.text).toContain('\nDEFINE · looking back\nstarted by /spec · 2 h ago\n')
-  expect(out.text).toContain('\nFiles\n  created SPEC.md · 2 h ago\n')
-  expect(out.text).toContain('\nActivity\n  /spec · 2 h ago')
+  expect(out.text).toContain('\nDEFINE\nstarted by /spec · 2 h ago\n')
+  expect(out.text).toContain('\nFiles changed · 1\n  created SPEC.md · 2 h ago')
+  expect(out.text).not.toContain('Commits')
 })
 
-test('pressing the step being viewed returns to the current step', async ($, on) => {
+test('pressing the step on show returns to the current step', async ($, on) => {
   const clock = mock.clock(on)
   engine(on)
   await session($, clock)
 
   const ui = await $.ui.mount(paneAt('terminal'))
   await ui.press({ key: 'step-define' })
-  expect(await texts(ui)).toContain('DEFINE · looking back')
+  expect(await texts(ui)).toContain('DEFINE')
   await ui.press({ key: 'step-define' })
-  expect(await texts(ui)).not.toContain('DEFINE · looking back')
+  expect(await texts(ui)).not.toContain('DEFINE')
+  expect(await texts(ui)).toContain('BUILD')
   await ui.unmount()
 })
 
-test('a step with nothing recorded says so', async ($, on) => {
+test("a step not reached isn't a button; /monitor <step> still shows it", async ($, on) => {
   const clock = mock.clock(on)
   engine(on)
   await session($, clock)
 
   const ui = await $.ui.mount(paneAt('desktop'))
-  await ui.press({ key: 'step-verify' })
-  const shown = await texts(ui)
-  expect(shown).toContain('VERIFY · looking back')
-  expect(shown).toContain('not started in this session')
-  expect(shown).toContain('Nothing recorded for this step yet.')
+  const pressed = await ui.press({ key: 'step-verify' }).then(
+    () => true,
+    () => false,
+  )
+  expect(pressed).toBe(false)
   await ui.unmount()
+
+  const out = await $.command.run(run('monitor', 'verify'))
+  expect(out.text).toContain('\nVERIFY\nnot started in this session\n\nNothing changed in this step yet.')
 })
 
 test("/monitor <step> on the phone: the step's view as text; build's commit and check are Build's", async ($, on) => {
@@ -147,7 +157,7 @@ test("/monitor <step> on the phone: the step's view as text; build's commit and 
   await session($, clock)
 
   const plan = await $.command.run(run('monitor', 'Plan'))
-  expect(plan.text).toContain('\nPLAN · looking back\n')
+  expect(plan.text).toContain('\nPLAN\nstarted by /plan · 1 h ago\n')
   expect(plan.text).toContain('  created tasks/plan.md · 1 h ago')
 
   const unknown = await $.command.run(run('monitor', 'deploy'))
@@ -155,8 +165,8 @@ test("/monitor <step> on the phone: the step's view as text; build's commit and 
 
   const current = await $.command.run(run('monitor'))
   expect(current.text).toContain('\nBUILD\nstarted by /build · just now\n')
-  expect(current.text).toContain('  ✗ tsc · just now')
-  expect(current.text).toContain('  committed 298bd7b probe: first commit · just now')
+  expect(current.text).toContain('\nChecks · 1, 1 failing\n  ✗ tsc · just now')
+  expect(current.text).toContain('\nCommits · 1\n  298bd7b probe: first commit · just now')
 })
 
 test('/monitor <step> where a pane is shown opens it on that step', async ($, on) => {
@@ -165,8 +175,9 @@ test('/monitor <step> where a pane is shown opens it on that step', async ($, on
   await session($, clock)
 
   const out = await $.command.run(run('monitor', 'define'))
-  expect(out.text).toBe('Workflow panel opened, looking back at Define.')
+  expect(out.text).toBe('Workflow panel opened on Define.')
   const ui = await $.ui.mount(paneAt('desktop'))
-  expect(await texts(ui)).toContain('DEFINE · looking back')
+  expect(await texts(ui)).toContain('DEFINE')
+  expect((await ui.find({ type: 'Button', key: 'back' }))?.text).toBe('Back to Build')
   await ui.unmount()
 })

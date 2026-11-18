@@ -26,13 +26,16 @@ const STYLE: Record<Tone, { color?: string; weight?: 'bold'; dimColor?: boolean 
 export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Section[], layout: Layout, actions: Actions) => {
   const text = (line: Line) => <Text {...STYLE[line.tone]}>{line.text}</Text>
 
-  // Each step is a plain button that opens its look-back view.
+  // A started or done step is a plain button that shows it; the step on
+  // show, when it isn't the current one, is underlined.
   const step = (line: Line) =>
     line.phase === undefined ? (
       text(line)
     ) : (
       <Button key={`step-${line.phase}`} plain onPress={() => actions.onStep(line.phase as PhaseId)}>
-        {text(line)}
+        <Text {...STYLE[line.tone]} underline={line.selected === true}>
+          {line.text}
+        </Text>
       </Button>
     )
 
@@ -54,16 +57,17 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
     </Text>
   )
 
-  // The step's name, large; looking back, with Back on the right.
-  const header = (key: string, lines: readonly Line[]) =>
+  // The step's name, large; for an earlier step, the button back to the
+  // current one on the right, named after it.
+  const header = (lines: readonly Line[]) =>
     lines.map((line, index) =>
       index !== 0 ? (
         text(line)
-      ) : key === 'lookback' ? (
+      ) : line.back !== undefined ? (
         <Box flexDirection="row" justifyContent="space-between" columnGap={2}>
           {heading(line)}
           <Button key="back" onPress={actions.onBack}>
-            Back
+            {line.back}
           </Button>
         </Box>
       ) : (
@@ -94,7 +98,7 @@ export const drawPane = ({ Box, Button, Text }: Table, sections: readonly Sectio
                 {title}
               </Text>
             )}
-            {key === 'current' || key === 'lookback' ? header(key, lines) : lines.map(row)}
+            {key === 'header' ? header(lines) : lines.map(row)}
           </Box>
         ),
       )}

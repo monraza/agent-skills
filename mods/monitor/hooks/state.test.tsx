@@ -82,7 +82,11 @@ test('files, commits and checks each keep their newest 200', async ($, on) => {
     await $.tool.call(gitCommit.input)
   }
 
-  // The activity cap is unit-tested with keepNewest; the totals show the rest.
+  // The activity and checks caps are unit-tested with keepNewest (each check
+  // shows once, so its list's length isn't shown); the lists show the rest.
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toMatch(/\n200 files changed · 200 commits · 200 checks$/)
+  expect(out.text).toContain('\nFiles changed · 200\n')
+  expect(out.text).toContain('\nCommits · 200\n')
+  expect(out.text).toContain('  created file-249.md')
+  expect(out.text).not.toContain('  created file-49.md')
 })

@@ -82,9 +82,11 @@ test('a full session draws on every surface at both widths', async ($, on) => {
         'DEFINE',
         'started by /spec · just now',
         'created notes.md',
-        'committed 298bd7b probe: first commit',
+        'Files changed · 1',
+        'Commits · 1',
+        '298bd7b probe: first commit',
+        'Checks · 1',
         '✓ npm test',
-        '1 file changed · 1 commit · 1 check · 0/1 tasks',
       ]) {
         expect(shown).toContain(text)
       }
@@ -102,7 +104,7 @@ test('an empty session draws on every surface at both widths', async ($, on) => 
     for (const width of [WIDE, NARROW]) {
       const ui = await $.ui.mount(paneAt(surface, width))
       const shown = await texts(ui)
-      for (const text of ['○ Define', 'No step yet', 'waiting for an agent-skills command or skill', 'no files changed · no commits · no checks']) {
+      for (const text of ['○ Define', 'No step yet', 'waiting for an agent-skills command or skill']) {
         expect(shown).toContain(text)
       }
       await ui.unmount()
@@ -110,7 +112,7 @@ test('an empty session draws on every surface at both widths', async ($, on) => 
   }
 })
 
-test('Recent shows the newest 4 events; the totals count them all', async ($, on) => {
+test("every file changed in the step is listed, newest first, in the pane and the text", async ($, on) => {
   const clock = mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -121,17 +123,14 @@ test('Recent shows the newest 4 events; the totals count them all', async ($, on
 
   const ui = await $.ui.mount(paneAt('desktop', WIDE))
   const shown = await texts(ui)
-  expect(shown.filter(text => text?.startsWith('created '))).toEqual([
-    'created file-9.md',
-    'created file-8.md',
-    'created file-7.md',
-    'created file-6.md',
-  ])
-  expect(shown).toContain('10 files changed · no commits · no checks')
+  const created = shown.filter(text => text?.startsWith('created '))
+  expect(created).toHaveLength(10)
+  expect(created.slice(0, 2)).toEqual(['created file-9.md', 'created file-8.md'])
+  expect(shown).toContain('Files changed · 10')
   await ui.unmount()
 
   const out = await $.command.run(run('monitor'))
-  expect((out.text ?? '').split('\n').filter(line => line.startsWith('  created '))).toHaveLength(4)
+  expect((out.text ?? '').split('\n').filter(line => line.startsWith('  created '))).toHaveLength(10)
 })
 
 test('the pane is drawn with hierarchy and the theme colors, on every surface', async ($, on) => {
@@ -153,11 +152,11 @@ test('the pane is drawn with hierarchy and the theme colors, on every surface', 
     expect(await props('○ Plan')).toMatchObject({ dimColor: true })
     expect(await props('✗ tsc')).toMatchObject({ color: 'error' })
     expect(await props('✓ npm test')).toMatchObject({ color: 'success' })
-    expect(await props('Recent')).toMatchObject({ size: 'caption', dimColor: true })
+    expect(await props('Checks · 2, 1 failing')).toMatchObject({ size: 'caption', dimColor: true })
 
     // A blank line between blocks, not before the first.
     expect((await ui.find({ type: 'Box', key: 'phases' }))?.props.marginTop).toBeUndefined()
-    for (const key of ['current', 'recent', 'totals']) {
+    for (const key of ['header', 'checks']) {
       expect((await ui.find({ type: 'Box', key }))?.props.marginTop).toBe(1)
     }
     await ui.unmount()

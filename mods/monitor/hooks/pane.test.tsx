@@ -24,8 +24,6 @@ const EMPTY_SUMMARY = [
   '',
   'No step yet',
   'waiting for an agent-skills command or skill',
-  '',
-  'no files changed · no commits · no checks',
 ].join('\n')
 
 test('/monitor opens the Workflow pane', async ($, on) => {
@@ -80,14 +78,15 @@ test('session.start and other commands pass through unchanged', async ($, on) =>
   expect(await $.command.run(typedCommand.commandRun)).toEqual({ text: 'engine ran spec' })
 })
 
-test('an empty session shows no step yet and empty totals, on every surface', async ($, on) => {
+test('an empty session shows the stepper and No step yet, and nothing else, on every surface', async ($, on) => {
   mock.clock(on)
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
 
     expect((await ui.find({ type: 'Text', text: 'No step yet' }))?.text).toBe('No step yet')
-    expect((await ui.find({ type: 'Text', text: 'no files changed' }))?.text).toBe('no files changed · no commits · no checks')
     expect((await ui.find({ type: 'Text', text: '○ Define' }))?.text).toBe('○ Define')
+    // No step has started, so none is a button.
+    expect(await ui.findAll({ type: 'Button' })).toEqual([])
     await ui.unmount()
   }
 })

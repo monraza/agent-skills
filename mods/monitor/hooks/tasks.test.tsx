@@ -2,9 +2,10 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { NO_ARTIFACTS } from './artifacts'
+import { commandEntry } from './phases'
 import { sessionStart, taskCreate, taskUpdate, typedCommand } from './fixtures/live-events'
 import { sectionsOf } from './sections'
-import { taskCounts, taskCreated, taskUpdated, todosWritten } from './tasks'
+import { taskCreated, taskUpdated, todosWritten } from './tasks'
 
 const PANE = {
   plugin: 'monitor',
@@ -58,6 +59,8 @@ const engine = (on: On) => {
   on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
 }
 
+const build = { ...typedCommand.commandRun, command: 'build', args: '' }
+
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
@@ -85,23 +88,29 @@ describe('session tasks', () => {
       { content: 'Make it pass', status: 'in_progress', activeForm: 'Making it pass' },
       { content: 'Commit', status: 'pending', activeForm: 'Committing' },
     ] as const
-    expect(taskCounts(todosWritten(todos))).toEqual({ done: 1, total: 3 })
+    expect(todosWritten(todos)).toEqual([
+      { id: '1', subject: 'Write the test', status: 'completed' },
+      { id: '2', subject: 'Make it pass', status: 'in_progress' },
+      { id: '3', subject: 'Commit', status: 'pending' },
+    ])
   })
 
-  test("the totals count the session's tasks, and leave them out when there are none", () => {
-    const base = { activity: [], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], now: 0 }
+  test("without a todo, Build lists the session's tasks, numbered from their subjects; none, no list", () => {
+    const base = { activity: [commandEntry('build', 0)], artifacts: NO_ARTIFACTS, files: [], commits: [], checks: [], now: 0 }
     const tasks = taskUpdated(taskCreated(taskCreated([], taskCreate.result), createSecond.result), complete.input, complete.result)
-    const totals = (list: typeof tasks) => sectionsOf({ ...base, tasks: list }).find(section => section.key === 'totals')?.lines[0]?.text
+    const list = (of: typeof tasks) => sectionsOf({ ...base, tasks: of }).find(section => section.key === 'tasks')
 
-    expect(totals(tasks)).toBe('no files changed · no commits · no checks · 1/2 tasks')
-    expect(totals([])).toBe('no files changed · no commits · no checks')
+    expect(list(tasks)?.title).toBe('Tasks · 1 of 2 done')
+    expect(list(tasks)?.lines.map(line => line.text)).toEqual(['✓ 1. Live event check for the monitor mod', '▸ 2. Second task'])
+    expect(list([])).toBeUndefined()
   })
 })
 
-test('task tool calls update the session task count in the totals', async ($, on) => {
+test("task tool calls update Build's task list", async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
+  await $.command.run(build)
   await $.tool.call(taskCreate.input)
   await $.tool.call(createSecond.input)
   await $.tool.call(taskUpdate.input)
@@ -109,16 +118,17 @@ test('task tool calls update the session task count in the totals', async ($, on
   await $.tool.call(createFailed.input)
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/2 tasks')
+  expect(await texts(ui)).toContain('Tasks · 1 of 2 done')
   await $.tool.call(deleteSecond.input)
-  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/1 tasks')
+  expect(await texts(ui)).toContain('Tasks · 1 of 1 done')
   await ui.unmount()
 })
 
-test('a TodoWrite call sets the session count', async ($, on) => {
+test("a TodoWrite call sets Build's task list", async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
+  await $.command.run(build)
   await $.tool.call({
     tool: 'TodoWrite',
     tool_use_id: 'toolu_todo',
@@ -129,18 +139,19 @@ test('a TodoWrite call sets the session count', async ($, on) => {
   })
 
   const ui = await $.ui.mount(PANE)
-  expect(await texts(ui)).toContain('no files changed · no commits · no checks · 1/2 tasks')
+  expect(await texts(ui)).toContain('Tasks · 1 of 2 done')
   await ui.unmount()
 })
 
-test("/monitor's text summary shows the same task count", async ($, on) => {
+test("/monitor's text summary shows the same tasks", async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
+  await $.command.run(build)
   await $.tool.call(taskCreate.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\nno files changed · no commits · no checks · 0/1 tasks')
+  expect(out.text).toContain('\nTasks · 0 of 1 done\n  ▸ 1. Live event check for the monitor mod')
 })
 
 test('task tool calls pass through unchanged', async ($, on) => {

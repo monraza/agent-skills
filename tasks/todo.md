@@ -241,7 +241,7 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criteria 4 and 21 (the heading part). `Build 0/85` on a heading-style todo reads one count per task.
   - **Files:** `hooks/artifacts.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 18: One view per step** · M · Dependencies: 17
+- [x] **Task 18: One view per step** · M · Dependencies: 17
   - **What:**
     - The same view for the current step and any earlier one: header, Build's tasks, `Files changed`, `Commits` and `Checks` (each check once, latest result) for that step.
     - `Recent`, `Activity`, the totals line and `looking back` go.

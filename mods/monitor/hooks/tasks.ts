@@ -1,4 +1,4 @@
-import type { SessionTask, TaskStatus, TodoCount } from '../types'
+import type { SessionTask, TaskStatus } from '../types'
 
 import { isRecord } from './classify'
 
@@ -35,9 +35,4 @@ export const taskUpdated = (tasks: readonly SessionTask[], change: TaskChange, r
 }
 
 export const todosWritten = (todos: readonly { content: string; status: TaskStatus }[]): SessionTask[] =>
-  todos.map((todo, index) => ({ id: `todo-${index + 1}`, subject: todo.content, status: todo.status }))
-
-export const taskCounts = (tasks: readonly SessionTask[]): TodoCount => ({
-  done: tasks.filter(task => task.status === 'completed').length,
-  total: tasks.length,
-})
+  todos.map((todo, index) => ({ id: String(index + 1), subject: todo.content, status: todo.status }))

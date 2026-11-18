@@ -23,17 +23,23 @@ const itemsOf = (lines: readonly string[]): Item[] =>
   })
 
 // A title loses its ** and is cut at ' · ', where this repo's task lines
-// start their size and dependencies; `Task N:` becomes its number.
-const taskOf = (text: string, place: number, done: boolean, started: boolean): TodoTask => {
+// start their size and dependencies; `Task N:` becomes its number, and
+// without one the task keeps the number it's given.
+export const numbered = (text: string, number: string): { number: string; title: string } => {
   const plain = text.replaceAll('**', '').split(' · ')[0]?.trim() ?? ''
   const match = plain.match(TASK_NUMBER)
-  if (match === null) return { number: String(place), title: plain, done, started }
-
+  if (match === null) return { number, title: plain }
   // `Task 3` with nothing after its number keeps its whole text as the title.
   const title = plain.slice(match[0].length).trim()
 
-  return { number: match[1] ?? String(place), title: title === '' ? plain : title, done, started }
+  return { number: match[1] ?? number, title: title === '' ? plain : title }
 }
+
+const taskOf = (text: string, place: number, done: boolean, started: boolean): TodoTask => ({
+  ...numbered(text, String(place)),
+  done,
+  started,
+})
 
 // The planning skill's `## Task N: title` sections: the boxes under a task
 // heading, down to the next heading as high as it, are that task's. A

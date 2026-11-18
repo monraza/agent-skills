@@ -47,7 +47,7 @@ const engine = (on: On) => {
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
-test('a file written then edited counts once and shows once, relative to the working directory', async ($, on) => {
+test('a file written then edited shows once, as created, relative to the working directory', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -56,8 +56,8 @@ test('a file written then edited counts once and shows once, relative to the wor
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('1 file changed · no commits · no checks')
-  expect(shown.filter(text => text === 'edited notes.md')).toEqual(['edited notes.md'])
+  expect(shown).toContain('Files changed · 1')
+  expect(shown.filter(text => text?.includes('notes.md'))).toEqual(['created notes.md'])
   await ui.unmount()
 })
 
@@ -70,7 +70,7 @@ test('a file outside the working directory keeps its full path; a failed edit is
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('1 file changed · no commits · no checks')
+  expect(shown).toContain('Files changed · 1')
   expect(shown).toContain('created /tmp/elsewhere.md')
   expect(shown).not.toContain('edited broken.md')
   expect(shown).not.toContain('created broken.md')
@@ -87,20 +87,21 @@ test('a successful commit shows with its short hash and subject; a failed comman
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('no files changed · 1 commit · no checks')
-  expect(shown).toContain('committed 298bd7b probe: first commit')
+  expect(shown).toContain('Commits · 1')
+  expect(shown).not.toContain('Files changed · 0')
+  expect(shown).toContain('298bd7b probe: first commit')
   expect(shown.filter(text => text?.includes('298bd7b'))).toHaveLength(1)
   await ui.unmount()
 })
 
-test('with no changes the totals say so', async ($, on) => {
+test('with no changes no list is shown', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
 
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown).toContain('no files changed · no commits · no checks')
+  expect(shown.filter(text => /^(Files changed|Commits|Checks)/.test(text ?? ''))).toEqual([])
   await ui.unmount()
 })
 
@@ -112,9 +113,8 @@ test("/monitor's text summary lists the same files and commits", async ($, on) =
   await $.tool.call(gitCommit.input)
 
   const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
-  expect(out.text).toContain('\n  created notes.md · just now')
-  expect(out.text).toContain('\n  committed 298bd7b probe: first commit · just now')
-  expect(out.text).toContain('\n1 file changed · 1 commit · no checks')
+  expect(out.text).toContain('\nFiles changed · 1\n  created notes.md · just now\n')
+  expect(out.text).toContain('\nCommits · 1\n  298bd7b probe: first commit · just now')
 })
 
 test('Bash, Write and Edit calls pass through unchanged', async ($, on) => {
