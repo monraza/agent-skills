@@ -24,11 +24,16 @@ export type Artifacts = {
   todo: TodoCount | null
 }
 
+export type Commit = { sha: string; subject: string }
+
 declare module 'claude-code' {
   interface PluginState {
     monitor: {
       activity: Shaped<ActivityEntry[]>
       artifacts: Shaped<Artifacts>
+      // Paths relative to the working directory, each once, most recent last.
+      files: Shaped<string[]>
+      commits: Shaped<Commit[]>
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

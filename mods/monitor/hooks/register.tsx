@@ -4,6 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Artifacts } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo } from './artifacts'
+import { addFile, commitOf } from './classify'
 import { NEW_TURN, afterCommand, afterTurnStart, commandEntry, isOwnExpansion, skillEntry } from './phases'
 import { sectionsOf } from './sections'
 import type { SessionData } from './sections'
@@ -17,12 +18,16 @@ const MINUTE = 60_000
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
 const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-1' })
+const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-1' })
+const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-1' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 
 const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   activity: await read($, activity),
   artifacts: await read($, artifacts),
+  files: await read($, files),
+  commits: await read($, commits),
   now: await $.clock.now(),
 })
 
@@ -113,12 +118,19 @@ export const register: Register = on => {
     const ran = await next(e)
     const edited =
       e.tool === 'Edit' || e.tool === 'Write' ? e.file_path : e.tool === 'NotebookEdit' ? e.notebook_path : null
-    if (edited !== null) {
+    // A failed edit changed nothing.
+    if (edited !== null && ran.isError !== true) {
       try {
-        if (isTrackedPath(relativeTo(await $.session.cwd(), edited))) await refreshArtifacts($)
+        const path = relativeTo(await $.session.cwd(), edited)
+        await update($, files, list => addFile(list, path))
+        if (isTrackedPath(path)) await refreshArtifacts($)
       } catch {
-        // no working directory to compare with: nothing to refresh
+        // no working directory to compare with: nothing recorded
       }
+    }
+    if (e.tool === 'Bash') {
+      const commit = commitOf(ran)
+      if (commit !== null) await update($, commits, list => [...list, commit])
     }
 
     return ran

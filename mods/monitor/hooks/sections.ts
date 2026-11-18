@@ -1,4 +1,4 @@
-import type { ActivityEntry, Artifacts, PhaseId } from '../types'
+import type { ActivityEntry, Artifacts, Commit, PhaseId } from '../types'
 
 import { doneFrom } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
@@ -12,7 +12,13 @@ export type Line = { text: string; isDim: boolean }
 // labelled list.
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
 
-export type SessionData = { activity: readonly ActivityEntry[]; artifacts: Artifacts; now: number }
+export type SessionData = {
+  activity: readonly ActivityEntry[]
+  artifacts: Artifacts
+  files: readonly string[]
+  commits: readonly Commit[]
+  now: number
+}
 
 const MINUTE = 60_000
 
@@ -62,4 +68,23 @@ const activitySection = ({ activity, now }: SessionData): Section => {
   return { key: 'activity', title: 'Activity', lines }
 }
 
-export const sectionsOf = (data: SessionData): Section[] => [phaseSection(data), activitySection(data)]
+const filesSection = ({ files }: SessionData): Section =>
+  files.length === 0
+    ? { key: 'files', title: null, lines: empty('No files changed yet.') }
+    : { key: 'files', title: `Files (${files.length})`, lines: [...files].reverse().map(text => ({ text, isDim: false })) }
+
+const commitsSection = ({ commits }: SessionData): Section =>
+  commits.length === 0
+    ? { key: 'commits', title: null, lines: empty('No commits yet.') }
+    : {
+        key: 'commits',
+        title: 'Commits',
+        lines: [...commits].reverse().map(({ sha, subject }) => ({ text: `${sha} ${subject}`.trim(), isDim: false })),
+      }
+
+export const sectionsOf = (data: SessionData): Section[] => [
+  phaseSection(data),
+  activitySection(data),
+  filesSection(data),
+  commitsSection(data),
+]

@@ -81,7 +81,7 @@ Every task, before it's checked off:
     - Integration: a stubbed `fs` with 3 of 7 checked → `Build 3/7`. An Edit to `tasks/todo.md` → the count updates.
   - **Files:** `hooks/artifacts.ts`, `hooks/artifacts.test.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`
 
-- [ ] **Task 5: Files changed and commits** · M · Dependencies: 2
+- [x] **Task 5: Files changed and commits** · M · Dependencies: 2
   - **Acceptance:**
     - Spec success criteria 6 and 7 pass.
     - Paths are relative to the working directory, listed once each, with a count.
