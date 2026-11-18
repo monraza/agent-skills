@@ -33,6 +33,7 @@ const EMPTY_SUMMARY = [
   'No activity yet.',
   'No files changed yet.',
   'No commits yet.',
+  'No checks run yet.',
 ].join('\n')
 
 test('/monitor opens the Workflow pane', async ($, on) => {

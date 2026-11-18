@@ -4,7 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Artifacts } from '../types'
 
 import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo } from './artifacts'
-import { addFile, commitOf } from './classify'
+import { addFile, checkOf, commitOf } from './classify'
 import { NEW_TURN, afterCommand, afterTurnStart, commandEntry, isOwnExpansion, skillEntry } from './phases'
 import { sectionsOf } from './sections'
 import type { SessionData } from './sections'
@@ -20,6 +20,7 @@ const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { sha
 const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-1' })
 const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-1' })
 const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-1' })
+const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 
@@ -28,6 +29,7 @@ const sessionData = async ($: EngineInterface): Promise<SessionData> => ({
   artifacts: await read($, artifacts),
   files: await read($, files),
   commits: await read($, commits),
+  checks: await read($, checks),
   now: await $.clock.now(),
 })
 
@@ -131,6 +133,8 @@ export const register: Register = on => {
     if (e.tool === 'Bash') {
       const commit = commitOf(ran)
       if (commit !== null) await update($, commits, list => [...list, commit])
+      const check = checkOf(e.command, ran, await $.clock.now())
+      if (check !== null) await update($, checks, list => [...list, check])
     }
 
     return ran

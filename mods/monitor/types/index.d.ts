@@ -26,6 +26,8 @@ export type Artifacts = {
 
 export type Commit = { sha: string; subject: string }
 
+export type Check = { at: number; label: string; ok: boolean }
+
 declare module 'claude-code' {
   interface PluginState {
     monitor: {
@@ -34,6 +36,7 @@ declare module 'claude-code' {
       // Paths relative to the working directory, each once, most recent last.
       files: Shaped<string[]>
       commits: Shaped<Commit[]>
+      checks: Shaped<Check[]>
       turn: Shaped<Turn>
       // Bumped once a minute, so a drawing reading it redraws its relative times.
       tick: number

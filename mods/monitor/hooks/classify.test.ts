@@ -1,7 +1,61 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { addFile, commitOf } from './classify'
+import { addFile, checkLabelOf, checkOf, commitOf } from './classify'
 import { bashFail, bashPass, gitCommit } from './fixtures/live-events'
+
+describe('check commands', () => {
+  test('match the built-in list, wrapped or chained', () => {
+    const cases = [
+      ['npm test', 'npm test'],
+      ['npm run test -- --coverage', 'npm test'],
+      ['npm run lint', 'npm run lint'],
+      ['node scripts/run-evals.js', 'run-evals'],
+      ['node scripts/validate-skills.js', 'validate-skills'],
+      ['bash hooks/sdd-cache-test.sh', 'sdd-cache-test'],
+      ['PATH="${BASH_PATH_PREFIX}$PATH" bash hooks/simplify-ignore-test.sh', 'simplify-ignore-test'],
+      ['claude plugin validate mods/monitor', 'claude plugin validate'],
+      ['timeout 180 claude plugin test mods/monitor 2>&1 | grep -E "pass"', 'claude plugin test'],
+      ['cd mods/monitor && npx tsc -p .', 'tsc'],
+      ['npx eslint .', 'eslint'],
+      ['npx jest', 'jest'],
+      ['vitest run', 'vitest'],
+      ['(cd api && pytest -q)', 'pytest'],
+      ['go test ./...', 'go test'],
+      ['cargo test', 'cargo test'],
+      ['node scripts/validate-skills.js && node scripts/run-evals.js', 'validate-skills, run-evals'],
+    ] as const
+
+    for (const [command, label] of cases) expect(checkLabelOf(command)).toBe(label)
+  })
+
+  test('near misses are not checks', () => {
+    const misses = [
+      'npm install',
+      'npm run build',
+      'cat package.json',
+      'grep -n tsc README.md',
+      'echo npm test',
+      'git commit -m "run the tests"',
+      'ls scripts/validate-skills.js',
+      'node scripts/build.js',
+    ]
+
+    for (const command of misses) expect(checkLabelOf(command)).toBeNull()
+  })
+
+  test('pass and fail come from the Bash result', () => {
+    expect(checkOf('npm test', bashPass.result, 5)).toEqual({ at: 5, label: 'npm test', ok: true })
+    expect(checkOf('npm test', bashFail.result, 5)).toEqual({ at: 5, label: 'npm test', ok: false })
+    const interrupted = { ...bashPass.result, result: { ...bashPass.result.result, interrupted: true } }
+    expect(checkOf('npm test', interrupted, 5)?.ok).toBe(false)
+  })
+
+  test('a check still running in the background, or not a check, gives nothing', () => {
+    const background = { ...bashPass.result, result: { ...bashPass.result.result, backgroundTaskId: 'b1' } }
+    expect(checkOf('npm test', background, 5)).toBeNull()
+    expect(checkOf('echo probe-pass', bashPass.result, 5)).toBeNull()
+  })
+})
 
 describe('commits', () => {
   test('a successful commit gives its short hash and subject', () => {

@@ -1,4 +1,4 @@
-import type { ActivityEntry, Artifacts, Commit, PhaseId } from '../types'
+import type { ActivityEntry, Artifacts, Check, Commit, PhaseId } from '../types'
 
 import { doneFrom } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseViewOf } from './phases'
@@ -17,6 +17,7 @@ export type SessionData = {
   artifacts: Artifacts
   files: readonly string[]
   commits: readonly Commit[]
+  checks: readonly Check[]
   now: number
 }
 
@@ -82,9 +83,22 @@ const commitsSection = ({ commits }: SessionData): Section =>
         lines: [...commits].reverse().map(({ sha, subject }) => ({ text: `${sha} ${subject}`.trim(), isDim: false })),
       }
 
+const checksSection = ({ checks, now }: SessionData): Section =>
+  checks.length === 0
+    ? { key: 'checks', title: null, lines: empty('No checks run yet.') }
+    : {
+        key: 'checks',
+        title: 'Checks',
+        lines: [...checks].reverse().map(({ at, label, ok }) => ({
+          text: `${ok ? '✓' : '✗'} ${label} · ${ago(at, now)}`,
+          isDim: false,
+        })),
+      }
+
 export const sectionsOf = (data: SessionData): Section[] => [
   phaseSection(data),
   activitySection(data),
   filesSection(data),
   commitsSection(data),
+  checksSection(data),
 ]

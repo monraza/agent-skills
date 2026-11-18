@@ -91,7 +91,7 @@ Every task, before it's checked off:
     - Integration: fixture Edit, Write and commit events → the pane shows them.
   - **Files:** `hooks/classify.ts`, `hooks/classify.test.ts`, `hooks/register.tsx`, `hooks/view.tsx`, `types/index.d.ts`
 
-- [ ] **Task 6: Checks with pass/fail** · S · Dependencies: 2, and Decision 1
+- [x] **Task 6: Checks with pass/fail** · S · Dependencies: 2, and Decision 1
   - **Acceptance:**
     - Spec success criterion 8 passes as Decision 1 settled it: ✓/✗, or ran/interrupted only.
     - The built-in check list matches, and near-misses (`npm install`, `cat package.json`) don't.

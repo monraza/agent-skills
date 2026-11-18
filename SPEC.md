@@ -79,6 +79,8 @@ Tracking starts at session start whether or not the pane is open, so opening it 
 
 **Check commands (V1, built in):** `npm test` / `npm run test` / `npm run lint`, `node scripts/run-evals.js`, `node scripts/validate-*.js`, `bash hooks/*-test.sh`, `claude plugin validate|test`, `tsc`, `eslint`, `jest`, `vitest`, `pytest`, `go test`, `cargo test`.
 
+A check's ✓/✗ is its Bash call's result. So a check piped into another command (`npm test | tail`) shows the last command's exit status, as the shell reports it, and a check still running in the background isn't recorded.
+
 Each list keeps its newest 200 entries.
 
 ### Pane layout (V1, read-only)
