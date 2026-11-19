@@ -61,7 +61,7 @@ describe('the blocks', () => {
     ])
   })
 
-  test("while Build is current, the todo's tasks in three groups: completed, in progress, to do", () => {
+  test("Plan lists the todo's tasks in three groups: completed, in progress, to do", () => {
     const data = {
       ...EMPTY,
       activity: [commandEntry('spec', 0), commandEntry('build', MINUTE)],
@@ -70,10 +70,10 @@ describe('the blocks', () => {
         hasSpec: true,
         todo: { done: 1, total: 4 },
         todoTasks: [
-          { number: '1', title: 'Parser', done: true, started: true },
-          { number: '2', title: 'Wiring', done: false, started: false },
-          { number: '3', title: 'Docs', done: false, started: true },
-          { number: '4', title: 'Release', done: false, started: false },
+          { number: '1', title: 'Parser', done: true, started: true, details: [] },
+          { number: '2', title: 'Wiring', done: false, started: false, details: [] },
+          { number: '3', title: 'Docs', done: false, started: true, details: [] },
+          { number: '4', title: 'Release', done: false, started: false, details: [] },
         ],
       },
       now: 5 * MINUTE,
@@ -88,17 +88,17 @@ describe('the blocks', () => {
       '○ Ship',
     ])
     // A task with some boxes checked is in progress, wherever it is.
-    expect(block(data, 'tasks')).toEqual({
+    expect(block(data, 'tasks', 'plan')).toEqual({
       key: 'tasks',
       title: 'Tasks · 1 of 4 done',
       lines: [
         { text: 'Completed · 1', tone: 'normal', group: 'completed', open: true },
-        { text: '✓ 1. Parser', tone: 'done', indent: true },
+        { text: '✓ 1. Parser', tone: 'done', indent: 1 },
         { text: 'In progress · 1', tone: 'normal', group: 'working', open: true },
-        { text: '● 3. Docs', tone: 'current', indent: true },
+        { text: '● 3. Docs', tone: 'current', indent: 1 },
         { text: 'To do · 2', tone: 'normal', group: 'todo', open: true },
-        { text: '○ 2. Wiring', tone: 'muted', indent: true },
-        { text: '○ 4. Release', tone: 'muted', indent: true },
+        { text: '○ 2. Wiring', tone: 'muted', indent: 1 },
+        { text: '○ 4. Release', tone: 'muted', indent: 1 },
       ],
     })
   })
@@ -111,17 +111,17 @@ describe('the blocks', () => {
         ...NO_ARTIFACTS,
         todo: { done: 1, total: 2 },
         todoTasks: [
-          { number: '1', title: 'Parser', done: true, started: false },
-          { number: '2', title: 'Wiring', done: false, started: false },
+          { number: '1', title: 'Parser', done: true, started: false, details: [] },
+          { number: '2', title: 'Wiring', done: false, started: false, details: [] },
         ],
       },
     }
-    const lines = (open: OpenGroups) => sectionsOf(data, null, open).find(section => section.key === 'tasks')?.lines
+    const lines = (open: OpenGroups) => sectionsOf(data, 'plan', open).find(section => section.key === 'tasks')?.lines
 
     expect(lines(GROUPS_AT_START)).toEqual([
       { text: 'Completed · 1', tone: 'normal', group: 'completed', open: false },
       { text: 'In progress · 1', tone: 'normal', group: 'working', open: true },
-      { text: '● 2. Wiring', tone: 'current', indent: true },
+      { text: '● 2. Wiring', tone: 'current', indent: 1 },
     ])
     expect(lines({ completed: true, working: false, todo: true })?.map(line => line.text)).toEqual([
       'Completed · 1',
@@ -138,27 +138,27 @@ describe('the blocks', () => {
         ...NO_ARTIFACTS,
         todo: { done: 0, total: 2 },
         todoTasks: [
-          { number: '1', title: 'Parser', done: false, started: false },
-          { number: '2', title: 'Wiring', done: false, started: false },
+          { number: '1', title: 'Parser', done: false, started: false, details: [] },
+          { number: '2', title: 'Wiring', done: false, started: false, details: [] },
         ],
       },
     }
 
-    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual(['In progress · 1', '● 1. Parser', 'To do · 1', '○ 2. Wiring'])
+    expect(block(data, 'tasks', 'plan')?.lines.map(line => line.text)).toEqual(['In progress · 1', '● 1. Parser', 'To do · 1', '○ 2. Wiring'])
   })
 
-  test("without a todo, Build lists the session's own tasks by their status", () => {
+  test("without a todo, Plan lists the session's own tasks by their status", () => {
     const data: SessionData = {
       ...EMPTY,
       activity: [commandEntry('build', 0)],
       tasks: [
-        { id: '1', subject: 'Write the test', status: 'completed' },
-        { id: '2', subject: 'Make it pass', status: 'pending' },
-        { id: '3', subject: 'Refactor', status: 'in_progress' },
+        { id: '1', subject: 'Write the test', status: 'completed', description: '' },
+        { id: '2', subject: 'Make it pass', status: 'pending', description: '' },
+        { id: '3', subject: 'Refactor', status: 'in_progress', description: '' },
       ],
     }
 
-    expect(block(data, 'tasks')?.lines.map(line => line.text)).toEqual([
+    expect(block(data, 'tasks', 'plan')?.lines.map(line => line.text)).toEqual([
       'Completed · 1',
       '✓ 1. Write the test',
       'In progress · 1',
@@ -168,14 +168,69 @@ describe('the blocks', () => {
     ])
   })
 
-  test('the task list shows whenever Build is the step on show', () => {
-    const artifacts = { ...NO_ARTIFACTS, todo: { done: 0, total: 1 }, todoTasks: [{ number: '1', title: 'Parser', done: false, started: false }] }
+  test('the task list shows whenever Plan is the step on show, and never under Build', () => {
+    const artifacts = { ...NO_ARTIFACTS, todo: { done: 0, total: 1 }, todoTasks: [{ number: '1', title: 'Parser', done: false, started: false, details: [] }] }
     const later = { ...EMPTY, artifacts, activity: [commandEntry('build', 0), commandEntry('test', 1)] }
 
-    expect(block({ ...EMPTY, artifacts, activity: [commandEntry('plan', 0)] }, 'tasks')).toBeUndefined()
+    expect(block({ ...EMPTY, artifacts, activity: [commandEntry('plan', 0)] }, 'tasks')?.title).toBe('Tasks · 0 of 1 done')
     expect(block({ ...EMPTY, artifacts }, 'tasks')).toBeUndefined()
     expect(block(later, 'tasks')).toBeUndefined()
-    expect(block(later, 'tasks', 'build')?.title).toBe('Tasks · 0 of 1 done')
+    expect(block(later, 'tasks', 'build')).toBeUndefined()
+    expect(block(later, 'tasks', 'plan')?.title).toBe('Tasks · 0 of 1 done')
+  })
+
+  test('Build shows only the current task, with its details', () => {
+    const data = {
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      artifacts: {
+        ...NO_ARTIFACTS,
+        todo: { done: 1, total: 3 },
+        todoTasks: [
+          { number: '1', title: 'Parser', done: true, started: true, details: ['- [x] parses'] },
+          {
+            number: '2',
+            title: 'Wiring',
+            done: false,
+            started: true,
+            details: ['**What:** connect `a` to b', '- [x] wired', '* [ ] tested', '  - nested note', '### Notes', '…'],
+          },
+          { number: '3', title: 'Docs', done: false, started: false, details: [] },
+        ],
+      },
+    }
+
+    expect(block(data, 'tasks')).toBeUndefined()
+    expect(block(data, 'task')).toEqual({
+      key: 'task',
+      title: 'Current task · 1 of 3 done',
+      lines: [
+        { text: '● 2. Wiring', tone: 'current' },
+        { text: 'What: connect a to b', tone: 'normal', indent: 1, wrap: true },
+        { text: '✓ wired', tone: 'done', indent: 1, wrap: true },
+        { text: '○ tested', tone: 'muted', indent: 1, wrap: true },
+        { text: '• nested note', tone: 'normal', indent: 2, wrap: true },
+        { text: 'Notes', tone: 'normal', indent: 1, wrap: true },
+        { text: '…', tone: 'muted', indent: 1, wrap: true },
+      ],
+    })
+    // Plan has the list, Build doesn't.
+    expect(block(data, 'task', 'plan')).toBeUndefined()
+  })
+
+  test("Build's current task: a session task's description; with every task done, says so", () => {
+    const session = (status: 'in_progress' | 'completed'): SessionData => ({
+      ...EMPTY,
+      activity: [commandEntry('build', 0)],
+      tasks: [{ id: '1', subject: 'Write the test', status, description: 'Red first.\n\nThen green.' }],
+    })
+
+    expect(block(session('in_progress'), 'task')?.lines.map(line => line.text)).toEqual(['● 1. Write the test', 'Red first.', 'Then green.'])
+    expect(block(session('completed'), 'task')).toEqual({
+      key: 'task',
+      title: 'Current task · 1 of 1 done',
+      lines: [{ text: '✓ All tasks done', tone: 'done' }],
+    })
   })
 
   test('a step the session has been through shows ✓', () => {
@@ -345,18 +400,21 @@ describe('relative times', () => {
 })
 
 describe('the text summary', () => {
-  test('task groups are unfolded, their tasks indented under them', () => {
+  test("Plan's task groups are unfolded, their tasks indented under them; Build's details under the task", () => {
     const data: SessionData = {
       ...EMPTY,
       activity: [commandEntry('build', 0)],
       tasks: [
-        { id: '1', subject: 'Write the test', status: 'completed' },
-        { id: '2', subject: 'Make it pass', status: 'in_progress' },
+        { id: '1', subject: 'Write the test', status: 'completed', description: '' },
+        { id: '2', subject: 'Make it pass', status: 'in_progress', description: '' },
       ],
     }
 
-    expect(summaryOf(sectionsOf(data))).toContain(
+    expect(summaryOf(sectionsOf(data, 'plan'))).toContain(
       ['Tasks · 1 of 2 done', '  Completed · 1', '    ✓ 1. Write the test', '  In progress · 1', '    ● 2. Make it pass'].join('\n'),
+    )
+    expect(summaryOf(sectionsOf({ ...data, tasks: [{ id: '1', subject: 'Write it', status: 'in_progress', description: 'Red first.' }] }))).toContain(
+      ['Current task · 0 of 1 done', '  ● 1. Write it', '    Red first.'].join('\n'),
     )
   })
 

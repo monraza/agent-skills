@@ -43,16 +43,16 @@ describe('todo task lines', () => {
     ].join('\n')
 
     expect(todoTasksOf(text)).toEqual([
-      { number: '1', title: 'Live event check', done: true, started: false },
-      { number: '2a', title: 'Mod skeleton', done: false, started: false },
+      { number: '1', title: 'Live event check', done: true, started: false, details: ['- **What:** a probe'] },
+      { number: '2a', title: 'Mod skeleton', done: false, started: false, details: [] },
     ])
-    expect(todoTasksOf('- [ ] Task 3')).toEqual([{ number: '3', title: 'Task 3', done: false, started: false }])
+    expect(todoTasksOf('- [ ] Task 3')).toEqual([{ number: '3', title: 'Task 3', done: false, started: false, details: [] }])
   })
 
   test("without any 'Task' lines or headings, every checkbox item is a task, numbered by its place", () => {
     expect(todoTasksOf('- [x] write the parser\n- [ ] wire it up')).toEqual([
-      { number: '1', title: 'write the parser', done: true, started: false },
-      { number: '2', title: 'wire it up', done: false, started: false },
+      { number: '1', title: 'write the parser', done: true, started: false, details: [] },
+      { number: '2', title: 'wire it up', done: false, started: false, details: [] },
     ])
   })
 
@@ -79,13 +79,54 @@ describe('todo task lines', () => {
     ].join('\n')
 
     expect(todoTasksOf(text)).toEqual([
-      { number: '1', title: 'Set up the schema', done: true, started: true },
-      { number: '2', title: 'API endpoints', done: false, started: true },
-      { number: '3', title: 'UI', done: false, started: false },
-      { number: '4', title: 'Docs', done: false, started: false },
+      {
+        number: '1',
+        title: 'Set up the schema',
+        done: true,
+        started: true,
+        details: ['**Acceptance criteria:**', '- [x] tables exist', '- [x] migrations run', '**Verification:**', '- [x] Tests pass'],
+      },
+      {
+        number: '2',
+        title: 'API endpoints',
+        done: false,
+        started: true,
+        details: ['- [x] list endpoint', '- [ ] create endpoint', '### Notes', "- [ ] a box under a deeper heading is still Task 2's"],
+      },
+      { number: '3', title: 'UI', done: false, started: false, details: ['- [ ] form'] },
+      { number: '4', title: 'Docs', done: false, started: false, details: [] },
     ])
     // Was 3/7 with every box counted (Build 0/85 on a real plan).
     expect(countTodo(text)).toEqual({ done: 1, total: 4 })
+  })
+
+  test("a 'Task' line's details are the lines indented under it, down to the next line that isn't", () => {
+    const text = [
+      '- [x] **Task 1: Live event check** · S',
+      '  - **What:** a probe',
+      '',
+      '    - records events',
+      '  - **Files:** `fixtures/live-events.ts`',
+      '- [ ] Task 2: Mod skeleton',
+      '  - [x] registers /monitor',
+      '  - [ ] opens the pane',
+      '### Checkpoint A',
+      '- [x] validate passes',
+    ].join('\n')
+
+    expect(todoTasksOf(text).map(task => task.details)).toEqual([
+      ['- **What:** a probe', '  - records events', '- **Files:** `fixtures/live-events.ts`'],
+      ['- [x] registers /monitor', '- [ ] opens the pane'],
+    ])
+  })
+
+  test('a task keeps at most 30 lines of details, then …', () => {
+    const text = ['## Task 1: Long', ...Array.from({ length: 40 }, (_, index) => `- [ ] criterion ${index + 1}`)].join('\n')
+    const [task] = todoTasksOf(text)
+
+    expect(task?.details).toHaveLength(31)
+    expect(task?.details.at(29)).toBe('- [ ] criterion 30')
+    expect(task?.details.at(30)).toBe('…')
   })
 
   test("'Task' checkbox lines win over headings when a todo has both", () => {

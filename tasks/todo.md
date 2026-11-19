@@ -272,7 +272,7 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criterion 23, in the pane and the text.
   - **Files:** `hooks/artifacts.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
 
-- [ ] **Task 22: Tasks under Plan; the current task under Build** · M · Dependencies: 21
+- [x] **Task 22: Tasks under Plan; the current task under Build** · M · Dependencies: 21
   - **What:**
     - The task groups show when Plan is the step on show, not Build.
     - Build shows `Current task · N of M done`, then the active task and its details. The details come from the todo task's lines (kept in state, at most 30) or the session task's description (tasks shape 2). Checkboxes show as ✓ or ○, bullets as •, and long lines wrap in the pane.
@@ -280,6 +280,6 @@ Every task, before it's checked off:
   - **Files:** `hooks/artifacts.ts`, `hooks/tasks.ts`, `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `types/index.d.ts`, and the tests
 
 ### Checkpoint G
-- [ ] Tests, type-check and validate pass (every surface)
+- [x] Tests, type-check and validate pass (137 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review

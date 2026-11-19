@@ -13,14 +13,42 @@ const HEADING = /^(#{1,6})\s+(.*)$/
 const TASK_NUMBER = /^task\s+(\d+[a-z]?)\b\s*[:.)\-–—]?\s*/i
 const IS_TASK = /^task\b/i
 
-type Item = { text: string; done: boolean }
+// `at`: the item's line number, for the lines under it.
+type Item = { text: string; done: boolean; at: number }
 
 const itemsOf = (lines: readonly string[]): Item[] =>
-  lines.flatMap(line => {
+  lines.flatMap((line, at) => {
     const match = line.match(TODO_ITEM)
 
-    return match === null ? [] : [{ text: match[2] ?? '', done: match[1] !== ' ' }]
+    return match === null ? [] : [{ text: match[2] ?? '', done: match[1] !== ' ', at }]
   })
+
+const DETAIL_LIMIT = 30
+
+const indentOf = (line: string) => line.length - line.trimStart().length
+
+// Lines as written, blank ones dropped and their shared indentation
+// removed; at most DETAIL_LIMIT, then '…'.
+export const detailsOf = (lines: readonly string[]): string[] => {
+  const kept = lines.filter(line => line.trim() !== '')
+  const shared = Math.min(...kept.map(indentOf))
+  const plain = kept.map(line => line.slice(shared).trimEnd())
+
+  return plain.length > DETAIL_LIMIT ? [...plain.slice(0, DETAIL_LIMIT), '…'] : plain
+}
+
+// The lines indented under the item on line `at`, down to the next line
+// that isn't.
+const linesUnder = (lines: readonly string[], at: number): string[] => {
+  const depth = indentOf(lines[at] ?? '')
+  const under: string[] = []
+  for (const line of lines.slice(at + 1)) {
+    if (line.trim() !== '' && indentOf(line) <= depth) break
+    under.push(line)
+  }
+
+  return under
+}
 
 // A title loses its ** and is cut at ' · ', where this repo's task lines
 // start their size and dependencies; `Task N:` becomes its number, and
@@ -35,36 +63,43 @@ export const numbered = (text: string, number: string): { number: string; title:
   return { number: match[1] ?? number, title: title === '' ? plain : title }
 }
 
-const taskOf = (text: string, place: number, done: boolean, started: boolean): TodoTask => ({
+const taskOf = (text: string, place: number, done: boolean, started: boolean, details: readonly string[]): TodoTask => ({
   ...numbered(text, String(place)),
   done,
   started,
+  details: detailsOf(details),
 })
 
-// The planning skill's `## Task N: title` sections: the boxes under a task
-// heading, down to the next heading as high as it, are that task's. A
-// heading needs its number (`## Task List` is not a task).
+// A checkbox item as a task: its details are the lines indented under it.
+const itemTasksOf = (lines: readonly string[], items: readonly Item[]): TodoTask[] =>
+  items.map((item, index) => taskOf(item.text, index + 1, item.done, false, linesUnder(lines, item.at)))
+
+// The planning skill's `## Task N: title` sections: the lines under a task
+// heading, down to the next heading as high as it, are that task's, and so
+// are the boxes among them. A heading needs its number (`## Task List` is
+// not a task).
 const headingTasksOf = (lines: readonly string[]): TodoTask[] => {
-  const sections: { text: string; boxes: Item[] }[] = []
+  const sections: { text: string; lines: string[] }[] = []
   let level = 0
   for (const line of lines) {
     const heading = line.match(HEADING)
     const depth = heading?.[1]?.length ?? 0
     const text = heading?.[2]?.trim() ?? ''
     if (heading !== null && TASK_NUMBER.test(text.replaceAll('**', ''))) {
-      sections.push({ text, boxes: [] })
+      sections.push({ text, lines: [] })
       level = depth
     } else if (heading !== null && depth <= level) {
       level = 0
     } else if (level > 0) {
-      sections.at(-1)?.boxes.push(...itemsOf([line]))
+      sections.at(-1)?.lines.push(line)
     }
   }
 
-  return sections.map(({ text, boxes }, index) => {
+  return sections.map(({ text, lines: under }, index) => {
+    const boxes = itemsOf(under)
     const checked = boxes.filter(box => box.done).length
 
-    return taskOf(text, index + 1, boxes.length > 0 && checked === boxes.length, checked > 0)
+    return taskOf(text, index + 1, boxes.length > 0 && checked === boxes.length, checked > 0, under)
   })
 }
 
@@ -74,11 +109,11 @@ export const todoTasksOf = (text: string): TodoTask[] => {
   const lines = text.split('\n')
   const items = itemsOf(lines)
   const taskItems = items.filter(item => IS_TASK.test(item.text.replaceAll('**', '')))
-  if (taskItems.length > 0) return taskItems.map((item, index) => taskOf(item.text, index + 1, item.done, false))
+  if (taskItems.length > 0) return itemTasksOf(lines, taskItems)
   const headed = headingTasksOf(lines)
   if (headed.length > 0) return headed
 
-  return items.map((item, index) => taskOf(item.text, index + 1, item.done, false))
+  return itemTasksOf(lines, items)
 }
 
 export const countTodo = (text: string): TodoCount => {

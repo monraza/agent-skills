@@ -20,7 +20,8 @@ export type TodoCount = { done: number; total: number }
 // One task line of tasks/todo.md: its title and whether it's checked.
 // `number`: the N of `Task N:`, or else the task's place in the list.
 // `started`: some of a task heading's boxes are checked.
-export type TodoTask = { number: string; title: string; done: boolean; started: boolean }
+// `details`: the lines under the task in tasks/todo.md, as written (at most 30, then '…').
+export type TodoTask = { number: string; title: string; done: boolean; started: boolean; details: string[] }
 
 // What the working directory's files say: flags, counts, and the todo's task
 // lines (the only file text kept, for Build's task list).
@@ -47,7 +48,7 @@ export type OpenGroups = Record<GroupId, boolean>
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed'
 
-export type SessionTask = { id: string; subject: string; status: TaskStatus }
+export type SessionTask = { id: string; subject: string; status: TaskStatus; description: string }
 
 declare module 'claude-code' {
   interface PluginState {

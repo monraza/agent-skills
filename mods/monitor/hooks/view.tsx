@@ -3,6 +3,7 @@ import type { Elements, RenderSurface } from 'claude-code'
 import type { GroupId, PhaseId } from '../types'
 
 import type { Line, Section, Tone } from './sections'
+import { wrapText } from './wrap'
 
 type Table = Elements[RenderSurface]
 
@@ -105,15 +106,40 @@ export const drawPane = (
       ),
     )
 
-  // A row: what happened on the left, when on the right. A task group's name
-  // is a button that folds it (▾ unfolded, ▸ folded); a task sits under it.
+  // A line that wraps, as rows that fit beside its indent; the rows after
+  // the first sit under its text, past a mark such as ✓, ○ or •.
+  const wrapped = (line: Line, indent: number) => {
+    const mark = /^[✓○•●] /.test(line.text) ? 2 : 0
+    const [first = '', ...rest] = wrapText(line.text, Math.max(10, layout.columns - 2 * indent - mark))
+
+    return [
+      <Box paddingLeft={2 * indent}>
+        <Text {...STYLE[line.tone]}>{first}</Text>
+      </Box>,
+      ...rest.map(part => (
+        <Box paddingLeft={2 * indent + mark}>
+          <Text {...STYLE[line.tone]}>{part}</Text>
+        </Box>
+      )),
+    ]
+  }
+
+  // A line's rows: what happened on the left, when on the right. A task
+  // group's name is a button that folds it (▾ unfolded, ▸ folded); a task or
+  // a detail sits indented under what it belongs to.
+  const rowsOfLine = (line: Line) => {
+    const indent = line.indent ?? 0
+    if (line.wrap === true) return wrapped(line, indent)
+    if (indent > 0 && line.group === undefined) return [<Box paddingLeft={2 * indent}>{row(line)}</Box>]
+
+    return [row(line)]
+  }
+
   const row = (line: Line) =>
     line.group !== undefined ? (
       <Button key={`group-${line.group}`} plain onPress={() => actions.onGroup(line.group as GroupId)}>
         <Text {...STYLE[line.tone]} wrap="truncate-end">{`${line.open === true ? '▾' : '▸'} ${line.text}`}</Text>
       </Button>
-    ) : line.indent === true ? (
-      <Box paddingLeft={2}>{text(line)}</Box>
     ) : line.time === undefined ? (
       text(line)
     ) : (
@@ -135,7 +161,7 @@ export const drawPane = (
               {title}
             </Text>,
           ]),
-      ...(key === 'header' ? header(lines) : lines.map(row)),
+      ...(key === 'header' ? header(lines) : lines.flatMap(rowsOfLine)),
     ])
 
   // The stepper and the step's header stay put; the blocks after them scroll.

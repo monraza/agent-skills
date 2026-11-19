@@ -1,6 +1,6 @@
 import type { ActivityEntry, Artifacts, Check, Commit, FileChange, GroupId, OpenGroups, PhaseId, SessionTask } from '../types'
 
-import { PLAN_PATH, TODO_PATH, doneFrom, numbered } from './artifacts'
+import { PLAN_PATH, TODO_PATH, detailsOf, doneFrom, numbered } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseAt, phaseViewOf } from './phases'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
@@ -15,9 +15,11 @@ export type Tone = 'current' | 'done' | 'failed' | 'normal' | 'muted'
 // `time` is a row's relative time, drawn apart from its text. On the
 // stepper, `phase` makes a step a button that shows it, and `selected` marks
 // the step on show when it isn't the current one. On a header, `back` is the
-// label of the button back to the current step. In Build's tasks, `group`
+// label of the button back to the current step. In Plan's tasks, `group`
 // makes a group's name a button that folds it (`open` says whether it is
-// unfolded), and `indent` puts a task under its group.
+// unfolded). `indent` is how many steps in a line sits (a task under its
+// group, a detail under Build's current task), and `wrap` lets a long line
+// wrap where it would otherwise be cut.
 export type Line = {
   text: string
   tone: Tone
@@ -27,7 +29,8 @@ export type Line = {
   back?: string
   group?: GroupId
   open?: boolean
-  indent?: boolean
+  indent?: number
+  wrap?: boolean
 }
 
 export type Section = { key: string; title: string | null; lines: readonly Line[] }
@@ -129,7 +132,7 @@ export const ALL_OPEN: OpenGroups = { completed: true, working: true, todo: true
 export const GROUPS_AT_START: OpenGroups = { completed: false, working: true, todo: true }
 
 type TaskState = 'done' | 'working' | 'open'
-type ListedTask = { number: string; title: string; state: TaskState }
+type ListedTask = { number: string; title: string; state: TaskState; details: readonly string[] }
 
 const GROUPS: readonly { id: GroupId; state: TaskState; name: string; mark: string; tone: Tone }[] = [
   { id: 'completed', state: 'done', name: 'Completed', mark: '✓', tone: 'done' },
@@ -143,14 +146,16 @@ const GROUPS: readonly { id: GroupId; state: TaskState; name: string; mark: stri
 const listedTasks = ({ artifacts, tasks }: SessionData): ListedTask[] => {
   const listed: ListedTask[] =
     artifacts.todo !== null
-      ? artifacts.todoTasks.map(({ number, title, done, started }) => ({
+      ? artifacts.todoTasks.map(({ number, title, done, started, details }) => ({
           number,
           title,
           state: done ? 'done' : started ? 'working' : 'open',
+          details,
         }))
       : tasks.map(task => ({
           ...numbered(task.subject, task.id),
           state: task.status === 'completed' ? 'done' : task.status === 'in_progress' ? 'working' : 'open',
+          details: detailsOf(task.description.split('\n')),
         }))
   if (listed.some(task => task.state === 'working')) return listed
   const next = listed.findIndex(task => task.state === 'open')
@@ -158,11 +163,11 @@ const listedTasks = ({ artifacts, tasks }: SessionData): ListedTask[] => {
   return listed.map((task, index) => (index === next ? { ...task, state: 'working' } : task))
 }
 
-// Build is the densest step, so when it's on show the panel lists its tasks
-// in three groups, in order: completed, in progress, to do. A group with no
-// tasks is left out; a folded one shows only its name and count.
+// The plan's tasks, under Plan: three groups, in order: completed, in
+// progress (the active task), to do. A group with no tasks is left out; a
+// folded one shows only its name and count.
 const tasksSection = (data: SessionData, shown: PhaseId | null, open: OpenGroups): Section | null => {
-  if (shown !== 'build') return null
+  if (shown !== 'plan') return null
   const listed = listedTasks(data)
   if (listed.length === 0) return null
   const lines = GROUPS.flatMap(({ id, state, name, mark, tone }): Line[] => {
@@ -171,11 +176,48 @@ const tasksSection = (data: SessionData, shown: PhaseId | null, open: OpenGroups
     const header: Line = { text: `${name} · ${members.length}`, tone: 'normal', group: id, open: open[id] }
     if (!open[id]) return [header]
 
-    return [header, ...members.map(({ number, title }): Line => ({ text: `${mark} ${number}. ${title}`, tone, indent: true }))]
+    return [header, ...members.map(({ number, title }): Line => ({ text: `${mark} ${number}. ${title}`, tone, indent: 1 }))]
   })
   const done = listed.filter(task => task.state === 'done').length
 
   return { key: 'tasks', title: `Tasks · ${done} of ${listed.length} done`, lines }
+}
+
+const CHECKED = /^[-*+]\s+\[[xX]\]\s+/
+const UNCHECKED = /^[-*+]\s+\[ \]\s+/
+const BULLET = /^[-*+]\s+/
+const HEADING_MARK = /^#{1,6}\s+/
+
+// A line under a task, as the panel shows it: ** and backticks removed, a
+// checked box as ✓, an open one as ○, a bullet as •, a heading's #s dropped;
+// every two spaces of nesting one more step in.
+const detailLine = (raw: string): Line => {
+  const indent = 1 + Math.min(3, Math.floor((raw.length - raw.trimStart().length) / 2))
+  const plain = raw.trim().replaceAll('**', '').replaceAll('`', '')
+  const line = (text: string, tone: Tone): Line => ({ text, tone, indent, wrap: true })
+  if (CHECKED.test(plain)) return line(`✓ ${plain.replace(CHECKED, '')}`, 'done')
+  if (UNCHECKED.test(plain)) return line(`○ ${plain.replace(UNCHECKED, '')}`, 'muted')
+  if (BULLET.test(plain)) return line(`• ${plain.replace(BULLET, '')}`, 'normal')
+  if (plain === '…') return line(plain, 'muted')
+
+  return line(plain.replace(HEADING_MARK, ''), 'normal')
+}
+
+// Under Build, only the task in hand: the active task and its details.
+const currentTaskSection = (data: SessionData, shown: PhaseId | null): Section | null => {
+  if (shown !== 'build') return null
+  const listed = listedTasks(data)
+  if (listed.length === 0) return null
+  const done = listed.filter(task => task.state === 'done').length
+  const title = `Current task · ${done} of ${listed.length} done`
+  const active = listed.find(task => task.state === 'working')
+  if (active === undefined) return { key: 'task', title, lines: [{ text: '✓ All tasks done', tone: 'done' }] }
+
+  return {
+    key: 'task',
+    title,
+    lines: [{ text: `● ${active.number}. ${active.title}`, tone: 'current' }, ...active.details.map(detailLine)],
+  }
 }
 
 // Each key once, as of its latest entry, newest first.
@@ -230,6 +272,7 @@ export const sectionsOf = (data: SessionData, viewing: PhaseId | null = null, op
     headerSection(data, shown),
     documentsSection(data, shown),
     tasksSection(data, shown, open),
+    currentTaskSection(data, shown),
     ...changeSections(data, shown),
   ].filter(
     (section): section is Section => section !== null,

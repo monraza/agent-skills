@@ -7,7 +7,7 @@ const blockOf = ({ key, title, lines }: Section): string[] => {
   if (key === 'stepper') return [lines.map(line => line.text).join(' ─ ')]
   if (title === null) return lines.map(line => line.text)
 
-  return [title, ...lines.map(line => `  ${line.indent === true ? '  ' : ''}${line.text}${line.time === undefined ? '' : ` · ${line.time}`}`)]
+  return [title, ...lines.map(line => `  ${'  '.repeat(line.indent ?? 0)}${line.text}${line.time === undefined ? '' : ` · ${line.time}`}`)]
 }
 
 export const summaryOf = (sections: readonly Section[]): string =>

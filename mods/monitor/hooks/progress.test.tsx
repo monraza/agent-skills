@@ -101,6 +101,56 @@ test('Define and Plan show their documents, written before this session', async 
   expect(out.text).toContain('\nDocuments\n  SPEC.md')
 })
 
+test("Build shows the current task with its details from a heading-style todo, wrapped to the pane", async ($, on) => {
+  mock.clock(on)
+  const long = 'Every acceptance criterion of this task is written out at length so that it cannot fit on one row of the pane'
+  fakeRepo(
+    on,
+    new Map([
+      ['SPEC.md', '# Spec'],
+      ['tasks/plan.md', '# Plan'],
+      [
+        'tasks/todo.md',
+        [
+          '## Task 1: Schema',
+          '- [x] tables exist',
+          '## Task 2: API endpoints',
+          '**Acceptance criteria:**',
+          '- [x] list endpoint',
+          '- [ ] create endpoint',
+          `- [ ] ${long}`,
+          '**Files likely touched:**',
+          '- `src/api.ts`',
+          '## Task 3: UI',
+          '- [ ] form',
+        ].join('\n'),
+      ],
+    ]),
+  )
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.command.run({ ...typedCommand.commandRun, command: 'build', args: '' })
+
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown).toContain('● Build 1/3')
+  expect(shown).toContain('Current task · 1 of 3 done')
+  expect(shown).toContain('● 2. API endpoints')
+  expect(shown).toContain('Acceptance criteria:')
+  expect(shown).toContain('✓ list endpoint')
+  expect(shown).toContain('○ create endpoint')
+  expect(shown).toContain('• src/api.ts')
+  expect(shown).not.toContain('● 3. UI')
+  // The long criterion wraps into rows that fit the pane, and nothing is lost.
+  const wrapped = shown.filter(
+    text => text !== undefined && (text.startsWith(`○ ${long.slice(0, 10)}`) || (text.trim() !== '' && long.includes(text.trim()))),
+  )
+  expect(wrapped.length).toBeGreaterThan(1)
+  expect(wrapped.every(text => (text ?? '').length <= PANE.props.bodyColumns)).toBe(true)
+  expect(wrapped.join(' ').replace(/\s+/g, ' ')).toBe(`○ ${long}`)
+  await ui.unmount()
+})
+
 test('checking a todo item with Edit updates Build after that call', async ($, on) => {
   mock.clock(on)
   const files = fullRepo()
@@ -188,7 +238,7 @@ test('tool.call passes through unchanged', async ($, on) => {
   expect(await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/todo.md` })).toEqual(edit.result)
 })
 
-test("once Build starts, the todo's tasks show in groups that fold; Completed starts folded", async ($, on) => {
+test("Plan's view shows the todo's tasks in groups that fold; Completed starts folded", async ($, on) => {
   mock.clock(on)
   fakeRepo(on, fullRepo())
   engine(on)
@@ -197,8 +247,10 @@ test("once Build starts, the todo's tasks show in groups that fold; Completed st
   await $.turn.start({ ...typedCommand.turnStart, turnId: 'turn-build' })
 
   const ui = await $.ui.mount(PANE)
+  expect(await texts(ui)).toContain('● Build 3/7')
+  expect(await texts(ui)).not.toContain('Tasks · 3 of 7 done')
+  await ui.press({ key: 'step-plan' })
   const shown = await texts(ui)
-  expect(shown).toContain('● Build 3/7')
   expect(shown).toContain('Tasks · 3 of 7 done')
   expect(shown).toContain('▸ Completed · 3')
   expect(shown).not.toContain('✓ 3. task 3')

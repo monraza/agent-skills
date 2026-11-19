@@ -32,11 +32,11 @@ const MINUTE = 60_000
 // Change a shape tag when its value's fields change: it declines what an
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
-const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-4' })
+const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-5' })
 const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-3' })
 const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-2' })
 const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
-const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-1' })
+const tasks = atom({ plugin: 'monitor', key: 'tasks' } as const, [], { shape: 'tasks-2' })
 const turn = atom({ plugin: 'monitor', key: 'turn' } as const, NEW_TURN, { shape: 'turn-1' })
 const tick = atom({ plugin: 'monitor', key: 'tick' } as const, 0)
 const hasOpened = atom({ plugin: 'monitor', key: 'hasOpened' } as const, false)

@@ -11,16 +11,21 @@ const failed = (ran: unknown) => !isRecord(ran) || ran.isError === true
 
 export const taskCreated = (tasks: readonly SessionTask[], ran: unknown): SessionTask[] => {
   if (failed(ran) || !isRecord(ran) || !isRecord(ran.result) || !isRecord(ran.result.task)) return [...tasks]
-  const { id, subject } = ran.result.task
+  const { id, subject, description } = ran.result.task
   if (typeof id !== 'string') return [...tasks]
 
   return [
     ...tasks.filter(task => task.id !== id),
-    { id, subject: typeof subject === 'string' ? subject : '', status: 'pending' },
+    {
+      id,
+      subject: typeof subject === 'string' ? subject : '',
+      status: 'pending',
+      description: typeof description === 'string' ? description : '',
+    },
   ]
 }
 
-export type TaskChange = { taskId: string; status?: TaskStatus | 'deleted'; subject?: string }
+export type TaskChange = { taskId: string; status?: TaskStatus | 'deleted'; subject?: string; description?: string }
 
 export const taskUpdated = (tasks: readonly SessionTask[], change: TaskChange, ran: unknown): SessionTask[] => {
   if (failed(ran)) return [...tasks]
@@ -29,10 +34,15 @@ export const taskUpdated = (tasks: readonly SessionTask[], change: TaskChange, r
 
   return tasks.map(task =>
     task.id === change.taskId
-      ? { ...task, status: status ?? task.status, subject: change.subject ?? task.subject }
+      ? {
+          ...task,
+          status: status ?? task.status,
+          subject: change.subject ?? task.subject,
+          description: change.description ?? task.description,
+        }
       : task,
   )
 }
 
 export const todosWritten = (todos: readonly { content: string; status: TaskStatus }[]): SessionTask[] =>
-  todos.map((todo, index) => ({ id: String(index + 1), subject: todo.content, status: todo.status }))
+  todos.map((todo, index) => ({ id: String(index + 1), subject: todo.content, status: todo.status, description: '' }))

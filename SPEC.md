@@ -178,11 +178,11 @@ Files changed · 2
   - with no `tasks/todo.md`, the session's own task list
 - **Current task (Build).** When Build is the step on show, `Current task · N of M done`, then the active task (the first in progress, as above) and its details:
   - **From `tasks/todo.md`:** the lines under the task: indented under a `Task` checkbox item, or down to the next heading as high as a `## Task N:` heading.
-  - **Formatting:** `**` is removed, a checked box shows as ✓ (success colour), an open one as ○ (dim), and other bullets as `•`. Nesting is kept, blank lines are dropped, and long lines wrap.
+  - **Formatting:** `**`, backticks and headings' `#` marks are removed, a checked box shows as ✓ (success colour), an open one as ○ (dim), and other bullets as `•`. Nesting is kept, blank lines are dropped, and long lines wrap in the pane.
   - **Length:** at most 30 lines, then `…`.
   - **Session tasks:** with no `tasks/todo.md`, the details are the session task's description.
 
-  With every task done, it says `All M tasks done`.
+  With every task done, it says `All tasks done`.
 - **Files changed · N.** The files created or edited while the step on show was current, each path once, newest first, as `created <path>` or `edited <path>`. A path counts as created if any change during the step created it.
 - **Commits · N.** `<sha> <subject>`, newest first.
 - **Checks · N, K failing.** Each check once, with its latest result (✓ or ✗, in the success or error colour), newest first. `K failing` counts the checks whose latest result is ✗, and is left out when there are none.
