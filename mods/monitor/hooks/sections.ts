@@ -1,6 +1,6 @@
 import type { ActivityEntry, Artifacts, Check, Commit, FileChange, GroupId, OpenGroups, PhaseId, SessionTask } from '../types'
 
-import { doneFrom, numbered } from './artifacts'
+import { PLAN_PATH, TODO_PATH, doneFrom, numbered } from './artifacts'
 import { PHASES, PHASE_LABEL, bareName, phaseAt, phaseViewOf } from './phases'
 
 // Pure: no `$`, no I/O. The one place that decides what the panel shows, so
@@ -108,6 +108,20 @@ const headerSection = (data: SessionData, shown: PhaseId | null): Section => {
   return { key: 'header', title: null, lines: [name, { text: since, tone: 'muted' }] }
 }
 
+// Define's and Plan's own files, as they are on disk: they show whether or
+// not they changed in this session.
+const documentsSection = ({ artifacts }: SessionData, shown: PhaseId | null): Section | null => {
+  const paths =
+    shown === 'define'
+      ? artifacts.specPaths
+      : shown === 'plan'
+        ? [...(artifacts.hasPlan ? [PLAN_PATH] : []), ...(artifacts.todo !== null ? [TODO_PATH] : [])]
+        : []
+  if (paths.length === 0) return null
+
+  return { key: 'documents', title: 'Documents', lines: paths.map((text): Line => ({ text, tone: 'normal' })) }
+}
+
 // Every group unfolded: the text summary, where nothing folds.
 export const ALL_OPEN: OpenGroups = { completed: true, working: true, todo: true }
 
@@ -211,7 +225,13 @@ const changeSections = (data: SessionData, shown: PhaseId | null): Section[] => 
 export const sectionsOf = (data: SessionData, viewing: PhaseId | null = null, open: OpenGroups = ALL_OPEN): Section[] => {
   const shown = viewing ?? currentOf(data)
 
-  return [stepperSection(data, shown), headerSection(data, shown), tasksSection(data, shown, open), ...changeSections(data, shown)].filter(
+  return [
+    stepperSection(data, shown),
+    headerSection(data, shown),
+    documentsSection(data, shown),
+    tasksSection(data, shown, open),
+    ...changeSections(data, shown),
+  ].filter(
     (section): section is Section => section !== null,
   )
 }

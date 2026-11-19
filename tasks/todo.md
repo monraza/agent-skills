@@ -267,7 +267,7 @@ Every task, before it's checked off:
 
 ## Phase 7: Tasks under Plan, the task in hand under Build (spec Decision 13)
 
-- [ ] **Task 21: Each step's documents** · S · Dependencies: 20
+- [x] **Task 21: Each step's documents** · S · Dependencies: 20
   - **What:** reading the files also keeps the spec's paths (artifacts shape 4). Define's view lists them under `Documents`, and Plan's lists `tasks/plan.md` and `tasks/todo.md`, whenever they exist.
   - **Acceptance:** spec success criterion 23, in the pane and the text.
   - **Files:** `hooks/artifacts.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests

@@ -309,6 +309,27 @@ describe("a step's view", () => {
   })
 })
 
+describe("a step's documents", () => {
+  const files = { ...NO_ARTIFACTS, hasSpec: true, specPaths: ['SPEC.md'], hasPlan: true, todo: { done: 0, total: 0 } }
+  // Written before this session: no command has run.
+  const data: SessionData = { ...EMPTY, artifacts: files }
+
+  test("Define lists the spec and Plan lists the plan and the todo, from disk, even when written before this session", () => {
+    expect(block(data, 'documents', 'define')).toEqual({ key: 'documents', title: 'Documents', lines: [{ text: 'SPEC.md', tone: 'normal' }] })
+    expect(block(data, 'documents', 'plan')?.lines.map(line => line.text)).toEqual(['tasks/plan.md', 'tasks/todo.md'])
+    // Right after the header.
+    expect(sectionsOf(data, 'define').map(section => section.key).slice(0, 3)).toEqual(['stepper', 'header', 'documents'])
+  })
+
+  test('other steps, and a step whose files are missing, have none', () => {
+    expect(block(data, 'documents', 'build')).toBeUndefined()
+    expect(block({ ...EMPTY, artifacts: { ...files, specPaths: [], hasSpec: false } }, 'documents', 'define')).toBeUndefined()
+    expect(block({ ...EMPTY, artifacts: { ...files, hasPlan: false } }, 'documents', 'plan')?.lines.map(line => line.text)).toEqual([
+      'tasks/todo.md',
+    ])
+  })
+})
+
 describe('relative times', () => {
   test('just now, then minutes, then hours', () => {
     expect(ago(0, 59_999)).toBe('just now')

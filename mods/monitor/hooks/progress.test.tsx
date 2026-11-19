@@ -83,6 +83,24 @@ test('a repo with a spec, a plan and 3 of 7 todos shows Define ✓, Plan ✓ and
   await ui.unmount()
 })
 
+test('Define and Plan show their documents, written before this session', async ($, on) => {
+  mock.clock(on)
+  fakeRepo(on, fullRepo())
+  engine(on)
+  await $.session.start(sessionStart)
+
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'step-define' })
+  expect(await texts(ui)).toContain('SPEC.md')
+  await ui.press({ key: 'step-plan' })
+  expect(await texts(ui)).toContain('tasks/plan.md')
+  expect(await texts(ui)).toContain('tasks/todo.md')
+  await ui.unmount()
+
+  const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: 'define' })
+  expect(out.text).toContain('\nDocuments\n  SPEC.md')
+})
+
 test('checking a todo item with Edit updates Build after that call', async ($, on) => {
   mock.clock(on)
   const files = fullRepo()

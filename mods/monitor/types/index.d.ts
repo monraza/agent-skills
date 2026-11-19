@@ -26,6 +26,8 @@ export type TodoTask = { number: string; title: string; done: boolean; started: 
 // lines (the only file text kept, for Build's task list).
 export type Artifacts = {
   hasSpec: boolean
+  // The spec files found, relative to the working directory, SPEC.md first.
+  specPaths: string[]
   hasPlan: boolean
   todo: TodoCount | null
   todoTasks: TodoTask[]

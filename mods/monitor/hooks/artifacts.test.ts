@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { NO_ARTIFACTS, countTodo, doneFrom, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
+import { NO_ARTIFACTS, countTodo, doneFrom, hasSpecIn, isTrackedPath, relativeTo, specPathsIn, todoTasksOf } from './artifacts'
 
 describe('todo counting', () => {
   test('counts checkbox items, nested or not, and ignores other lines', () => {
@@ -103,6 +103,17 @@ describe('spec detection', () => {
     expect(hasSpecIn({ ...none, root: ['SPEC-ocr.md'] })).toBe(true)
     expect(hasSpecIn({ ...none, docs: ['SPEC.md'] })).toBe(true)
     expect(hasSpecIn({ ...none, spec: ['billing.md'] })).toBe(true)
+  })
+
+  test("lists each spec's path, SPEC.md first", () => {
+    expect(specPathsIn({ root: ['README.md', 'SPEC-ocr.md', 'SPEC.md'], docs: ['SPEC.md'], spec: ['billing.md', 'auth.md'] })).toEqual([
+      'SPEC.md',
+      'SPEC-ocr.md',
+      'docs/SPEC.md',
+      'spec/auth.md',
+      'spec/billing.md',
+    ])
+    expect(specPathsIn(none)).toEqual([])
   })
 
   test('finds nothing elsewhere', () => {

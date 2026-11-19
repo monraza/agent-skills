@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Artifacts, GroupId, PhaseId } from '../types'
 
-import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, hasSpecIn, isTrackedPath, relativeTo, todoTasksOf } from './artifacts'
+import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, isTrackedPath, relativeTo, specPathsIn, todoTasksOf } from './artifacts'
 import { checkOf, commitOf, isCreated, keepNewest } from './classify'
 import {
   NEW_TURN,
@@ -32,7 +32,7 @@ const MINUTE = 60_000
 // Change a shape tag when its value's fields change: it declines what an
 // earlier version stored, which outlives a reload.
 const activity = atom({ plugin: 'monitor', key: 'activity' } as const, [], { shape: 'activity-1' })
-const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-3' })
+const artifacts = atom({ plugin: 'monitor', key: 'artifacts' } as const, NO_ARTIFACTS, { shape: 'artifacts-4' })
 const files = atom({ plugin: 'monitor', key: 'files' } as const, [], { shape: 'files-3' })
 const commits = atom({ plugin: 'monitor', key: 'commits' } as const, [], { shape: 'commits-2' })
 const checks = atom({ plugin: 'monitor', key: 'checks' } as const, [], { shape: 'checks-1' })
@@ -74,12 +74,15 @@ const readArtifacts = async ($: EngineInterface): Promise<Artifacts> => {
 
   const todo = (await $.fs.exists(at(TODO_PATH))) ? await $.fs.read(at(TODO_PATH)) : null
 
+  const specPaths = specPathsIn({
+    root: await filesIn($, cwd),
+    docs: await filesIn($, at('docs')),
+    spec: await filesIn($, at('spec')),
+  })
+
   return {
-    hasSpec: hasSpecIn({
-      root: await filesIn($, cwd),
-      docs: await filesIn($, at('docs')),
-      spec: await filesIn($, at('spec')),
-    }),
+    hasSpec: specPaths.length > 0,
+    specPaths,
     hasPlan: await $.fs.exists(at(PLAN_PATH)),
     todo: todo === null ? null : countTodo(todo),
     todoTasks: todo === null ? [] : todoTasksOf(todo),

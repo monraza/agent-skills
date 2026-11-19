@@ -3,7 +3,7 @@ import type { Artifacts, PhaseId, TodoCount, TodoTask } from '../types'
 // Pure: no `$`, no I/O. What the spec, plan and todo files mean for the
 // phases (SPEC.md, Phase rules). register.tsx reads the files.
 
-export const NO_ARTIFACTS: Artifacts = { hasSpec: false, hasPlan: false, todo: null, todoTasks: [] }
+export const NO_ARTIFACTS: Artifacts = { hasSpec: false, specPaths: [], hasPlan: false, todo: null, todoTasks: [] }
 
 export const PLAN_PATH = 'tasks/plan.md'
 export const TODO_PATH = 'tasks/todo.md'
@@ -89,10 +89,20 @@ export const countTodo = (text: string): TodoCount => {
 
 const ROOT_SPEC = /^SPEC(-[^/]+)?\.md$/
 
-// The paths /build accepts: SPEC.md, a root SPEC-<change>.md, docs/SPEC.md,
-// or a file under spec/. Each list holds the file names in that folder.
-export const hasSpecIn = (files: { root: readonly string[]; docs: readonly string[]; spec: readonly string[] }) =>
-  files.root.some(name => ROOT_SPEC.test(name)) || files.docs.includes('SPEC.md') || files.spec.length > 0
+type SpecFolders = { root: readonly string[]; docs: readonly string[]; spec: readonly string[] }
+
+const specFirst = (a: string, b: string) => (a === 'SPEC.md' ? -1 : b === 'SPEC.md' ? 1 : a.localeCompare(b))
+
+// The paths /build accepts, SPEC.md first: SPEC.md, a root SPEC-<change>.md,
+// docs/SPEC.md, or a file under spec/. Each list holds the file names in
+// that folder.
+export const specPathsIn = ({ root, docs, spec }: SpecFolders): string[] => [
+  ...root.filter(name => ROOT_SPEC.test(name)).sort(specFirst),
+  ...(docs.includes('SPEC.md') ? ['docs/SPEC.md'] : []),
+  ...[...spec].sort().map(name => `spec/${name}`),
+]
+
+export const hasSpecIn = (folders: SpecFolders): boolean => specPathsIn(folders).length > 0
 
 // A path relative to the working directory, as relativeTo gives it.
 export const isTrackedPath = (path: string): boolean =>
