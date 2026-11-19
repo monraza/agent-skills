@@ -50,7 +50,7 @@ Commands and skills outside the table are recorded but not shown, and never chan
 - A mapped skill (`skill.prompt`) sets it only when the skill fires in a turn that didn't start with a mapped command. For example, `/test` followed by test-driven-development firing in the same turn stays in Verify.
 - **Evidence is always shown.** The active phase is a guess from the last command or skill, so the panel says what started it and when, e.g. `started by /build · 4 min ago` or `started by skill test-driven-development · just now`. When nothing has set a phase yet, it says `No step yet`, with no guess.
 
-**Phase states:** `todo`, `active`, `visited` (was active earlier this session) or `done`. `done` comes from files in the session's working directory:
+**Phase states:** `todo`, `active`, `visited` (was active earlier this session) or `done`. `done` comes from files in the session's project root, where it started (a shell `cd` during the session doesn't move it):
 - **Define is done** when a spec exists at one of the paths `/build` accepts: `SPEC.md`, a root `SPEC-*.md`, `docs/SPEC.md`, or a file under `spec/`.
 - **Plan is done** when `tasks/plan.md` exists.
 - **Build shows progress** as `checked/total` from the `- [ ]` / `- [x]` items in `tasks/todo.md`. It is done when there's at least one item and all are checked.
@@ -60,7 +60,7 @@ Commands and skills outside the table are recorded but not shown, and never chan
 
 **Which step an event belongs to:** the step that was current when it happened, i.e. the latest phase-setting command or skill at or before it. Events before any step belong to none.
 
-**Freshness:** these files are read at session start, at each turn start, and after any Edit, Write or NotebookEdit call whose path is one of them.
+**Freshness:** these files are read at session start, at each turn start, after any Edit, Write or NotebookEdit call whose path is one of them, and after every Bash call, since a shell command can change them too.
 
 ### Opening rules
 
@@ -176,6 +176,8 @@ Files changed · 2
   - the planning skill's `## Task N: title` headings; a heading's task is done when all the boxes under it are checked
   - all its checkbox items
   - with no `tasks/todo.md`, the session's own task list
+
+  A `Task N` that `tasks/plan.md` lists but the todo doesn't (a task added to the plan alone) joins the list in number order, when the todo's tasks are numbered. A task in both comes from the todo.
 - **Current task (Build).** When Build is the step on show, `Current task · N of M done`, then the active task (the first in progress, as above) and its details:
   - **From `tasks/todo.md`:** the lines under the task: indented under a `Task` checkbox item, or down to the next heading as high as a `## Task N:` heading.
   - **Formatting:** `**`, backticks and headings' `#` marks are removed, a checked box shows as ✓ (success colour), an open one as ○ (dim), and other bullets as `•`. Nesting is kept, blank lines are dropped, and long lines wrap in the pane.
@@ -353,7 +355,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
   - deny, rewrite or delay a tool call, prompt or command
   - make network requests (`$.http`) or run processes (`$.process`)
   - keep command output beyond what's displayed (a commit's hash and subject)
-  - copy file contents into state: only counts, paths, and the tasks from `tasks/todo.md` (titles, and each task's lines for Build's current task), which the panel shows (Decisions 11 and 13)
+  - copy file contents into state: only counts, paths, and the tasks from `tasks/todo.md` and `tasks/plan.md` (titles, and each task's lines for Build's current task), which the panel shows (Decisions 11, 13 and 14)
 
 ## Success Criteria
 
@@ -362,7 +364,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 3. `/test` followed by test-driven-development firing in the same turn leaves Verify current.
 4. In a repo with `SPEC.md`, `tasks/plan.md` and a `tasks/todo.md` with 3 of 7 items checked, the stepper shows ✓ Define, ✓ Plan and ○ Build 3/7 at session start, before any command runs.
 5. Checking a todo item via an Edit call updates the Build count after that call.
-6. Each file changed by Edit, Write or NotebookEdit shows once under `Files changed` for the step current at the time, as `created <path>` or `edited <path>`, relative to the working directory.
+6. Each file changed by Edit, Write or NotebookEdit shows once under `Files changed` for the step current at the time, as `created <path>` or `edited <path>`, relative to the project root.
 7. A successful `git commit` Bash call shows under `Commits` as `<sha> <subject>`. A failed one adds nothing.
 8. A matching check command shows under `Checks` with ✓ when its Bash call had no `isError` and wasn't interrupted, and with ✗ otherwise. Each check shows once, with its latest result, and the title counts the failing ones. A Bash command that isn't a check doesn't appear.
 9. `TodoWrite`, `TaskCreate` and `TaskUpdate` calls are reflected in Build's task list when there's no `tasks/todo.md`.
@@ -380,6 +382,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 21. The tasks show in three groups, in order: `Completed`, `In progress`, `To do`. Each is numbered, and each group folds and unfolds when its name is pressed; `Completed` starts folded. A `tasks/todo.md` written with the planning skill's `## Task N:` headings counts one task per heading, not one per checkbox.
 22. The stepper and the step's header (with `Back to <step>`) stay at the top of the pane while the rest scrolls.
 23. Define's view lists the spec file, and Plan's lists `tasks/plan.md` and `tasks/todo.md`, under `Documents`, whenever they exist, including when they were written before this session.
+24. A task added during Build shows in Plan's list, in the counts and, once it's the active task, under Build: after the Edit or Write that adds it to `tasks/todo.md`, after a Bash call that does, after a shell `cd` into a subfolder, and when it was added to `tasks/plan.md` alone.
 
 ## Out of Scope (Deferred)
 
@@ -414,6 +417,10 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
     - **Headings:** a `## Task N:` heading counts as one task.
     - **Stepper:** it's pinned, with the step's header, because the pane scrolls its own rows under them (`ui.scroll`). The header is pinned too, so `Back to <step>` never scrolls away.
 13. **Tasks under Plan, the task in hand under Build, and each step's documents (after the fourth look, 2026-11-19).** The full task list belongs with the plan that made it, so it moves to Plan's view, with the active task marked. Build shows only the active task and its details from `tasks/todo.md` (acceptance criteria and verification boxes, files), so it stays on the work in hand. Define's and Plan's views didn't show `SPEC.md` or the plan: their lists hold only the changes the panel recorded during this session, so a file written earlier (in another session, or before a fresh load) never appears. Each now lists its documents from disk under `Documents`. To show the details, the panel keeps each todo task's lines in state.
+14. **Tasks added during Build (after the fifth look, 2026-11-19).** A task added to the plan during Build didn't show under Plan or Build. Three causes, all fixed:
+    - **Moved shell:** the files were read from the shell's current directory, which moves when a command `cd`s into a subfolder (as a build often does to run tests), so `tasks/` wasn't found and the list emptied. They're now read from the session's project root (`$.session.root()`), which a shell `cd` doesn't move; file paths are shown relative to it too.
+    - **Shell edits:** a task appended with a shell command wasn't seen until the next turn. The files are now re-read after every Bash call; a re-read that finds nothing new changes nothing.
+    - **Plan alone:** a task added only to `tasks/plan.md` never showed, since the list came from `tasks/todo.md` alone. A numbered task the plan has and the todo lacks now joins the list in number order. It does so only when the todo's tasks are numbered, so the two lists can be matched by number; otherwise the todo stands alone.
 
 ## Open Questions
 

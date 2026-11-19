@@ -283,3 +283,22 @@ Every task, before it's checked off:
 - [x] Tests, type-check and validate pass (137 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
+
+## Phase 8: Tasks added during Build (spec Decision 14)
+
+- [ ] **Task 23: Read the files from the project root, and again after every Bash call** · S · Dependencies: 22
+  - **What:**
+    - The spec, plan and todo are read from `$.session.root()`, not the shell's current directory, and edited paths are compared and shown relative to it.
+    - Every Bash call re-reads them; a re-read that finds nothing new leaves the stored value as it was.
+  - **Acceptance:** spec success criteria 6 and 24 (after an Edit, after a Bash call, after a shell `cd`).
+  - **Files:** `hooks/register.tsx` and the tests
+
+- [ ] **Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list** · S · Dependencies: 23
+  - **What:** when the todo's tasks are numbered, each `Task N` the plan has and the todo doesn't is added in number order, with its details from the plan. The counts include it.
+  - **Acceptance:** spec success criterion 24 (added to the plan alone).
+  - **Files:** `hooks/artifacts.ts`, `hooks/register.tsx` and the tests
+
+### Checkpoint H
+- [ ] Tests, type-check and validate pass (every surface)
+- [ ] Seen on a real screen and the phone
+- [ ] Human review

@@ -136,6 +136,15 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
 
+### Phase 8: Tasks added during Build (spec Decision 14)
+- [ ] Task 23: Read the files from the project root, and again after every Bash call
+- [ ] Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list
+
+### Checkpoint H
+- [ ] Tests, type-check and validate pass (every surface)
+- [ ] Seen on a real screen and the phone
+- [ ] Human review
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
