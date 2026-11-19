@@ -138,10 +138,10 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 
 ### Phase 8: Tasks added during Build (spec Decision 14)
 - [x] Task 23: Read the files from the project root, and again after every Bash call
-- [ ] Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list
+- [x] Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list
 
 ### Checkpoint H
-- [ ] Tests, type-check and validate pass (every surface)
+- [x] Tests, type-check and validate pass (145 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
 

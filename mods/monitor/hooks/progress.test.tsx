@@ -260,6 +260,35 @@ test('a task added with a shell command shows after that Bash call', async ($, o
   await ui.unmount()
 })
 
+test("a task added to the plan alone shows in Plan's list, and under Build once it's the active one", async ($, on) => {
+  mock.clock(on)
+  const files = numberedRepo()
+  files.set('tasks/plan.md', ['## Task List', NUMBERED_TODO].join('\n'))
+  fakeRepo(on, files)
+  engine(on)
+  await startBuild($)
+
+  files.set('tasks/todo.md', NUMBERED_TODO.replace('- [ ] Task 3', '- [x] Task 3'))
+  await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/todo.md` })
+  files.set(
+    'tasks/plan.md',
+    ['## Task List', NUMBERED_TODO, '- [ ] Task 4: Export button', '', '## Task 4: Export button', '- [ ] CSV download works'].join('\n'),
+  )
+  await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/plan.md` })
+
+  const ui = await $.ui.mount(PANE)
+  let shown = await texts(ui)
+  expect(shown).toContain('● Build 3/4')
+  expect(shown).toContain('Current task · 3 of 4 done')
+  expect(shown).toContain('● 4. Export button')
+  expect(shown).toContain('○ CSV download works')
+  await ui.press({ key: 'step-plan' })
+  shown = await texts(ui)
+  expect(shown).toContain('Tasks · 3 of 4 done')
+  expect(shown).toContain('● 4. Export button')
+  await ui.unmount()
+})
+
 test('a fully checked todo list marks Build done', async ($, on) => {
   mock.clock(on)
   fakeRepo(on, new Map([['tasks/todo.md', todo(7, 7)]]))

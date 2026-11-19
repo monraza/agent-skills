@@ -47,6 +47,7 @@ Checks · 2, 1 failing
     - the planning skill's `## Task N:` headings, one task each, done when every box under it is checked
     - every checkbox line
   - **Without a `tasks/todo.md`,** the session's own task list.
+  - **Added to the plan alone:** a `Task N` in `tasks/plan.md` that the todo doesn't have joins the list in number order, when the todo's tasks are numbered.
 - **Current task (Build):** only the active task, with its lines from `tasks/todo.md`: what it's for, its acceptance criteria and verification (✓ checked, ○ open), and the files it touches. Long lines wrap. With no `tasks/todo.md`, the session task's description.
 - **Files changed:** each file created or edited during the step, once.
 - **Commits:** the commits made during the step.

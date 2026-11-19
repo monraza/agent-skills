@@ -1,6 +1,17 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { NO_ARTIFACTS, countTodo, doneFrom, hasSpecIn, isTrackedPath, relativeTo, specPathsIn, todoTasksOf } from './artifacts'
+import {
+  NO_ARTIFACTS,
+  countTasks,
+  countTodo,
+  doneFrom,
+  hasSpecIn,
+  isTrackedPath,
+  relativeTo,
+  specPathsIn,
+  tasksOf,
+  todoTasksOf,
+} from './artifacts'
 
 describe('todo counting', () => {
   test('counts checkbox items, nested or not, and ignores other lines', () => {
@@ -133,6 +144,50 @@ describe('todo task lines', () => {
     const text = ['## Task 1: One', '- [x] criterion', '## Task list', '- [x] Task 1: One', '- [ ] Task 2: Two'].join('\n')
 
     expect(countTodo(text)).toEqual({ done: 1, total: 2 })
+  })
+})
+
+describe('tasks added to the plan alone', () => {
+  const TODO = ['- [x] Task 1: Schema', '- [ ] Task 3: UI'].join('\n')
+  const PLAN = [
+    '## Task List',
+    '- [ ] Task 1: Schema and seed data',
+    '- [ ] Task 2: Search',
+    '  - [ ] finds by title',
+    '- [ ] Task 3: UI',
+    '- [ ] Task 4: Export',
+  ].join('\n')
+
+  test('a numbered task the plan has and the todo lacks joins in number order, with its details', () => {
+    const tasks = tasksOf(TODO, PLAN)
+    expect(tasks.map(task => `${task.number}. ${task.title}`)).toEqual(['1. Schema', '2. Search', '3. UI', '4. Export'])
+    expect(tasks[1]?.details).toEqual(['- [ ] finds by title'])
+    expect(countTasks(tasks)).toEqual({ done: 1, total: 4 })
+  })
+
+  test('a task in both comes from the todo', () => {
+    const first = tasksOf(TODO, PLAN)[0]
+    expect(first?.title).toBe('Schema')
+    expect(first?.done).toBe(true)
+  })
+
+  test("an added task with a '## Task N:' section in the plan takes its details from there", () => {
+    const plan = [...PLAN.split('\n'), '', '## Task 4: Export', '**Acceptance criteria:**', '- [ ] CSV download works'].join('\n')
+    const added = tasksOf(TODO, plan).find(task => task.number === '4')
+    expect(added?.details).toEqual(['**Acceptance criteria:**', '- [ ] CSV download works'])
+    expect(added?.done).toBe(false)
+  })
+
+  test('a plan written with headings alone adds its numbered sections too, in order', () => {
+    const plan = ['## Task 1: Schema', '- [x] tables', '## Task 2a: Search', '- [ ] finds by title'].join('\n')
+    expect(tasksOf(TODO, plan).map(task => task.number)).toEqual(['1', '2a', '3'])
+  })
+
+  test('a todo numbered by place stands alone, as does a todo with no plan or a plan without numbered tasks', () => {
+    const byPlace = ['- [ ] schema', '- [ ] api'].join('\n')
+    expect(tasksOf(byPlace, PLAN)).toEqual(todoTasksOf(byPlace))
+    expect(tasksOf(TODO, null)).toEqual(todoTasksOf(TODO))
+    expect(tasksOf(TODO, '# Plan\n- [ ] Task list reviewed\n- [ ] something')).toEqual(todoTasksOf(TODO))
   })
 })
 

@@ -103,23 +103,55 @@ const headingTasksOf = (lines: readonly string[]): TodoTask[] => {
   })
 }
 
-// The todo's tasks, in this order of preference: its checkbox items whose
-// text starts with `Task`; its `## Task N:` headings; every checkbox item.
-export const todoTasksOf = (text: string): TodoTask[] => {
+const hasNumber = (text: string) => TASK_NUMBER.test(text.replaceAll('**', '').trim())
+
+// A file's tasks, and for each whether its number is its own (`Task N`)
+// rather than its place in the list. In this order of preference: the
+// checkbox items whose text starts with `Task`; the `## Task N:` headings,
+// which always have their number; every checkbox item.
+const parsedTasksOf = (text: string): { tasks: TodoTask[]; numbered: boolean[] } => {
   const lines = text.split('\n')
   const items = itemsOf(lines)
   const taskItems = items.filter(item => IS_TASK.test(item.text.replaceAll('**', '')))
-  if (taskItems.length > 0) return itemTasksOf(lines, taskItems)
-  const headed = headingTasksOf(lines)
-  if (headed.length > 0) return headed
+  const chosen = taskItems.length > 0 ? taskItems : items
+  const headed = taskItems.length > 0 ? [] : headingTasksOf(lines)
+  if (headed.length > 0) return { tasks: headed, numbered: headed.map(() => true) }
 
-  return itemTasksOf(lines, items)
+  return { tasks: itemTasksOf(lines, chosen), numbered: chosen.map(item => hasNumber(item.text)) }
 }
 
-export const countTodo = (text: string): TodoCount => {
-  const tasks = todoTasksOf(text)
+export const todoTasksOf = (text: string): TodoTask[] => parsedTasksOf(text).tasks
 
-  return { done: tasks.filter(task => task.done).length, total: tasks.length }
+export const countTasks = (tasks: readonly TodoTask[]): TodoCount => ({
+  done: tasks.filter(task => task.done).length,
+  total: tasks.length,
+})
+
+export const countTodo = (text: string): TodoCount => countTasks(todoTasksOf(text))
+
+const byNumber = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+
+// The todo's tasks, joined by each numbered task the plan has and the todo
+// lacks (one added to the plan alone), placed in number order. A task in
+// both comes from the todo. An added task with no lines under its checkbox
+// takes those of the plan's `## Task N:` section, if it has one. Only a todo
+// whose tasks all have their own numbers is matched, since a number that is
+// only a place in the list could name another task.
+export const tasksOf = (todo: string, plan: string | null): TodoTask[] => {
+  const own = parsedTasksOf(todo)
+  if (plan === null || own.tasks.length === 0 || !own.numbered.every(Boolean)) return own.tasks
+  const planned = parsedTasksOf(plan)
+  const known = new Set(own.tasks.map(task => task.number))
+  const sections = new Map(headingTasksOf(plan.split('\n')).map(task => [task.number, task.details]))
+  const added = planned.tasks
+    .filter((task, index) => planned.numbered[index] === true && !known.has(task.number))
+    .map(task => (task.details.length > 0 ? task : { ...task, details: sections.get(task.number) ?? [] }))
+
+  return added.reduce((list, task) => {
+    const at = list.findIndex(other => byNumber(other.number, task.number) > 0)
+
+    return at === -1 ? [...list, task] : [...list.slice(0, at), task, ...list.slice(at)]
+  }, own.tasks)
 }
 
 const ROOT_SPEC = /^SPEC(-[^/]+)?\.md$/

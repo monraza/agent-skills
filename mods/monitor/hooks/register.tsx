@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Artifacts, GroupId, PhaseId } from '../types'
 
-import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTodo, isTrackedPath, relativeTo, specPathsIn, todoTasksOf } from './artifacts'
+import { NO_ARTIFACTS, PLAN_PATH, TODO_PATH, countTasks, isTrackedPath, relativeTo, specPathsIn, tasksOf } from './artifacts'
 import { checkOf, commitOf, isCreated, keepNewest } from './classify'
 import {
   NEW_TURN,
@@ -77,7 +77,11 @@ const readArtifacts = async ($: EngineInterface): Promise<Artifacts> => {
   const root = await projectRoot($)
   const at = (path: string) => `${root}/${path}`
 
-  const todo = (await $.fs.exists(at(TODO_PATH))) ? await $.fs.read(at(TODO_PATH)) : null
+  const readIfThere = async (path: string) => ((await $.fs.exists(at(path))) ? await $.fs.read(at(path)) : null)
+  const todo = await readIfThere(TODO_PATH)
+  const plan = await readIfThere(PLAN_PATH)
+  // The plan adds the tasks it has and the todo lacks.
+  const todoTasks = todo === null ? [] : tasksOf(todo, plan)
 
   const specPaths = specPathsIn({
     root: await filesIn($, root),
@@ -88,9 +92,9 @@ const readArtifacts = async ($: EngineInterface): Promise<Artifacts> => {
   return {
     hasSpec: specPaths.length > 0,
     specPaths,
-    hasPlan: await $.fs.exists(at(PLAN_PATH)),
-    todo: todo === null ? null : countTodo(todo),
-    todoTasks: todo === null ? [] : todoTasksOf(todo),
+    hasPlan: plan !== null,
+    todo: todo === null ? null : countTasks(todoTasks),
+    todoTasks,
   }
 }
 

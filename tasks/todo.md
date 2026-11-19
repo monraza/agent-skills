@@ -293,12 +293,12 @@ Every task, before it's checked off:
   - **Acceptance:** spec success criteria 6 and 24 (after an Edit, after a Bash call, after a shell `cd`).
   - **Files:** `hooks/register.tsx` and the tests
 
-- [ ] **Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list** · S · Dependencies: 23
+- [x] **Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list** · S · Dependencies: 23
   - **What:** when the todo's tasks are numbered, each `Task N` the plan has and the todo doesn't is added in number order, with its details from the plan. The counts include it.
   - **Acceptance:** spec success criterion 24 (added to the plan alone).
   - **Files:** `hooks/artifacts.ts`, `hooks/register.tsx` and the tests
 
 ### Checkpoint H
-- [ ] Tests, type-check and validate pass (every surface)
+- [x] Tests, type-check and validate pass (145 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
