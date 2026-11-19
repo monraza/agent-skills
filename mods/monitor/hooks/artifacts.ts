@@ -1,0 +1,195 @@
+import type { Artifacts, PhaseId, TodoCount, TodoTask } from '../types'
+
+// Pure: no `$`, no I/O. What the spec, plan and todo files mean for the
+// phases (SPEC.md, Phase rules). register.tsx reads the files.
+
+export const NO_ARTIFACTS: Artifacts = { hasSpec: false, specPaths: [], hasPlan: false, todo: null, todoTasks: [] }
+
+export const PLAN_PATH = 'tasks/plan.md'
+export const TODO_PATH = 'tasks/todo.md'
+
+const TODO_ITEM = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/
+const HEADING = /^(#{1,6})\s+(.*)$/
+const TASK_NUMBER = /^task\s+(\d+[a-z]?)\b\s*[:.)\-–—]?\s*/i
+const IS_TASK = /^task\b/i
+
+// `at`: the item's line number, for the lines under it.
+type Item = { text: string; done: boolean; at: number }
+
+const itemsOf = (lines: readonly string[]): Item[] =>
+  lines.flatMap((line, at) => {
+    const match = line.match(TODO_ITEM)
+
+    return match === null ? [] : [{ text: match[2] ?? '', done: match[1] !== ' ', at }]
+  })
+
+const DETAIL_LIMIT = 30
+
+const indentOf = (line: string) => line.length - line.trimStart().length
+
+// Lines as written, blank ones dropped and their shared indentation
+// removed; at most DETAIL_LIMIT, then '…'.
+export const detailsOf = (lines: readonly string[]): string[] => {
+  const kept = lines.filter(line => line.trim() !== '')
+  const shared = Math.min(...kept.map(indentOf))
+  const plain = kept.map(line => line.slice(shared).trimEnd())
+
+  return plain.length > DETAIL_LIMIT ? [...plain.slice(0, DETAIL_LIMIT), '…'] : plain
+}
+
+// The lines indented under the item on line `at`, down to the next line
+// that isn't.
+const linesUnder = (lines: readonly string[], at: number): string[] => {
+  const depth = indentOf(lines[at] ?? '')
+  const under: string[] = []
+  for (const line of lines.slice(at + 1)) {
+    if (line.trim() !== '' && indentOf(line) <= depth) break
+    under.push(line)
+  }
+
+  return under
+}
+
+// A title loses its ** and is cut at ' · ', where this repo's task lines
+// start their size and dependencies; `Task N:` becomes its number, and
+// without one the task keeps the number it's given.
+export const numbered = (text: string, number: string): { number: string; title: string } => {
+  const plain = text.replaceAll('**', '').split(' · ')[0]?.trim() ?? ''
+  const match = plain.match(TASK_NUMBER)
+  if (match === null) return { number, title: plain }
+  // `Task 3` with nothing after its number keeps its whole text as the title.
+  const title = plain.slice(match[0].length).trim()
+
+  return { number: match[1] ?? number, title: title === '' ? plain : title }
+}
+
+const taskOf = (text: string, place: number, done: boolean, started: boolean, details: readonly string[]): TodoTask => ({
+  ...numbered(text, String(place)),
+  done,
+  started,
+  details: detailsOf(details),
+})
+
+// A checkbox item as a task: its details are the lines indented under it.
+const itemTasksOf = (lines: readonly string[], items: readonly Item[]): TodoTask[] =>
+  items.map((item, index) => taskOf(item.text, index + 1, item.done, false, linesUnder(lines, item.at)))
+
+// The planning skill's `## Task N: title` sections: the lines under a task
+// heading, down to the next heading as high as it, are that task's, and so
+// are the boxes among them. A heading needs its number (`## Task List` is
+// not a task).
+const headingTasksOf = (lines: readonly string[]): TodoTask[] => {
+  const sections: { text: string; lines: string[] }[] = []
+  let level = 0
+  for (const line of lines) {
+    const heading = line.match(HEADING)
+    const depth = heading?.[1]?.length ?? 0
+    const text = heading?.[2]?.trim() ?? ''
+    if (heading !== null && TASK_NUMBER.test(text.replaceAll('**', ''))) {
+      sections.push({ text, lines: [] })
+      level = depth
+    } else if (heading !== null && depth <= level) {
+      level = 0
+    } else if (level > 0) {
+      sections.at(-1)?.lines.push(line)
+    }
+  }
+
+  return sections.map(({ text, lines: under }, index) => {
+    const boxes = itemsOf(under)
+    const checked = boxes.filter(box => box.done).length
+
+    return taskOf(text, index + 1, boxes.length > 0 && checked === boxes.length, checked > 0, under)
+  })
+}
+
+const hasNumber = (text: string) => TASK_NUMBER.test(text.replaceAll('**', '').trim())
+
+// A file's tasks, and for each whether its number is its own (`Task N`)
+// rather than its place in the list. In this order of preference: the
+// checkbox items whose text starts with `Task`; the `## Task N:` headings,
+// which always have their number; every checkbox item.
+const parsedTasksOf = (text: string): { tasks: TodoTask[]; numbered: boolean[] } => {
+  const lines = text.split('\n')
+  const items = itemsOf(lines)
+  const taskItems = items.filter(item => IS_TASK.test(item.text.replaceAll('**', '')))
+  const chosen = taskItems.length > 0 ? taskItems : items
+  const headed = taskItems.length > 0 ? [] : headingTasksOf(lines)
+  if (headed.length > 0) return { tasks: headed, numbered: headed.map(() => true) }
+
+  return { tasks: itemTasksOf(lines, chosen), numbered: chosen.map(item => hasNumber(item.text)) }
+}
+
+export const todoTasksOf = (text: string): TodoTask[] => parsedTasksOf(text).tasks
+
+export const countTasks = (tasks: readonly TodoTask[]): TodoCount => ({
+  done: tasks.filter(task => task.done).length,
+  total: tasks.length,
+})
+
+export const countTodo = (text: string): TodoCount => countTasks(todoTasksOf(text))
+
+const byNumber = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+
+// The todo's tasks, joined by each numbered task the plan has and the todo
+// lacks (one added to the plan alone), placed in number order. A task in
+// both comes from the todo. An added task with no lines under its checkbox
+// takes those of the plan's `## Task N:` section, if it has one. Only a todo
+// whose tasks all have their own numbers is matched, since a number that is
+// only a place in the list could name another task.
+export const tasksOf = (todo: string, plan: string | null): TodoTask[] => {
+  const own = parsedTasksOf(todo)
+  if (plan === null || own.tasks.length === 0 || !own.numbered.every(Boolean)) return own.tasks
+  const planned = parsedTasksOf(plan)
+  const known = new Set(own.tasks.map(task => task.number))
+  const sections = new Map(headingTasksOf(plan.split('\n')).map(task => [task.number, task.details]))
+  const added = planned.tasks
+    .filter((task, index) => planned.numbered[index] === true && !known.has(task.number))
+    .map(task => (task.details.length > 0 ? task : { ...task, details: sections.get(task.number) ?? [] }))
+
+  return added.reduce((list, task) => {
+    const at = list.findIndex(other => byNumber(other.number, task.number) > 0)
+
+    return at === -1 ? [...list, task] : [...list.slice(0, at), task, ...list.slice(at)]
+  }, own.tasks)
+}
+
+const ROOT_SPEC = /^SPEC(-[^/]+)?\.md$/
+
+type SpecFolders = { root: readonly string[]; docs: readonly string[]; spec: readonly string[] }
+
+const specFirst = (a: string, b: string) => (a === 'SPEC.md' ? -1 : b === 'SPEC.md' ? 1 : a.localeCompare(b))
+
+// The paths /build accepts, SPEC.md first: SPEC.md, a root SPEC-<change>.md,
+// docs/SPEC.md, or a file under spec/. Each list holds the file names in
+// that folder.
+export const specPathsIn = ({ root, docs, spec }: SpecFolders): string[] => [
+  ...root.filter(name => ROOT_SPEC.test(name)).sort(specFirst),
+  ...(docs.includes('SPEC.md') ? ['docs/SPEC.md'] : []),
+  ...[...spec].sort().map(name => `spec/${name}`),
+]
+
+export const hasSpecIn = (folders: SpecFolders): boolean => specPathsIn(folders).length > 0
+
+// A path relative to the project root, as relativeTo gives it.
+export const isTrackedPath = (path: string): boolean =>
+  ROOT_SPEC.test(path) ||
+  path === 'docs/SPEC.md' ||
+  /^spec\/[^/]+$/.test(path) ||
+  path === PLAN_PATH ||
+  path === TODO_PATH
+
+export const relativeTo = (cwd: string, path: string): string => {
+  const root = cwd.endsWith('/') ? cwd : `${cwd}/`
+
+  return path.startsWith(root) ? path.slice(root.length) : path
+}
+
+export const doneFrom = ({ hasSpec, hasPlan, todo }: Artifacts): Record<PhaseId, boolean> => ({
+  define: hasSpec,
+  plan: hasPlan,
+  build: todo !== null && todo.total > 0 && todo.done === todo.total,
+  verify: false,
+  review: false,
+  ship: false,
+})

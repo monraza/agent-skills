@@ -1,0 +1,102 @@
+import { expect, mock, test } from 'claude-code/testing'
+import type { On } from 'claude-code'
+
+import { bashFail, bashPass, sessionStart, typedCommand } from './fixtures/live-events'
+
+const PANE = {
+  plugin: 'monitor',
+  component: 'Pane',
+  requestId: 'monitor',
+  surface: 'desktop',
+  props: {
+    title: 'Workflow',
+    isFocused: false,
+    bodyColumns: 60,
+    placement: 'dock',
+    scroll: { offset: 0, bodyRows: 40 },
+    view: {},
+  },
+} as const
+
+const MINUTE = 60_000
+
+// The recorded passing and failing Bash calls, running check commands.
+const evalsPass = { ...bashPass.input, tool_use_id: 'toolu_evals', command: 'node scripts/run-evals.js' }
+const testsFail = { ...bashFail.input, tool_use_id: 'toolu_tests', command: 'npm test' }
+
+const engine = (on: On) => {
+  on('command.register', () => ({ value: { command: 'monitor' } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('command.run', () => typedCommand.commandResult)
+  on('tool.call', (_, e) =>
+    (e.tool_use_id === testsFail.tool_use_id ? bashFail.result : bashPass.result) as typeof bashPass.result,
+  )
+  on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
+}
+
+const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
+  (await ui.findAll({ type: 'Text' })).map(one => one.text)
+
+test('a passing and a failing check show ✓ and ✗, newest first', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.tool.call(evalsPass)
+  await clock.advance(3 * MINUTE)
+  await $.tool.call(testsFail)
+
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown).toContain('Checks · 2, 1 failing')
+  expect(shown.indexOf('✗ npm test')).toBeGreaterThan(-1)
+  expect(shown.indexOf('✗ npm test')).toBeLessThan(shown.indexOf('✓ run-evals'))
+  expect(shown).toContain('3 min ago')
+  await ui.unmount()
+})
+
+test('a Bash command that is not a check is not listed', async ($, on) => {
+  mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.tool.call(bashPass.input)
+
+  const ui = await $.ui.mount(PANE)
+  expect((await texts(ui)).filter(text => text?.startsWith('Checks'))).toEqual([])
+  await ui.unmount()
+})
+
+test("/monitor's text summary lists the same checks", async ($, on) => {
+  mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.tool.call(evalsPass)
+  await $.tool.call(testsFail)
+
+  const out = await $.command.run({ ...typedCommand.commandRun, command: 'monitor', args: '' })
+  expect(out.text).toContain('\nChecks · 2, 1 failing\n  ✗ npm test · just now\n  ✓ run-evals · just now')
+})
+
+test('a check that failed, then passed, shows once, with its latest result', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+  await $.tool.call(testsFail)
+  await clock.advance(MINUTE)
+  // The engine passes the same command run again (any other tool_use_id).
+  await $.tool.call({ ...testsFail, tool_use_id: 'toolu_tests_again' })
+
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown.filter(text => text?.includes('npm test'))).toEqual(['✓ npm test'])
+  expect(shown).toContain('Checks · 1')
+  await ui.unmount()
+})
+
+test('a check command passes through unchanged', async ($, on) => {
+  mock.clock(on)
+  engine(on)
+  await $.session.start(sessionStart)
+
+  expect(await $.tool.call(testsFail)).toEqual(bashFail.result)
+  expect(await $.tool.call(evalsPass)).toEqual(bashPass.result)
+})
