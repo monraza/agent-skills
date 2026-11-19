@@ -286,7 +286,7 @@ Every task, before it's checked off:
 
 ## Phase 8: Tasks added during Build (spec Decision 14)
 
-- [ ] **Task 23: Read the files from the project root, and again after every Bash call** · S · Dependencies: 22
+- [x] **Task 23: Read the files from the project root, and again after every Bash call** · S · Dependencies: 22
   - **What:**
     - The spec, plan and todo are read from `$.session.root()`, not the shell's current directory, and edited paths are compared and shown relative to it.
     - Every Bash call re-reads them; a re-read that finds nothing new leaves the stored value as it was.

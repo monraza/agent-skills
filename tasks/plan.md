@@ -137,7 +137,7 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [ ] Human review
 
 ### Phase 8: Tasks added during Build (spec Decision 14)
-- [ ] Task 23: Read the files from the project root, and again after every Bash call
+- [x] Task 23: Read the files from the project root, and again after every Bash call
 - [ ] Task 24: A numbered task in `tasks/plan.md` that the todo lacks joins the list
 
 ### Checkpoint H

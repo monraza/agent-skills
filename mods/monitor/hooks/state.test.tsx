@@ -24,7 +24,7 @@ const CWD = sessionStart.cwd
 const engine = (on: On) => {
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
   on('command.run', () => typedCommand.commandResult)
   on('tool.call', (_, e) =>
     (e.tool === 'Write'

@@ -38,7 +38,7 @@ const engine = (on: On) => {
   }
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
   on('command.run', () => typedCommand.commandResult)
   on('tool.call', (_, e) => (results[e.tool_use_id ?? ''] ?? edit.result) as typeof edit.result)
   on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
@@ -47,7 +47,7 @@ const engine = (on: On) => {
 const texts = async (ui: { findAll: (q: { type: string }) => Promise<readonly { text?: string }[]> }) =>
   (await ui.findAll({ type: 'Text' })).map(one => one.text)
 
-test('a file written then edited shows once, as created, relative to the working directory', async ($, on) => {
+test('a file written then edited shows once, as created, relative to the project root', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)
@@ -61,7 +61,7 @@ test('a file written then edited shows once, as created, relative to the working
   await ui.unmount()
 })
 
-test('a file outside the working directory keeps its full path; a failed edit is not listed', async ($, on) => {
+test('a file outside the project root keeps its full path; a failed edit is not listed', async ($, on) => {
   mock.clock(on)
   engine(on)
   await $.session.start(sessionStart)

@@ -139,7 +139,7 @@ export const specPathsIn = ({ root, docs, spec }: SpecFolders): string[] => [
 
 export const hasSpecIn = (folders: SpecFolders): boolean => specPathsIn(folders).length > 0
 
-// A path relative to the working directory, as relativeTo gives it.
+// A path relative to the project root, as relativeTo gives it.
 export const isTrackedPath = (path: string): boolean =>
   ROOT_SPEC.test(path) ||
   path === 'docs/SPEC.md' ||

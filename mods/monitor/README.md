@@ -99,6 +99,7 @@ claude --plugin-dir ./mods/monitor
 - **Quiet commits:** `git commit -q` prints nothing, so Claude Code reports no commit and it isn't listed.
 - **Fresh loads:** if the mod is loaded afresh mid-session (re-enabled, or Claude Code's worker restarts), the session's activity, files, commits and checks start empty. Counts read from files come back. Ordinary reloads keep everything.
 - **What it reads:** only `SPEC*.md`, `docs/SPEC.md`, `spec/`, `tasks/plan.md` and `tasks/todo.md`, for their paths, counts and tasks. It writes no files and makes no network requests.
+- **When it reads them:** at session start, at each turn, after an edit to one of them, and after every shell command (which can change them too). They're read from the project root, where the session started, so a `cd` into a subfolder doesn't lose them.
 
 ## Develop
 

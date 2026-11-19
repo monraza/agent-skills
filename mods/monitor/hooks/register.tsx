@@ -65,17 +65,22 @@ const filesIn = async ($: EngineInterface, folder: string): Promise<string[]> =>
     ? (await $.fs.list(folder)).filter(entry => entry.kind === 'file').map(entry => entry.name)
     : []
 
-// Paths are built from the session's working directory, the same one tool
-// calls' paths are compared with (the engine would otherwise resolve a
-// relative path against a base of its own choosing).
+// The session's project root, where it started: a shell `cd` into a
+// subfolder (a build running its tests, say) doesn't move it, so the spec,
+// plan and todo are still found, and file paths read the same all session.
+const projectRoot = async ($: EngineInterface) => (await $.session.root()).replace(/\/$/, '')
+
+// Paths are built from the project root, the same one tool calls' paths are
+// compared with (the engine would otherwise resolve a relative path against
+// a base of its own choosing).
 const readArtifacts = async ($: EngineInterface): Promise<Artifacts> => {
-  const cwd = (await $.session.cwd()).replace(/\/$/, '')
-  const at = (path: string) => `${cwd}/${path}`
+  const root = await projectRoot($)
+  const at = (path: string) => `${root}/${path}`
 
   const todo = (await $.fs.exists(at(TODO_PATH))) ? await $.fs.read(at(TODO_PATH)) : null
 
   const specPaths = specPathsIn({
-    root: await filesIn($, cwd),
+    root: await filesIn($, root),
     docs: await filesIn($, at('docs')),
     spec: await filesIn($, at('spec')),
   })
@@ -90,10 +95,12 @@ const readArtifacts = async ($: EngineInterface): Promise<Artifacts> => {
 }
 
 // A failed read keeps what the panel showed: it never affects the session.
+// A read that finds nothing new keeps the stored value, so the pane isn't
+// redrawn after every shell command.
 const refreshArtifacts = async ($: EngineInterface) => {
   try {
     const found = await readArtifacts($)
-    await update($, artifacts, () => found)
+    await update($, artifacts, stored => (JSON.stringify(stored) === JSON.stringify(found) ? stored : found))
   } catch {
     // keep the previous value
   }
@@ -101,7 +108,7 @@ const refreshArtifacts = async ($: EngineInterface) => {
 
 const hasTasksFolder = async ($: EngineInterface): Promise<boolean> => {
   try {
-    return await $.fs.exists(`${(await $.session.cwd()).replace(/\/$/, '')}/tasks`)
+    return await $.fs.exists(`${await projectRoot($)}/tasks`)
   } catch {
     return false
   }
@@ -185,16 +192,19 @@ export const register: Register = on => {
     // A failed edit changed nothing.
     if (edited !== null && ran.isError !== true) {
       try {
-        const path = relativeTo(await $.session.cwd(), edited)
+        const path = relativeTo(await projectRoot($), edited)
         const at = await $.clock.now()
         const created = e.tool === 'Write' && isCreated(ran)
         await update($, files, list => keepNewest([...list, { path, at, created }]))
         if (isTrackedPath(path)) await refreshArtifacts($)
       } catch {
-        // no working directory to compare with: nothing recorded
+        // no project root to compare with: nothing recorded
       }
     }
     if (e.tool === 'Bash') {
+      // A shell command can change the files too (a task appended with
+      // `>>`, a `git checkout`), so they're read again after every one.
+      await refreshArtifacts($)
       const commit = commitOf(ran, await $.clock.now())
       if (commit !== null) await update($, commits, list => keepNewest([...list, commit]))
       const check = checkOf(e.command, ran, await $.clock.now())

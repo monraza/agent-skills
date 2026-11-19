@@ -1,7 +1,8 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
+import type { Engine } from 'claude-code/testing'
 
-import { edit, sessionStart, turnStart, typedCommand } from './fixtures/live-events'
+import { bashPass, edit, sessionStart, turnStart, typedCommand } from './fixtures/live-events'
 
 const PANE = {
   plugin: 'monitor',
@@ -48,13 +49,16 @@ const fakeRepo = (on: On, files: Map<string, string>) => {
   return reads
 }
 
-const engine = (on: On) => {
+// The project root is CWD; `where.shell` is the shell's current directory,
+// which a `cd` in a Bash command moves.
+const engine = (on: On, where: { shell: string } = { shell: CWD }) => {
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
+  on('session.cwd', () => ({ value: where.shell }))
   on('command.run', () => typedCommand.commandResult)
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
-  on('tool.call', () => edit.result)
+  on('tool.call', (_, e) => (e.tool === 'Bash' ? bashPass.result : edit.result))
   on('ui.open', () => ({ value: { isPlaced: false, reason: 'no-surface: no surface is attached' } }))
 }
 
@@ -190,6 +194,69 @@ test('a turn start re-reads the files', async ($, on) => {
 
   const ui = await $.ui.mount(PANE)
   expect(await texts(ui)).toContain('✓ Plan')
+  await ui.unmount()
+})
+
+// The todo as /plan writes it: Tasks 1 and 2 done, Task 3 open.
+const NUMBERED_TODO = ['- [x] Task 1: Schema', '- [x] Task 2: API', '- [ ] Task 3: UI'].join('\n')
+const ADDED_TASK = ['- [ ] Task 4: Export button', '  - [ ] CSV download works'].join('\n')
+
+const numberedRepo = () =>
+  new Map([
+    ['SPEC.md', '# Spec'],
+    ['tasks/plan.md', '# Plan'],
+    ['tasks/todo.md', NUMBERED_TODO],
+  ])
+
+// Build current, as after /build and its turn.
+const startBuild = async ($: Engine) => {
+  await $.session.start(sessionStart)
+  await $.command.run({ ...typedCommand.commandRun, command: 'build', args: '' })
+  await $.turn.start({ ...typedCommand.turnStart, turnId: 'turn-build' })
+}
+
+test('a task added to the todo after the shell moved into a subfolder shows under Plan and Build', async ($, on) => {
+  mock.clock(on)
+  const files = numberedRepo()
+  fakeRepo(on, files)
+  const where: { shell: string } = { shell: CWD }
+  engine(on, where)
+  await startBuild($)
+
+  // A test run moves the shell; then Task 3 is checked and Task 4 added.
+  where.shell = `${CWD}/packages/app`
+  files.set('tasks/todo.md', `${NUMBERED_TODO.replace('- [ ] Task 3', '- [x] Task 3')}\n${ADDED_TASK}`)
+  await $.tool.call({ ...edit.input, file_path: `${CWD}/tasks/todo.md` })
+  await $.turn.start({ ...typedCommand.turnStart, turnId: 'turn-next' })
+
+  const ui = await $.ui.mount(PANE)
+  let shown = await texts(ui)
+  expect(shown).toContain('● Build 3/4')
+  expect(shown).toContain('Current task · 3 of 4 done')
+  expect(shown).toContain('● 4. Export button')
+  expect(shown).toContain('○ CSV download works')
+  expect(shown).toContain('edited tasks/todo.md')
+  await ui.press({ key: 'step-plan' })
+  shown = await texts(ui)
+  expect(shown).toContain('Tasks · 3 of 4 done')
+  expect(shown).toContain('● 4. Export button')
+  await ui.unmount()
+})
+
+test('a task added with a shell command shows after that Bash call', async ($, on) => {
+  mock.clock(on)
+  const files = numberedRepo()
+  fakeRepo(on, files)
+  engine(on)
+  await startBuild($)
+
+  files.set('tasks/todo.md', `${NUMBERED_TODO}\n${ADDED_TASK}`)
+  await $.tool.call({ ...bashPass.input, command: "printf '%s\\n' '- [ ] Task 4: Export button' >> tasks/todo.md" })
+
+  const ui = await $.ui.mount(PANE)
+  expect(await texts(ui)).toContain('● Build 2/4')
+  await ui.press({ key: 'step-plan' })
+  expect(await texts(ui)).toContain('○ 4. Export button')
   await ui.unmount()
 })
 

@@ -5,12 +5,12 @@ import { sessionStart, skillPrompt, turnStart, typedCommand } from './fixtures/l
 
 const CWD = sessionStart.cwd
 
-// A working directory holding `files` (paths relative to CWD), and an engine
+// A project root holding `files` (paths relative to CWD), and an engine
 // that counts the panes opened.
 const setup = (on: On, files: readonly string[], { openFails = false } = {}) => {
   const relative = (path: string) => (path === CWD ? '' : path.replace(`${CWD}/`, ''))
   const under = (folder: string) => files.filter(file => folder === '' || file.startsWith(`${folder}/`))
-  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
   on('fs.exists', (_, e) => ({ value: files.includes(relative(e.path)) || under(relative(e.path)).length > 0 }))
   on('fs.list', (_, e) => {
     const folder = relative(e.path)

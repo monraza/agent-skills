@@ -33,7 +33,7 @@ const engine = (on: On, moved: number[] = []) => {
   })
   on('command.register', () => ({ value: { command: 'monitor' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
   on('command.run', () => typedCommand.commandResult)
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('tool.call', () => write.result)

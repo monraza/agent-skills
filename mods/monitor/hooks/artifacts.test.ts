@@ -176,7 +176,7 @@ describe('tracked paths', () => {
 })
 
 describe('relative paths', () => {
-  test('a path inside the working directory becomes relative; one outside stays as it is', () => {
+  test('a path inside the project root becomes relative; one outside stays as it is', () => {
     expect(relativeTo('/home/user/project', '/home/user/project/tasks/todo.md')).toBe('tasks/todo.md')
     expect(relativeTo('/home/user/project/', '/home/user/project/SPEC.md')).toBe('SPEC.md')
     expect(relativeTo('/home/user/project', '/home/user/project-two/SPEC.md')).toBe('/home/user/project-two/SPEC.md')
