@@ -91,7 +91,9 @@ Each list keeps its newest 200 entries.
 
 ### Pane layout (V1)
 
-Revised after each look on a real screen (Decisions 10–12): a stepper pinned at the top, one view per step, and room for Build's tasks.
+Revised after each look on a real screen (Decisions 10–13): a stepper pinned at the top, one view per step, the plan's tasks under Plan, and Build focused on the task in hand.
+
+The current step, Build:
 
 ```
 ✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
@@ -99,14 +101,13 @@ Revised after each look on a real screen (Decisions 10–12): a stepper pinned a
 BUILD
 started by /build · 25 min ago
 
-Tasks · 3 of 7 done
-▸ Completed · 3
-▾ In progress · 1
-    ● 4. Done marks from files
-▾ To do · 3
-    ○ 5. Files and commits
-    ○ 6. Checks
-    ○ 7. Session tasks
+Current task · 3 of 7 done
+● 4. Done marks from files
+  What: Build's count comes from tasks/todo.md
+  Acceptance criteria:
+    ✓ Build shows 3/7 at session start
+    ○ An Edit to the todo updates the count
+  Files: hooks/artifacts.ts, hooks/sections.ts
 
 Files changed · 2
   edited hooks/phases.ts                   2 min ago
@@ -118,6 +119,32 @@ Commits · 1
 Checks · 2, 1 failing
   ✗ tsc                                    just now
   ✓ claude plugin test                     3 min ago
+```
+
+An earlier step, Plan:
+
+```
+✓ Define ─ ✓ Plan ─ ● Build 3/7 ─ ○ Verify ─ ○ Review ─ ○ Ship
+
+PLAN                                          Back to Build
+started by /plan · 1 h ago
+
+Documents
+  tasks/plan.md
+  tasks/todo.md
+
+Tasks · 3 of 7 done
+▸ Completed · 3
+▾ In progress · 1
+    ● 4. Done marks from files
+▾ To do · 3
+    ○ 5. Files and commits
+    ○ 6. Checks
+    ○ 7. Session tasks
+
+Files changed · 2
+  created tasks/plan.md                    1 h ago
+  created tasks/todo.md                    1 h ago
 ```
 
 - **Stepper.** The six steps on one row, pinned at the top with the step header below it: the rest of the pane scrolls under them.
@@ -132,9 +159,14 @@ Checks · 2, 1 failing
 
   Before any step, the header is `No step yet`, and that the panel is waiting for an agent-skills command or skill.
 - **Back to <step>.** While an earlier step is on show, a button on the right of its header names the current step and returns to it. Pressing the current step in the stepper does the same.
-- **Tasks.** When Build is the step on show, `Tasks · N of M done`, then three groups in this order. Each group's name is a button that folds or unfolds it:
+- **Documents.** The step's own files, as they are on disk, whether or not they changed in this session:
+  - Define: the spec (`SPEC.md`, a root `SPEC-<change>.md`, `docs/SPEC.md`, or the files under `spec/`)
+  - Plan: `tasks/plan.md` and `tasks/todo.md`
+
+  Left out when none exists. Other steps have none.
+- **Tasks (Plan).** When Plan is the step on show, `Tasks · N of M done`, then three groups in this order. Each group's name is a button that folds or unfolds it:
   - `Completed` (✓), folded at first
-  - `In progress` (●):
+  - `In progress` (●), the active task:
     - a session task marked in progress, or a todo task with some of its boxes checked
     - otherwise, the first open task
   - `To do` (○)
@@ -144,6 +176,13 @@ Checks · 2, 1 failing
   - the planning skill's `## Task N: title` headings; a heading's task is done when all the boxes under it are checked
   - all its checkbox items
   - with no `tasks/todo.md`, the session's own task list
+- **Current task (Build).** When Build is the step on show, `Current task · N of M done`, then the active task (the first in progress, as above) and its details:
+  - **From `tasks/todo.md`:** the lines under the task: indented under a `Task` checkbox item, or down to the next heading as high as a `## Task N:` heading.
+  - **Formatting:** `**` is removed, a checked box shows as ✓ (success colour), an open one as ○ (dim), and other bullets as `•`. Nesting is kept, blank lines are dropped, and long lines wrap.
+  - **Length:** at most 30 lines, then `…`.
+  - **Session tasks:** with no `tasks/todo.md`, the details are the session task's description.
+
+  With every task done, it says `All M tasks done`.
 - **Files changed · N.** The files created or edited while the step on show was current, each path once, newest first, as `created <path>` or `edited <path>`. A path counts as created if any change during the step created it.
 - **Commits · N.** `<sha> <subject>`, newest first.
 - **Checks · N, K failing.** Each check once, with its latest result (✓ or ✗, in the success or error colour), newest first. `K failing` counts the checks whose latest result is ✗, and is left out when there are none.
@@ -157,7 +196,7 @@ Checks · 2, 1 failing
 
 ### Text summary
 
-When nothing shows the pane, `/monitor` replies with the current step's view as plain text, and `/monitor <step>` with that step's. Every task group is unfolded:
+When nothing shows the pane, `/monitor` replies with the current step's view as plain text, and `/monitor <step>` with that step's. Every task group is unfolded (in `/monitor plan`):
 
 ```
 Workflow
@@ -166,15 +205,12 @@ Workflow
 BUILD
 started by /build · 25 min ago
 
-Tasks · 3 of 7 done
-  Completed · 3
-    ✓ 1. Live event check
-    …
-  In progress · 1
-    ● 4. Done marks from files
-  To do · 3
-    ○ 5. Files and commits
-    …
+Current task · 3 of 7 done
+  ● 4. Done marks from files
+    What: Build's count comes from tasks/todo.md
+    Acceptance criteria:
+      ✓ Build shows 3/7 at session start
+      …
 
 Files changed · 2
   edited hooks/phases.ts · 2 min ago
@@ -317,7 +353,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
   - deny, rewrite or delay a tool call, prompt or command
   - make network requests (`$.http`) or run processes (`$.process`)
   - keep command output beyond what's displayed (a commit's hash and subject)
-  - copy file contents into state: only counts, paths, and the task titles from `tasks/todo.md`, which Build's task list shows (Decision 11)
+  - copy file contents into state: only counts, paths, and the tasks from `tasks/todo.md` (titles, and each task's lines for Build's current task), which the panel shows (Decisions 11 and 13)
 
 ## Success Criteria
 
@@ -339,10 +375,11 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
 16. Every integration test builds its events from `hooks/fixtures/live-events.ts`, recorded from a real session, not from hand-written shapes.
 17. When the pane isn't placed, `/monitor` replies with the same blocks as text, from the same data. On the Android app, `/monitor` shows that text.
 18. Commands, skills and empty lists are not shown; the header names the command or skill that started the step.
-19. When Build is the step on show, the panel lists `tasks/todo.md`'s tasks under `Tasks · N of M done`, with ✓ done, ● in progress and ○ to do. With no `tasks/todo.md`, it lists the session's own tasks.
+19. When Plan is the step on show, the panel lists `tasks/todo.md`'s tasks under `Tasks · N of M done`, with ✓ done, ● in progress and ○ to do. With no `tasks/todo.md`, it lists the session's own tasks. When Build is the step on show, it shows only the active task, with its lines from `tasks/todo.md` (or its session description), under `Current task · N of M done`.
 20. Pressing a started or done step in the stepper shows that step's view: its files, commits and checks, from while it was current, under a header with no `looking back`. A step not reached isn't a button. `Back to <current step>` returns to the current step. `/monitor <step>` gives the same view as text, and an unknown step name gets a reply listing the valid ones.
 21. The tasks show in three groups, in order: `Completed`, `In progress`, `To do`. Each is numbered, and each group folds and unfolds when its name is pressed; `Completed` starts folded. A `tasks/todo.md` written with the planning skill's `## Task N:` headings counts one task per heading, not one per checkbox.
 22. The stepper and the step's header (with `Back to <step>`) stay at the top of the pane while the rest scrolls.
+23. Define's view lists the spec file, and Plan's lists `tasks/plan.md` and `tasks/todo.md`, under `Documents`, whenever they exist, including when they were written before this session.
 
 ## Out of Scope (Deferred)
 
@@ -376,6 +413,7 @@ Coverage target: every rule in this spec has at least one test. No percentage ga
     - **Tasks:** they show in foldable groups (`Completed`, `In progress`, `To do`), numbered.
     - **Headings:** a `## Task N:` heading counts as one task.
     - **Stepper:** it's pinned, with the step's header, because the pane scrolls its own rows under them (`ui.scroll`). The header is pinned too, so `Back to <step>` never scrolls away.
+13. **Tasks under Plan, the task in hand under Build, and each step's documents (after the fourth look, 2026-11-19).** The full task list belongs with the plan that made it, so it moves to Plan's view, with the active task marked. Build shows only the active task and its details from `tasks/todo.md` (acceptance criteria and verification boxes, files), so it stays on the work in hand. Define's and Plan's views didn't show `SPEC.md` or the plan: their lists hold only the changes the panel recorded during this session, so a file written earlier (in another session, or before a fresh load) never appears. Each now lists its documents from disk under `Documents`. To show the details, the panel keeps each todo task's lines in state.
 
 ## Open Questions
 

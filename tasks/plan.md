@@ -127,6 +127,15 @@ Full tasks, with acceptance criteria, verification steps and files, are in `task
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
 
+### Phase 7: Tasks under Plan, the task in hand under Build (spec Decision 13)
+- [ ] Task 21: Each step's documents: Define lists the spec, Plan lists `tasks/plan.md` and `tasks/todo.md`, from disk
+- [ ] Task 22: The task list moves to Plan, with the active task marked; Build shows only the active task and its details
+
+### Checkpoint G
+- [ ] Tests, type-check and validate pass (every surface)
+- [ ] Seen on a real screen and the phone
+- [ ] Human review
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |

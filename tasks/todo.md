@@ -264,3 +264,22 @@ Every task, before it's checked off:
 - [x] Tests, type-check and validate pass (125 tests, every surface)
 - [ ] Seen on a real screen and the phone
 - [ ] Human review
+
+## Phase 7: Tasks under Plan, the task in hand under Build (spec Decision 13)
+
+- [ ] **Task 21: Each step's documents** · S · Dependencies: 20
+  - **What:** reading the files also keeps the spec's paths (artifacts shape 4). Define's view lists them under `Documents`, and Plan's lists `tasks/plan.md` and `tasks/todo.md`, whenever they exist.
+  - **Acceptance:** spec success criterion 23, in the pane and the text.
+  - **Files:** `hooks/artifacts.ts`, `hooks/sections.ts`, `hooks/register.tsx`, `types/index.d.ts`, and the tests
+
+- [ ] **Task 22: Tasks under Plan; the current task under Build** · M · Dependencies: 21
+  - **What:**
+    - The task groups show when Plan is the step on show, not Build.
+    - Build shows `Current task · N of M done`, then the active task and its details. The details come from the todo task's lines (kept in state, at most 30) or the session task's description (tasks shape 2). Checkboxes show as ✓ or ○, bullets as •, and long lines wrap in the pane.
+  - **Acceptance:** spec success criterion 19 as revised, on every surface.
+  - **Files:** `hooks/artifacts.ts`, `hooks/tasks.ts`, `hooks/sections.ts`, `hooks/summary.ts`, `hooks/view.tsx`, `types/index.d.ts`, and the tests
+
+### Checkpoint G
+- [ ] Tests, type-check and validate pass (every surface)
+- [ ] Seen on a real screen and the phone
+- [ ] Human review
